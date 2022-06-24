@@ -27,15 +27,15 @@ jobs:
       run: sudo apt-get install libwolfssl-dev
 
     - name: Install gRPC
-      run:
-        - sudo apt-get install build-essential autoconf libtool
-        - cd /tmp
-        - git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
-        - cd grpc
-        - mkdir -p cmake/build && cd cmake/build
-        - cmake ../.. -DgRPC_INSTALL=ON
-        - make -j8 && make install
-        - cd / && rm -rf /tmp/grpc
+      run: |
+        sudo apt-get install build-essential autoconf libtool
+        cd /tmp
+        git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+        cd grpc
+        mkdir -p cmake/build && cd cmake/build
+        cmake ../.. -DgRPC_INSTALL=ON
+        make -j8 && make install
+        cd / && rm -rf /tmp/grpc
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
