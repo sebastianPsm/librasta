@@ -13,6 +13,7 @@ extern "C" {  // only need to export C interface if
 #include "dictionary.h"
 #include "logging.h"
 #include "rastafactory.h"
+#include <limits.h>
 #define CONFIG_BUFFER_LENGTH 10000
 
 /**
@@ -68,6 +69,31 @@ struct RastaConfigInfoGeneral {
     unsigned long rasta_network;
     unsigned long rasta_id;
 };
+
+enum RastaTLSMode{
+    TLS_MODE_DISABLED,
+    TLS_MODE_DTLS_1_2
+};
+
+/**
+ * Non-standard extension
+ */
+struct RastaConfigTLS {
+    enum RastaTLSMode mode;
+
+    /**
+     * Path to CA certificate to use, required for server and client operation
+     */
+    char ca_cert_path[PATH_MAX];
+    /**
+    * Path to server certificate to use, required for server and client operation
+    */
+    char cert_path[PATH_MAX];
+    /**
+    * Path to server private key to use, required for server operation
+    */
+    char key_path[PATH_MAX];
+};
 /**
  * stores all presets after load
  */
@@ -85,6 +111,11 @@ struct RastaConfigInfo {
      * values are 0 if not set in config
      */
     struct RastaConfigInfoGeneral general;
+    /**
+     * Configuration for TLS / dTLS setup.
+     * Must set mode, and for mode != TLS_MODE_DISABLED, paths to certificate and keys must be set as required
+     */
+    struct RastaConfigTLS tls;
 };
 
 /**

@@ -10,6 +10,7 @@ extern "C" {  // only need to export C interface if
 #include <event_system.h>
 #include "rastamodule.h"
 #include "rastaredundancy_new.h"
+#include <udp.h>
 
 /**
  * define struct as type here to allow usage in notification pointers
@@ -89,7 +90,7 @@ struct redundancy_mux{
     /**
      * the file descriptors of the used udp sockes. array has length port_count
      */
-    int * udp_socket_fds;
+    struct RastaUDPState * udp_socket_states;
 
     /**
      * the redundancy channels to remote entities this multiplexer is aware of

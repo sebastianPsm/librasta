@@ -7,7 +7,7 @@ unsigned char* hexstr_to_char(const char* hexstr)
 {
     size_t len = strlen(hexstr);
     size_t final_len = len / 2;
-    unsigned char* chrs = (unsigned char*)malloc((final_len+1) * sizeof(*chrs));
+    unsigned char* chrs = (unsigned char*)rmalloc((final_len+1) * sizeof(*chrs));
     for (unsigned int i=0, j=0; j<final_len; i+=2, j++)
         chrs[j] = (hexstr[i] % 32 + 9) % 25 * 16 + (hexstr[i+1] % 32 + 9) % 25;
     chrs[final_len] = '\0';
@@ -18,7 +18,7 @@ unsigned char* hexstr_to_char(const char* hexstr)
 
 void testBlake2Hash(){
     // assure that blake itself is working correctly
-    CU_ASSERT_EQUAL(0, blake2b_selftest());
+    CU_ASSERT_EQUAL(0, rasta_blake2b_selftest());
 
     unsigned char * result = rmalloc(64 * sizeof(unsigned char));
 
@@ -57,7 +57,7 @@ static void selftest_seq(uint8_t *out, size_t len, uint32_t seed) {
 }
 // BLAKE2b self-test validation. Return 0 when OK.
 
-int blake2b_selftest() {
+int rasta_blake2b_selftest() {
     // grand hash of hash results
     const uint8_t blake2b_res[32] = {
             0xC2, 0x3A, 0x78, 0x00, 0xD9, 0x81, 0x23, 0xBD,
@@ -71,10 +71,10 @@ int blake2b_selftest() {
 
     size_t i, j, outlen, inlen;
     uint8_t in[1024], md[64], key[64];
-    blake2b_ctx ctx;
+    rasta_blake2b_ctx ctx;
 
     // 256-bit hash for testing
-    if (blake2b_init(&ctx, 32, NULL, 0))
+    if (rasta_blake2b_init(&ctx, 32, NULL, 0))
         return -1;
 
     for (i = 0; i < 4; i++) {
@@ -83,17 +83,17 @@ int blake2b_selftest() {
             inlen = b2b_in_len[j];
 
             selftest_seq(in, inlen, inlen);     // unkeyed hash
-            blake2b(md, outlen, NULL, 0, in, inlen);
-            blake2b_update(&ctx, md, outlen);   // hash the hash
+            rasta_blake2b(md, outlen, NULL, 0, in, inlen);
+            rasta_blake2b_update(&ctx, md, outlen);   // hash the hash
 
             selftest_seq(key, outlen, outlen);  // keyed hash
-            blake2b(md, outlen, key, outlen, in, inlen);
-            blake2b_update(&ctx, md, outlen);   // hash the hash
+            rasta_blake2b(md, outlen, key, outlen, in, inlen);
+            rasta_blake2b_update(&ctx, md, outlen);   // hash the hash
         }
     }
 
     // compute and compare the hash of hashes
-    blake2b_final(&ctx, md);
+    rasta_blake2b_final(&ctx, md);
     for (i = 0; i < 32; i++) {
         if (md[i] != blake2b_res[i])
             return -1;
