@@ -33,13 +33,13 @@ void * fifo_pop(fifo_t * fifo){
     return res;
 }
 
-void fifo_push(fifo_t * fifo, void * element){
+int fifo_push(fifo_t * fifo, void * element){
     if (element == NULL){
-        return;
+        return 0;
     }
 
     if (fifo->size == fifo->max_size){
-        return;
+        return 0;
     }
 
     struct fifo_element * new_entry = rmalloc(sizeof(struct fifo_element));
@@ -55,6 +55,7 @@ void fifo_push(fifo_t * fifo, void * element){
     }
 
     fifo->size++;
+    return 1;
 }
 
 unsigned int fifo_get_size(fifo_t * fifo){

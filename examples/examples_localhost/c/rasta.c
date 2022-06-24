@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <rasta_lib.h>
 #include <rmemory.h>
+#include <fifo.h>
 
 #define CONFIG_PATH_S "rasta_server_local.cfg"
 #define CONFIG_PATH_C1 "rasta_client1_local.cfg"
@@ -36,21 +37,56 @@ void addRastaString(struct RastaMessageData * data, int pos, char * str) {
 int client1 = 1;
 int client2 = 1;
 
+// static rastaApplicationMessage received_packet;
+fifo_t *server_fifo;
+
+void send_pending_messages(struct rasta_handle *h) {
+    while (server_fifo->size) {
+        rastaApplicationMessage *oldestMessage = server_fifo->head->data;
+
+        struct rasta_connection* con;
+        int message_forwarded = 0;
+        for (con = h->first_con; con; con = con->linkedlist_next) {
+            if (con->remote_id != oldestMessage->id) {
+                 printf("Client message from %lu is now sent to %lu\n", oldestMessage->id, (long unsigned int) con->remote_id);
+
+                struct RastaMessageData messageData1;
+                allocateRastaMessageData(&messageData1, 1);
+
+                addRastaString(&messageData1, 0, (char*)oldestMessage->appMessage.bytes);
+                sr_send(h, con->remote_id, messageData1);
+                freeRastaMessageData(&messageData1);
+
+                printf("Message forwarded\n");
+                // printf("Disconnect to client %lu \n", (long unsigned int) result->connection.remote_id);
+                // sr_disconnect(result->handle, &result->connection);
+                message_forwarded = 1;
+            }
+        }
+
+        if (message_forwarded) {
+            rfree(fifo_pop(server_fifo));
+        } else {
+            break;
+        }
+    }
+}
+
 void onConnectionStateChange(struct rasta_notification_result *result) {
-    printf("\n Connectionstate change (remote: %u)", result->connection.remote_id);
+    printf("Connection state change (remote: %u)\n", result->connection.remote_id);
 
     switch (result->connection.current_state) {
         case RASTA_CONNECTION_CLOSED:
-            printf("\nCONNECTION_CLOSED \n\n");
+            printf("CONNECTION_CLOSED\n");
             break;
         case RASTA_CONNECTION_START:
-            printf("\nCONNECTION_START \n\n");
+            printf("CONNECTION_START\n");
             break;
         case RASTA_CONNECTION_DOWN:
-            printf("\nCONNECTION_DOWN \n\n");
+            printf("CONNECTION_DOWN\n");
             break;
         case RASTA_CONNECTION_UP:
-            printf("\nCONNECTION_UP \n\n");
+            printf("CONNECTION_UP\n");
             //send data to server
             if (result->connection.my_id == ID_S1) { //Client 1
                 struct RastaMessageData messageData1;
@@ -80,15 +116,15 @@ void onConnectionStateChange(struct rasta_notification_result *result) {
             else if (result->connection.my_id == ID_R) {
                 if (result->connection.remote_id == ID_S1) client1 = 0;
                 else if (result->connection.remote_id == ID_S2) client2 = 0;
+                send_pending_messages(result->handle);
             }
-
 
             break;
         case RASTA_CONNECTION_RETRREQ:
-            printf("\nCONNECTION_RETRREQ \n\n");
+            printf("CONNECTION_RETRREQ\n");
             break;
         case RASTA_CONNECTION_RETRRUN:
-            printf("\nCONNECTION_RETRRUN \n\n");
+            printf("CONNECTION_RETRRUN\n");
             break;
         default:
             break;
@@ -109,44 +145,30 @@ void onReceive(struct rasta_notification_result *result) {
 
     switch (result->connection.my_id) {
         case ID_R:
-            //Server
-            printf("\nReceived data from Client %u", result->connection.remote_id);
+            // Server
+            printf("Received data from Client %u\n", result->connection.remote_id);
 
-            p = sr_get_received_data(result->handle,&result->connection);
+            p = sr_get_received_data(result->handle, &result->connection);
 
-            printf("\nPacket is from %lu", p.id);
-            printf("\nMsg: %s", p.appMessage.bytes);
+            printf("Packet is from %lu\n", p.id);
+            printf("Msg: %s\n", p.appMessage.bytes);
 
-            printf("\n\n\n");
-
-            printf("\nSend it to other client \n");
-
-            for (struct rasta_connection* con = result->handle->first_con; con; con = con->linkedlist_next) {
-                if (con->remote_id != p.id) {
-                    printf("Client message from %lu is now send to %lu\n", p.id, (long unsigned int) con->remote_id);
-
-                    struct RastaMessageData messageData1;
-                    allocateRastaMessageData(&messageData1, 1);
-
-                    addRastaString(&messageData1,0,(char*)p.appMessage.bytes);
-                    sr_send(result->handle, con->remote_id, messageData1);
-                    freeRastaMessageData(&messageData1);
-
-                    printf("Message forwarded\n");
-                    printf("Disconnect to client %lu \n\n\n", (long unsigned int) con->remote_id);
-                    sr_disconnect(result->handle, con);
-                }
+            void* relayed_message = rmalloc(sizeof(rastaApplicationMessage));
+            memcpy(relayed_message, &p, sizeof(rastaApplicationMessage));
+            if (!fifo_push(server_fifo, relayed_message)) {
+                rfree(relayed_message);
             }
+
+            send_pending_messages(result->handle);
+
             break;
         case ID_S1: case ID_S2:
-            printf("\nReceived data from Server %u", result->connection.remote_id);
+            printf("Received data from Server %u\n", result->connection.remote_id);
 
             p = sr_get_received_data(result->handle,&result->connection);
 
-            printf("\nPacket is from %lu", p.id);
-            printf("\nMsg: %s", p.appMessage.bytes);
-
-            printf("\n\n\n");
+            printf("Packet is from %lu\n", p.id);
+            printf("Msg: %s\n", p.appMessage.bytes);
             break;
         default:
             break;
@@ -225,7 +247,12 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
-        getchar();
+        printf("->   Press Enter to listen\n");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+
+        server_fifo = fifo_init(128);
+
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
@@ -235,6 +262,8 @@ int main(int argc, char *argv[]){
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, true);
+
+        fifo_destroy(server_fifo);
     }
     else if (strcmp(argv[1], "s1") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_S1);
@@ -250,7 +279,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, true);
+        rasta_lib_start(rc, false);
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
@@ -266,7 +295,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, true);
+        rasta_lib_start(rc, false);
     }
 }
 
