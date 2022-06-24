@@ -6,26 +6,12 @@
 #include <errno.h>
 #include <unistd.h>
 #include "rmemory.h"
+#include "bsd_error.h"
 
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #endif
-
-/**
- * clears the erros of the socket and prepares for closing
- * @param fd the file descriptor
- * @return the socket state
- */
-int getSO_ERROR(int fd) {
-    int err = 1;
-    socklen_t len = sizeof err;
-    if (-1 == getsockopt(fd, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
-        exit(1);
-    if (err)
-        errno = err;              // set errno to the socket SO_ERROR
-    return err;
-}
 
 
 void udp_bind(int file_descriptor, uint16_t port) {

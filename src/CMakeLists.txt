@@ -29,6 +29,8 @@ set(RASTA_HDRS
     rasta/headers/rastautil.h
     rasta/headers/rmemory.h
     rasta/headers/udp.h
+    rasta/headers/tcp.h
+    rasta/headers/bsd_error.h
     rasta/headers/rastablake2.h
     rasta/headers/rastasiphash24.h
     rasta/headers/rastahashing.h
@@ -66,6 +68,8 @@ add_library(${target} SHARED
     rasta/c/rastautil.c
     rasta/c/rmemory.c
     rasta/c/udp.c
+    rasta/c/tcp.c
+    rasta/c/bsd_error.c
     sci/c/hashmap.c
     rasta/c/rastablake2.c
     rasta/c/rastasiphash24.c
