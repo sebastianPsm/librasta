@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include "rmemory.h"
-#include "bsd_error.h"
+#include "bsd_utils.h"
 
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
@@ -123,11 +123,4 @@ int udp_init() {
 
     return file_desc;
 }
-
-void sockaddr_to_host(struct sockaddr_in sockaddr, char* host){
-    inet_ntop(AF_INET, &(sockaddr.sin_addr), host, IPV4_STR_LEN);
-}
-
-
-
 

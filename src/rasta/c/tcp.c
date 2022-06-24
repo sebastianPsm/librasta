@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include "rmemory.h"
-#include "bsd_error.h"
+#include "bsd_utils.h"
 
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>

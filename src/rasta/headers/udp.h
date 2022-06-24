@@ -13,8 +13,6 @@ extern "C" {  // only need to export C interface if
 #include <stdint.h>
 #include <netinet/in.h>
 
-#define IPV4_STR_LEN 16
-
 /**
  * This function will initialise an udp socket and return its file descriptor, which is used to reference it in later
  * function calls

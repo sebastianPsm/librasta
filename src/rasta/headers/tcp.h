@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <netinet/in.h>
 
-#define IPV4_STR_LEN 16
 #define MAX_PENDING_CONNECTIONS 5
 
 /**

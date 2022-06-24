@@ -85,11 +85,18 @@ struct redundancy_mux{
      * amount of listen ports, i.e. length of the listen_ports array
      */
     unsigned int port_count;
-
+#ifdef USE_UDP
     /**
      * the file descriptors of the used udp sockes. array has length port_count
      */
     int * udp_socket_fds;
+#endif
+#ifdef USE_TCP
+    /**
+     * the file descriptors of the used udp sockes. array has length port_count
+     */
+    int * tcp_socket_fds;
+#endif
 
     /**
      * the redundancy channels to remote entities this multiplexer is aware of

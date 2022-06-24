@@ -30,7 +30,7 @@ set(RASTA_HDRS
     rasta/headers/rmemory.h
     rasta/headers/udp.h
     rasta/headers/tcp.h
-    rasta/headers/bsd_error.h
+    rasta/headers/bsd_utils.h
     rasta/headers/rastablake2.h
     rasta/headers/rastasiphash24.h
     rasta/headers/rastahashing.h
@@ -69,7 +69,7 @@ add_library(${target} SHARED
     rasta/c/rmemory.c
     rasta/c/udp.c
     rasta/c/tcp.c
-    rasta/c/bsd_error.c
+    rasta/c/bsd_utils.c
     sci/c/hashmap.c
     rasta/c/rastablake2.c
     rasta/c/rastasiphash24.c
@@ -146,3 +146,31 @@ endif(ENABLE_RASTA_TLS)
 install(TARGETS ${target}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+if(USE_UDP)
+    message("UDP is enabled")
+    target_compile_definitions(${target}
+        PRIVATE
+        USE_UDP
+    )
+endif(USE_UDP)
+
+if(USE_TCP)
+    message("TCP is enabled")
+    target_compile_definitions(${target}
+        PRIVATE
+        USE_TCP
+    )
+endif(USE_TCP)
+
+if(NOT USE_UDP)
+if(NOT USE_TCP)
+    message( FATAL_ERROR "Neither TCP nor UDP is enabled!")
+endif()
+endif()
+
+if(USE_UDP)
+if(USE_TCP)
+    message( FATAL_ERROR "You cannot enable both TCP and UDP at the same time!")
+endif(USE_UDP)
+endif(USE_TCP)

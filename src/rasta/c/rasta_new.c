@@ -1722,7 +1722,12 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
         channel_events[i].enabled = 1;
         channel_events[i].callback = channel_receive_event;
         channel_events[i].carry_data = channel_event_data + i;
+        #ifdef USE_UDP
         channel_events[i].fd = h->mux.udp_socket_fds[i];
+        #endif
+        #ifdef USE_TCP
+        channel_events[i].fd = h->mux.tcp_socket_fds[i];
+        #endif
         channel_event_data[i].channel_index = i;
         channel_event_data[i].event = channel_events + i;
         channel_event_data[i].h = h;
