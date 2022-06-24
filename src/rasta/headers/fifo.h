@@ -68,7 +68,7 @@ void * fifo_pop(fifo_t * fifo);
  * @param fifo the FIFO to use
  * @param element the data to insert
  */
-void fifo_push(fifo_t * fifo, void * element);
+int fifo_push(fifo_t * fifo, void * element);
 
 /**
  * Gets the amount of elements in the FIFO.
