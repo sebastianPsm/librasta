@@ -22,7 +22,8 @@ RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     && build-essential autoconf libtool pkg-config \
-        libcunit1 libcunit1-doc libcunit1-dev
+        libcunit1 libcunit1-doc libcunit1-dev \
+        libwolfssl-dev
 
 RUN cd /tmp \
  && git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc \

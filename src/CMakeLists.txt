@@ -1,3 +1,7 @@
+# if(ENABLE_RASTA_TLS)
+#     find_package(WolfSSL REQUIRED)
+# endif(ENABLE_RASTA_TLS)
+
 # Target name
 set(target rasta)
 
@@ -77,6 +81,9 @@ add_library(${target} SHARED
 
 # Link system libraries for librasta
 target_link_libraries(${target} rt pthread)
+if(ENABLE_RASTA_TLS)
+target_link_libraries(${target} wolfssl)
+endif(ENABLE_RASTA_TLS)
 
 set_property(TARGET ${target}
     PROPERTY PUBLIC_HEADER
@@ -126,6 +133,10 @@ target_compile_options(${target}
     PRIVATE
     ${DEFAULT_COMPILE_OPTIONS}
 )
+
+if(ENABLE_RASTA_TLS)
+    target_compile_definitions(rasta PRIVATE ENABLE_TLS)
+endif(ENABLE_RASTA_TLS)
 
 # Installation for library
 install(TARGETS ${target}

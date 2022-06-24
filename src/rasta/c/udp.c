@@ -7,6 +7,11 @@
 #include <unistd.h>
 #include "rmemory.h"
 
+#ifdef ENABLE_TLS
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
+#endif
+
 /**
  * clears the erros of the socket and prepares for closing
  * @param fd the file descriptor

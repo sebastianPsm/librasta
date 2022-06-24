@@ -3,12 +3,16 @@ project(rasta
     LANGUAGES C CXX
     DESCRIPTION "A C implementation of the RaSTA protocol stack")
 
+# Include cmake modules
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 SET(USE_OPENSSL false CACHE BOOL "Use OpenSSL MD4 implementation")
 
 option(BUILD_DOCUMENTATION "Generate documentation" OFF)
 option(BUILD_LOCAL_EXAMPLES "Build the RaSTA/SCI examples the run on localhost" ON)
 option(BUILD_REMOTE_EXAMPLES "Build the RaSTA/SCI examples that communicate in a network" ON)
 option(BUILD_RASTA_GRPC_BRIDGE "Build the RaSTA/gRPC bridge" OFF)
+option(ENABLE_RASTA_TLS "Enable RaSTA over TLS" OFF)
 option(EXAMPLE_IP_OVERRIDE "Use IPs from environment variables in RaSTA/SCI examples" OFF)
 option(ENABLE_CODE_COVERAGE "Provide command to generate code coverage report" OFF)
 option(ENABLE_STATIC_ANALYSIS "Run cppcheck along with the compiler" OFF)
@@ -47,8 +51,9 @@ endif(ENABLE_CODE_COVERAGE)
 
 include(cmake/CompileOptions.cmake)
 
-set(EXECUTABLE_OUTPUT_PATH bin/exe/examples)
-set(LIBRARY_OUTPUT_PATH bin/lib)
+# Set output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_subdirectory(src)
 add_subdirectory(examples)
