@@ -34,7 +34,7 @@ jobs:
         cd grpc
         mkdir -p cmake/build && cd cmake/build
         cmake ../.. -DgRPC_INSTALL=ON
-        make -j8 && make install
+        make -j8 && sudo make install
         cd / && rm -rf /tmp/grpc
 
     - name: Configure CMake
