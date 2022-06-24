@@ -748,7 +748,22 @@ void config_setstd(struct RastaConfig * cfg) {
         cfg->values.general.rasta_id = (unsigned long)entr.value.unumber;
     }
 
+    // TLS settings
 
+    entr = config_get(cfg, "RASTA_CA_PATH");
+    if(entr.type != DICTIONARY_STRING){
+        strncpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
+    }
+
+    entr = config_get(cfg, "RASTA_CERT_PATH");
+    if(entr.type != DICTIONARY_STRING){
+        strncpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
+    }
+
+    entr = config_get(cfg, "RASTA_KEY_PATH");
+    if(entr.type != DICTIONARY_STRING){
+        strncpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
+    }
 
 }
 
