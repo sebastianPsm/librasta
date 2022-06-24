@@ -51,12 +51,13 @@ size_t tcp_receive(int file_descriptor, unsigned char* received_message,size_t m
 void tcp_accept(int file_descriptor, struct sockaddr_in *sender);
 
 /**
- * Await a connection on a @p file_descriptor.
+ * Open a connection on a @p file_descriptor.
  * When a connection arrives, open a new socket to communicate with it,
  * @param file_descriptor the file descriptor to accept connections from
- * @param server address of the server
+ * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
+ * @param port the target port on the host
  */
-void tcp_connect(int file_descriptor, struct sockaddr_in *server);
+void tcp_connect(int file_descriptor,  char *host, uint16_t port);
 
 /**
  * Sends a message via the given file descriptor to a @p host and @p port

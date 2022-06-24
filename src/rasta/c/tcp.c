@@ -109,9 +109,22 @@ void tcp_accept(int file_descriptor, struct sockaddr_in *sender)
     }
 }
 
-void tcp_connect(int file_descriptor, struct sockaddr_in *server)
+void tcp_connect(int file_descriptor,  char *host, uint16_t port)
 {
-    if (connect(file_descriptor, (struct sockaddr *)server, sizeof(server)) < 0)
+    struct sockaddr_in server;
+
+    rmemset((char *)&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+
+    // convert host string to usable format
+    if (inet_aton(host, &server.sin_addr) == 0)
+    {
+        fprintf(stderr, "inet_aton() failed\n");
+        exit(1);
+    }
+
+    if (connect(file_descriptor, (struct sockaddr *)&server, sizeof(server)) < 0)
     {
         perror("tcp connection failed");
         exit(1);

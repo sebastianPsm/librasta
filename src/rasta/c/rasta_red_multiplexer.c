@@ -22,7 +22,6 @@
 
 #define UNUSED(x) (void)(x)
 
-
 /* --- Notifications --- */
 
 /**
@@ -184,7 +183,7 @@ void receive_packet(redundancy_mux *mux, int channel_id)
     // the sender of the received packet
     struct sockaddr_in sender;
 
-size_t len = 0;
+    size_t len = 0;
 #ifdef USE_UDP
     int fd = mux->udp_socket_fds[channel_id];
 
@@ -196,6 +195,9 @@ size_t len = 0;
     int fd = mux->tcp_socket_fds[channel_id];
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, fd);
+
+    tcp_accept(fd, &sender);
+
     // wait for pdu
     len = tcp_receive(fd, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #endif
@@ -442,8 +444,10 @@ redundancy_mux redundancy_mux_init_(struct logger_t logger, struct RastaConfigIn
             tcp_bind_device(mux.tcp_socket_fds[j],
                             (uint16_t)mux.config.redundancy.connections.data[j].port,
                             mux.config.redundancy.connections.data[j].ip);
+
+            tcp_listen(mux.tcp_socket_fds[j]);
 #endif
-            mux.listen_ports[j] = (uint16_t)mux.config.redundancy.connections.data[j].port;
+                mux.listen_ports[j] = (uint16_t)mux.config.redundancy.connections.data[j].port;
         }
     }
 
@@ -508,6 +512,7 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
         mux.tcp_socket_fds[i] = tcp_init();
         tcp_bind(mux.tcp_socket_fds[i], listen_ports[i]);
+        tcp_listen(mux.tcp_socket_fds[i]);
     }
 #endif
 
@@ -652,6 +657,7 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
         udp_send(mux->udp_socket_fds[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 #endif
 #ifdef USE_TCP
+        tcp_connect(mux->tcp_socket_fds[i], channel.ip_address, channel.port);
         // send using the channel specific tcp socket
         tcp_send(mux->tcp_socket_fds[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 #endif
