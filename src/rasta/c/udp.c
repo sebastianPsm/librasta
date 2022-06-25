@@ -67,6 +67,11 @@ static void wolfssl_initialize_if_necessary(){
 }
 
 static void wolfssl_start_dtls_server(struct RastaUDPState *state, const struct RastaConfigTLS *tls_config){
+    struct sockaddr_in client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+    char buffer;
+    ssize_t received_bytes;
+
     wolfssl_initialize_if_necessary();
     state->ctx = wolfSSL_CTX_new(wolfDTLSv1_2_server_method());
     if(!state->ctx){
@@ -102,14 +107,43 @@ static void wolfssl_start_dtls_server(struct RastaUDPState *state, const struct 
         fprintf(stderr, "Error allocating WolfSSL object.\n");
         exit(1);
     }
+
+
+    // need to open UDP "connection" and accept client before the remaining methods (send / receive) work as expected by RaSTA
+
+    do {
+        // wait for the first byte of the DTLS Client hello to identify the prospective client
+        received_bytes = recvfrom(state->file_descriptor, &buffer, sizeof(buffer), MSG_PEEK,
+                                  (struct sockaddr *) &client_addr, &addr_len);
+
+        if (received_bytes < 0) {
+            perror("No clients waiting to connect");
+            exit(1);
+        }
+    }while(!received_bytes);
+    // we have received a client hello and can now accept the connection
+
+    if(connect(state->file_descriptor,(struct sockaddr *) &client_addr,sizeof(client_addr)) != 0){
+        perror("Could not connect to client");
+        exit(1);
+    }
+
     wolfSSL_set_fd(state->ssl,state->file_descriptor);
     state->tls_state = RASTA_TLS_CONNECTION_READY;
     state->tls_config = tls_config;
+
+    if (wolfSSL_accept(state->ssl) != SSL_SUCCESS) {
+
+        int e = wolfSSL_get_error(state->ssl, 0);
+
+        fprintf(stderr,"WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
+        exit(1);
+    }
 }
 
 static void wolfssl_start_dtls_client(struct RastaUDPState *state, const struct RastaConfigTLS *tls_config){
     wolfssl_initialize_if_necessary();
-    state->ctx = wolfSSL_CTX_new(wolfDTLSv1_2_server_method());
+    state->ctx = wolfSSL_CTX_new(wolfDTLSv1_2_client_method());
     if(!state->ctx){
         fprintf(stderr,"Could not allocate WolfSSL context!\n");
         exit(1);
@@ -123,12 +157,14 @@ static void wolfssl_start_dtls_client(struct RastaUDPState *state, const struct 
     /* Load CA certificates */
     if (wolfSSL_CTX_load_verify_locations(state->ctx,tls_config->ca_cert_path,0) !=
         SSL_SUCCESS) {
-        fprintf(stderr, "Error loading CA certificate file %s.\n", tls_config->ca_cert_path);
+
+        fprintf(stderr, "Error loading CA certificate file %s\n", tls_config->ca_cert_path);
         exit(1);
     }
     state->ssl = wolfSSL_new(state->ctx);
     if(!state->ssl){
-        fprintf(stderr, "Error allocating WolfSSL object.\n");
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(state->ssl,0));
+        fprintf(stderr, "Error allocating WolfSSL session: %s.\n",error_str);
         exit(1);
     }
     wolfSSL_set_fd(state->ssl,state->file_descriptor);
@@ -137,39 +173,30 @@ static void wolfssl_start_dtls_client(struct RastaUDPState *state, const struct 
 
 static size_t wolfssl_receive_dtls(struct RastaUDPState * state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender){
     int receive_len;
-    if(state->tls_state == RASTA_TLS_CONNECTION_READY){
-        if (wolfSSL_accept(state->ssl) != SSL_SUCCESS) {
-
-            int e = wolfSSL_get_error(state->ssl, 0);
-
-            fprintf(stderr,"WolfSSL could not accept connection: error = %s\n", wolfSSL_ERR_reason_error_string(e));
-            exit(1);
+    if(state->tls_state == RASTA_TLS_CONNECTION_ESTABLISHED) {
+        if ((receive_len = wolfSSL_read(state->ssl, received_message, (int) max_buffer_len) > 0)) {
+            int peer_error = wolfSSL_dtls_get_peer(state->ssl, sender, (unsigned int *) sizeof(struct sockaddr_in));
+            if (peer_error != SSL_SUCCESS) {
+                fprintf(stderr, "Could not get peer from WolfSSL: %d\n", peer_error);
+                exit(1);
+            }
+            return receive_len;
         }
-    }
-    if((receive_len = wolfSSL_read(state->ssl,received_message,(int)max_buffer_len) > 0)){
-        int peer_error = wolfSSL_dtls_get_peer(state->ssl,sender,(unsigned int *) sizeof(struct sockaddr_in));
-        if(peer_error != SSL_SUCCESS){
-            fprintf(stderr, "Could not get peer from WolfSSL: %d\n",peer_error);
-            exit(1);
+        if (receive_len < 0) {
+            int readErr = wolfSSL_get_error(state->ssl, 0);
+            if (readErr != SSL_ERROR_WANT_READ) {
+                fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
+                exit(1);
+            }
         }
-        return receive_len;
-    }
-    if(receive_len < 0){
-        int readErr = wolfSSL_get_error(state->ssl, 0);
-        if(readErr != SSL_ERROR_WANT_READ) {
-            fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
-            exit(1);
-        }
+        return 0;
     }
     return 0;
 }
 
-static void wolfssl_send_tls(struct RastaUDPState * state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver, const struct RastaConfigTLS *tls_config){
+static void wolfssl_send_tls(struct RastaUDPState * state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver){
     if(state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED){
-        wolfssl_start_dtls_client(state,tls_config);
         wolfSSL_dtls_set_peer(state->ssl, receiver, sizeof(*receiver));
-        /* Set the file descriptor for ssl and connect with ssl variable */
-        wolfSSL_set_fd(state->ssl, state->file_descriptor);
         if (wolfSSL_connect(state->ssl) != SSL_SUCCESS) {
             int connect_error = wolfSSL_get_error(state->ssl, 0);
             fprintf(stderr,"WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
@@ -193,6 +220,11 @@ static void wolfssl_cleanup(struct RastaUDPState *state){
     wolfSSL_CTX_free(state->ctx);
 }
 
+static bool is_dtls_server(const struct RastaConfigTLS *tls_config){
+    // client has CA cert but no server certs
+    return tls_config->cert_path[0] && tls_config->key_path[0];
+}
+
 #endif
 
 static void handle_tls_mode(struct RastaUDPState *state) {
@@ -204,7 +236,12 @@ static void handle_tls_mode(struct RastaUDPState *state) {
 #ifdef ENABLE_TLS
         case TLS_MODE_DTLS_1_2:
             state->activeMode = TLS_MODE_DTLS_1_2;
-            wolfssl_start_dtls_server(state,tls_config);
+            if(is_dtls_server(tls_config)) {
+                wolfssl_start_dtls_server(state, tls_config);
+            }
+            else{
+                wolfssl_start_dtls_client(state,tls_config);
+            }
             break;
 #endif
         default:
@@ -306,7 +343,7 @@ void udp_send(struct RastaUDPState * state, unsigned char *message, size_t messa
     }
 #ifdef ENABLE_TLS
     else{
-        wolfssl_send_tls(state, message, message_len, &receiver,state->tls_config);
+        wolfssl_send_tls(state, message, message_len, &receiver);
     }
 #endif
 }
@@ -324,7 +361,7 @@ void udp_send_sockaddr(struct RastaUDPState * state, unsigned char *message, siz
     else{
         const struct RastaConfigTLS *tls_config = state->tls_config;
         state->tls_config = tls_config;
-        wolfssl_send_tls(state, message, message_len, &receiver,tls_config);
+        wolfssl_send_tls(state, message, message_len, &receiver);
     }
 #endif
 }

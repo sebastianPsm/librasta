@@ -14,6 +14,7 @@
 #include <linux/wireless.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <stdbool.h>
 #include "config.h"
 
 struct LineParser {
@@ -459,6 +460,8 @@ struct RastaIPData extractIPData(char data[256], int arrayIndex) {
     return result;
 }
 
+#define stringify(s) #s
+
 /**
  * sets the standard values in config
  * @param cfg
@@ -750,18 +753,36 @@ void config_setstd(struct RastaConfig * cfg) {
 
     // TLS settings
 
+    entr = config_get(cfg,"RASTA_TLS_MODE");
+    if(entr.type == DICTIONARY_STRING){
+        bool accepted = false;
+#ifdef ENABLE_TLS
+        if(!strncmp(entr.value.string.c,stringify(TLS_MODE_DTLS_1_2),strlen(stringify(TLS_MODE_DTLS_1_2)))){
+            cfg->values.tls.mode = TLS_MODE_DTLS_1_2;
+            accepted = true;
+        }
+#endif
+        if(!accepted){
+            fprintf(stderr, "Unknown or unsupported TLS mode: %s\n",entr.value.string.c);
+            exit(1);
+        }
+    }
+    else{
+        cfg->values.tls.mode = TLS_MODE_DISABLED;
+    }
+
     entr = config_get(cfg, "RASTA_CA_PATH");
-    if(entr.type != DICTIONARY_STRING){
+    if(entr.type == DICTIONARY_STRING){
         strncpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_CERT_PATH");
-    if(entr.type != DICTIONARY_STRING){
+    if(entr.type == DICTIONARY_STRING){
         strncpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_KEY_PATH");
-    if(entr.type != DICTIONARY_STRING){
+    if(entr.type == DICTIONARY_STRING){
         strncpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
     }
 
