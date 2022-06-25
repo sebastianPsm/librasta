@@ -32,13 +32,11 @@ enum RastaTLSConnectionState{
 struct RastaUDPState{
     int file_descriptor;
     enum RastaTLSMode activeMode;
+    const struct RastaConfigTLS *tls_config;
 #ifdef ENABLE_TLS
     WOLFSSL_CTX* ctx;
     WOLFSSL* ssl;
     enum RastaTLSConnectionState tls_state;
-
-    const struct RastaConfigTLS *tls_config;
-
 #endif
 };
 

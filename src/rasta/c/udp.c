@@ -13,7 +13,6 @@
 #include <wolfssl/ssl.h>
 #endif
 
-static bool wolfssl_initialized = false;
 
 struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port) {
     struct sockaddr_in receiver;
@@ -58,7 +57,9 @@ static void handle_port_unavailable(const uint16_t port) {
 }
 
 #ifdef ENABLE_TLS
+
 static void wolfssl_initialize_if_necessary(){
+    static bool wolfssl_initialized = false;
     if(!wolfssl_initialized){
         wolfssl_initialized = true;
         wolfSSL_Init();
@@ -253,9 +254,11 @@ void udp_close(struct RastaUDPState * state) {
     int file_descriptor = state-> file_descriptor;
     if (file_descriptor >= 0) {
 
+#ifdef ENABLE_TLS
         if(state->activeMode != TLS_MODE_DISABLED){
             wolfssl_cleanup(state);
         }
+#endif
 
         getSO_ERROR(file_descriptor); // first clear any errors, which can cause close to fail
         if (shutdown(file_descriptor, SHUT_RDWR) < 0) // secondly, terminate the 'reliable' delivery
@@ -291,6 +294,7 @@ size_t udp_receive(struct RastaUDPState * state, unsigned char *received_message
         return wolfssl_receive_dtls(state,received_message,max_buffer_len,sender);
     }
 #endif
+    return 0;
 }
 
 void udp_send(struct RastaUDPState * state, unsigned char *message, size_t message_len, char *host, uint16_t port) {
@@ -309,7 +313,6 @@ void udp_send(struct RastaUDPState * state, unsigned char *message, size_t messa
 
 void udp_send_sockaddr(struct RastaUDPState * state, unsigned char *message, size_t message_len, struct sockaddr_in receiver)
         {
-    const struct RastaConfigTLS *tls_config = state->tls_config;
     if(state->activeMode == TLS_MODE_DISABLED) {
         if (sendto(state->file_descriptor, message, message_len, 0, (struct sockaddr *) &receiver, sizeof(receiver)) ==
             -1) {
@@ -319,6 +322,7 @@ void udp_send_sockaddr(struct RastaUDPState * state, unsigned char *message, siz
     }
 #ifdef ENABLE_TLS
     else{
+        const struct RastaConfigTLS *tls_config = state->tls_config;
         state->tls_config = tls_config;
         wolfssl_send_tls(state, message, message_len, &receiver,tls_config);
     }
