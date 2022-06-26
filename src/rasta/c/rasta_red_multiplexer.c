@@ -177,6 +177,10 @@ void receive_packet(redundancy_mux * mux, int channel_id){
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", channel_id);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", channel_id, len);
 
+    if(!len){
+        return;
+    }
+
     struct RastaByteArray incomingData;
     incomingData.length = (unsigned int)len;
     incomingData.bytes = buffer;

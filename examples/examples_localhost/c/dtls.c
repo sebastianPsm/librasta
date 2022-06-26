@@ -248,6 +248,7 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_disconnect = on_con_end;
 
         printf("->   Press Enter to listen\n");
+        fflush(stdout);
         int c;
         while ((c = getchar()) != '\n' && c != EOF);
 
