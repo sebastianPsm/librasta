@@ -57,16 +57,6 @@ size_t udp_receive(int file_descriptor, unsigned char* received_message,size_t m
 void udp_send(int file_descriptor, unsigned char* message, size_t message_len, char* host, uint16_t port);
 
 /**
- * Sends a message via the given file descriptor to a host, the address information is stored in the
- * @p receiver struct
- * @param file_descriptor the file descriptor which is used to send the message
- * @param message the message which will be send
- * @param message_len the length of the @p message
- * @param receiver address information about the receiver of the message
- */
-void udp_send_sockaddr(int file_descriptor, unsigned char* message, size_t message_len, struct sockaddr_in receiver);
-
-/**
  * Closes the udp socket
  * @param file_descriptor the file descriptor which identifies the socket
  */

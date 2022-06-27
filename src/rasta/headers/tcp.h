@@ -70,16 +70,6 @@ void tcp_connect(int file_descriptor,  char *host, uint16_t port);
 void tcp_send(int file_descriptor, unsigned char* message, size_t message_len, char* host, uint16_t port);
 
 /**
- * Sends a message via the given file descriptor to a host, the address information is stored in the
- * @p receiver struct
- * @param file_descriptor the file descriptor which is used to send the message
- * @param message the message which will be send
- * @param message_len the length of the @p message
- * @param receiver address information about the receiver of the message
- */
-void tcp_send_sockaddr(int file_descriptor, unsigned char* message, size_t message_len, struct sockaddr_in receiver);
-
-/**
  * Closes the tcp socket
  * @param file_descriptor the file descriptor which identifies the socket
  */

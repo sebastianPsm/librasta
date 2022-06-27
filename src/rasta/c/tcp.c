@@ -1,10 +1,10 @@
-#include "tcp.h"
 #include <stdio.h>
 #include <string.h> //memset
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
+#include "tcp.h"
 #include "rmemory.h"
 #include "bsd_utils.h"
 
@@ -13,39 +13,20 @@
 #include <wolfssl/ssl.h>
 #endif
 
+
 int tcp_init()
 {
-    // the file descriptor of the socket
-    int file_desc;
-
-    // create a tcp socket
-    if ((file_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP)) < 0)
-    {
-        // creation failed, exit
-        perror("The tcp socket could not be initialized");
-        exit(1);
-    }
-
-    return file_desc;
+    return bsd_create_socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP);
 }
 
 void tcp_bind(int file_descriptor, uint16_t port)
 {
-    struct sockaddr_in local;
+    bsd_bind_port(file_descriptor, port);
+}
 
-    // set struct to 0s
-    rmemset((char *)&local, 0, sizeof(local));
-
-    local.sin_family = AF_INET;
-    local.sin_port = htons(port);
-    local.sin_addr.s_addr = htonl(INADDR_ANY);
-    // bind socket to port
-    if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(local)) < 0)
-    {
-        // bind failed
-        perror("could not bind the socket to port " + port);
-        exit(1);
-    }
+void tcp_bind_device(int file_descriptor, uint16_t port, char *ip)
+{
+    bsd_bind_device(file_descriptor, port, ip);
 }
 
 void tcp_listen(int file_descriptor)
@@ -55,46 +36,6 @@ void tcp_listen(int file_descriptor)
         // listen failed
         perror("error whe listening to file_descriptor " + file_descriptor);
         exit(1);
-    }
-}
-
-void tcp_bind_device(int file_descriptor, uint16_t port, char *ip)
-{
-    struct sockaddr_in local;
-
-    // set struct to 0s
-    rmemset((char *)&local, 0, sizeof(local));
-
-    local.sin_family = AF_INET;
-    local.sin_port = htons(port);
-    local.sin_addr.s_addr = inet_addr(ip);
-
-    // bind socket to port
-    if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) < 0)
-    {
-        // bind failed
-        perror("could not bind the socket to port");
-        exit(1);
-    }
-}
-
-void tcp_close(int file_descriptor)
-{
-    // close(file_descriptor);
-    if (file_descriptor >= 0)
-    {
-        getSO_ERROR(file_descriptor);                 // first clear any errors, which can cause close to fail
-        if (shutdown(file_descriptor, SHUT_RDWR) < 0) // secondly, terminate the 'reliable' delivery
-            if (errno != ENOTCONN && errno != EINVAL)
-            { // SGI causes EINVAL
-                perror("shutdown");
-                exit(1);
-            }
-        if (close(file_descriptor) < 0) // finally call close()
-        {
-            perror("close");
-            exit(1);
-        }
     }
 }
 
@@ -111,7 +52,7 @@ int tcp_accept(int file_descriptor, struct sockaddr_in *sender)
     return socket;
 }
 
-void tcp_connect(int file_descriptor,  char *host, uint16_t port)
+void tcp_connect(int file_descriptor, char *host, uint16_t port)
 {
     struct sockaddr_in server;
 
@@ -151,28 +92,10 @@ size_t tcp_receive(int file_descriptor, unsigned char *received_message, size_t 
 
 void tcp_send(int file_descriptor, unsigned char *message, size_t message_len, char *host, uint16_t port)
 {
-    struct sockaddr_in receiver;
-
-    rmemset((char *)&receiver, 0, sizeof(receiver));
-    receiver.sin_family = AF_INET;
-    receiver.sin_port = htons(port);
-
-    // convert host string to usable format
-    if (inet_aton(host, &receiver.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
-
-    // send the message using the other send function
-    tcp_send_sockaddr(file_descriptor, message, message_len, receiver);
+    bsd_send(file_descriptor, message, message_len, host, port);
 }
 
-void tcp_send_sockaddr(int file_descriptor, unsigned char *message, size_t message_len, struct sockaddr_in receiver)
+void tcp_close(int file_descriptor)
 {
-    if (sendto(file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) < 0)
-    {
-        perror("failed to send data");
-        exit(1);
-    }
+    bsd_close(file_descriptor);
 }
