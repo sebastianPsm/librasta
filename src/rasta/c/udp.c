@@ -194,6 +194,14 @@ static void wolfssl_start_dtls_client(struct RastaUDPState *state, const struct 
         fprintf(stderr, "Error allocating WolfSSL session: %s.\n",error_str);
         exit(1);
     }
+
+    if(state->tls_config->tls_hostname[0]) {
+        wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+    }
+    else{
+        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.");
+    }
+
     wolfSSL_set_fd(state->ssl,state->file_descriptor);
     state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
@@ -235,6 +243,7 @@ static size_t wolfssl_receive_dtls(struct RastaUDPState * state, unsigned char *
 static void wolfssl_send_tls(struct RastaUDPState * state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver){
     if(state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED){
         wolfSSL_dtls_set_peer(state->ssl, receiver, sizeof(*receiver));
+
         if (wolfSSL_connect(state->ssl) != SSL_SUCCESS) {
             int connect_error = wolfSSL_get_error(state->ssl, 0);
             fprintf(stderr,"WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));

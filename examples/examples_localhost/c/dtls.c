@@ -215,10 +215,14 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
 
 void prepare_certs(const char *config_path) {
     struct RastaConfig config = config_load(config_path);
-    create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
+    // do not overwrite existing certificates, might lead to failure in clients
+    if(access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
+        create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
 
-    printf("Generated Certificates");
-}
+        printf("Generated Certificates");
+    }
+    }
+
 
 int main(int argc, char *argv[]){
 

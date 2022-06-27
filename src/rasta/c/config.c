@@ -786,6 +786,12 @@ void config_setstd(struct RastaConfig * cfg) {
         strncpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
     }
 
+#ifdef ENABLE_TLS
+    entr = config_get(cfg, "RASTA_TLS_HOSTNAME");
+    if(entr.type == DICTIONARY_STRING){
+        strncpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
+    }
+#endif
 }
 
 /*

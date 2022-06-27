@@ -14,6 +14,7 @@ extern "C" {  // only need to export C interface if
 #include "logging.h"
 #include "rastafactory.h"
 #include <limits.h>
+
 #define CONFIG_BUFFER_LENGTH 10000
 
 /**
@@ -74,6 +75,8 @@ enum RastaTLSMode{
     TLS_MODE_DISABLED,
     TLS_MODE_DTLS_1_2
 };
+// max length of CN in ASN.1
+#define MAX_DOMAIN_LENGTH 64
 
 /**
  * Non-standard extension
@@ -93,6 +96,10 @@ struct RastaConfigTLS {
     * Path to server private key to use, required for server operation
     */
     char key_path[PATH_MAX];
+    /**
+     * Domain / common name to validate TLS certificates against (as client)
+     */
+    char tls_hostname[MAX_DOMAIN_LENGTH];
 };
 /**
  * stores all presets after load
