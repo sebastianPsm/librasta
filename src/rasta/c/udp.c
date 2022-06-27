@@ -124,8 +124,25 @@ static void wolfssl_start_dtls_server(struct RastaUDPState *state, const struct 
 
 }
 
-static void wolfssl_accept(struct RastaUDPState *state) {
+static void set_dtls_async(struct RastaUDPState *state) {
     int socket_flags;
+    // set socket to non-blocking so we can select() on it
+    socket_flags = fcntl(state->file_descriptor,F_GETFL,0);
+    if(socket_flags < 0){
+        perror("Error getting socket flags");
+        exit(1);
+    }
+    socket_flags |= O_NONBLOCK;
+    if(fcntl(state->file_descriptor,F_SETFL,socket_flags) != 0){
+        perror("Error setting socket non-blocking");
+        exit(1);
+    }
+
+    // inform wolfssl to expect read / write errors due to non-blocking nature of socket
+    wolfSSL_dtls_set_using_nonblock(state->ssl,1);
+}
+
+static void wolfssl_accept(struct RastaUDPState *state) {
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
@@ -146,21 +163,8 @@ static void wolfssl_accept(struct RastaUDPState *state) {
         fprintf(stderr,"WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
         exit(1);
     }
+    set_dtls_async(state);
 
-    // set socket to non-blocking so we can select() on it
-    socket_flags = fcntl(state->file_descriptor,F_GETFL,0);
-    if(socket_flags < 0){
-        perror("Error getting socket flags");
-        exit(1);
-    }
-    socket_flags |= O_NONBLOCK;
-    if(fcntl(state->file_descriptor,F_SETFL,socket_flags) != 0){
-        perror("Error setting socket non-blocking");
-        exit(1);
-    }
-
-    // inform wolfssl to expect read / write errors due to non-blocking nature of socket
-    wolfSSL_dtls_set_using_nonblock(state->ssl,1);
 }
 
 static void wolfssl_start_dtls_client(struct RastaUDPState *state, const struct RastaConfigTLS *tls_config){
@@ -236,6 +240,7 @@ static void wolfssl_send_tls(struct RastaUDPState * state, unsigned char *messag
             exit(1);
         }
         state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
+        set_dtls_async(state);
     }
 
     if(wolfSSL_write(state->ssl,message,(int) message_len) != (int) message_len){
