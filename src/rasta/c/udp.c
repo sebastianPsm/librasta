@@ -44,6 +44,20 @@ int getSO_ERROR(int fd) {
     return err;
 }
 
+#define MAX_WARNING_LENGTH_BYTES 128
+
+static void handle_port_unavailable(const uint16_t port) {
+    const char *warning_format = "could not bind the socket to port %d";
+    char warning_mbuf[MAX_WARNING_LENGTH_BYTES + 1];
+    snprintf(warning_mbuf,MAX_WARNING_LENGTH_BYTES,warning_format,port);
+
+    // bind failed
+    perror("warning_mbuf");
+    exit(1);
+}
+
+#ifdef ENABLE_TLS
+
 static void
 get_client_addr_from_socket(const struct RastaUDPState *state, struct sockaddr_in *client_addr, socklen_t *addr_len) {
     ssize_t received_bytes;
@@ -58,20 +72,6 @@ get_client_addr_from_socket(const struct RastaUDPState *state, struct sockaddr_i
     }
 
 }
-
-#define MAX_WARNING_LENGTH_BYTES 128
-
-static void handle_port_unavailable(const uint16_t port) {
-    const char *warning_format = "could not bind the socket to port %d";
-    char warning_mbuf[MAX_WARNING_LENGTH_BYTES + 1];
-    snprintf(warning_mbuf,MAX_WARNING_LENGTH_BYTES,warning_format,port);
-
-    // bind failed
-    perror("warning_mbuf");
-    exit(1);
-}
-
-#ifdef ENABLE_TLS
 
 static void wolfssl_initialize_if_necessary(){
     static bool wolfssl_initialized = false;
