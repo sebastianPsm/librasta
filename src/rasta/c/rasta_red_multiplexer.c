@@ -196,10 +196,10 @@ void receive_packet(redundancy_mux *mux, int channel_id)
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, fd);
 
-    tcp_accept(fd, &sender);
+    int socket = tcp_accept(fd, &sender);
 
     // wait for pdu
-    len = tcp_receive(fd, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+    len = tcp_receive(socket, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #endif
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", channel_id);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", channel_id, len);

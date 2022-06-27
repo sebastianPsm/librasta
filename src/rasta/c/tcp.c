@@ -98,15 +98,17 @@ void tcp_close(int file_descriptor)
     }
 }
 
-void tcp_accept(int file_descriptor, struct sockaddr_in *sender)
+int tcp_accept(int file_descriptor, struct sockaddr_in *sender)
 {
     struct sockaddr_in empty_sockaddr_in;
     socklen_t sender_len = sizeof(empty_sockaddr_in);
-    if (accept(file_descriptor, (struct sockaddr *)sender, &sender_len) < 0)
+    int socket;
+    if ((socket = accept(file_descriptor, (struct sockaddr *)sender, &sender_len)) < 0)
     {
         perror("tcp failed to accept connection");
         exit(1);
     }
+    return socket;
 }
 
 void tcp_connect(int file_descriptor,  char *host, uint16_t port)
