@@ -31,7 +31,7 @@ target_link_libraries(event_system_example_local rasta)
 
 if(ENABLE_RASTA_TLS)
 add_executable(dtls_example_local
-        examples_localhost/c/dtls.c)
+        examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
 set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(dtls_example_local rasta wolfssl)

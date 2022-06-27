@@ -10,6 +10,7 @@
 #include <rasta_lib.h>
 #include <rmemory.h>
 #include <fifo.h>
+#include "wolfssl_certificate_helper.h"
 
 #define CONFIG_PATH_S "rasta_server_local_tls.cfg"
 #define CONFIG_PATH_C1 "rasta_client1_local_tls.cfg"
@@ -212,6 +213,13 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
     free(memory);
 }
 
+void prepare_certs(const char *config_path) {
+    struct RastaConfig config = config_load(config_path);
+    create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
+
+    printf("Generated Certificates");
+}
+
 int main(int argc, char *argv[]){
 
     if (argc != 2) printHelpAndExit();
@@ -243,6 +251,8 @@ int main(int argc, char *argv[]){
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
+        prepare_certs(CONFIG_PATH_S);
+
         rasta_lib_init_configuration(rc, CONFIG_PATH_S);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
@@ -268,6 +278,7 @@ int main(int argc, char *argv[]){
     }
     else if (strcmp(argv[1], "s1") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_S1);
+
         rasta_lib_init_configuration(rc, CONFIG_PATH_C1);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
@@ -275,6 +286,7 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
+
         printf("->   Press Enter to connect\n");
         disable_fd_event(&termination_event);
         enable_fd_event(&connect_on_stdin_event);
@@ -284,6 +296,7 @@ int main(int argc, char *argv[]){
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
+
         rasta_lib_init_configuration(rc, CONFIG_PATH_C2);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
@@ -291,6 +304,7 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
+
         printf("->   Press Enter to connect\n");
         disable_fd_event(&termination_event);
         enable_fd_event(&connect_on_stdin_event);

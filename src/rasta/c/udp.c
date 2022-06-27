@@ -82,6 +82,7 @@ static void wolfssl_initialize_if_necessary(){
 }
 
 static void wolfssl_start_dtls_server(struct RastaUDPState *state, const struct RastaConfigTLS *tls_config){
+    int err;
     wolfssl_initialize_if_necessary();
     state->ctx = wolfSSL_CTX_new(wolfDTLSv1_2_server_method());
     if(!state->ctx){
@@ -107,9 +108,9 @@ static void wolfssl_start_dtls_server(struct RastaUDPState *state, const struct 
         exit(1);
     }
     /* Load server Keys */
-    if (wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
-                                        SSL_FILETYPE_PEM) != SSL_SUCCESS) {
-        printf("Error loading server private key file %s as PEM file.\n", tls_config->key_path);
+    if ((err = wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
+                                        SSL_FILETYPE_PEM)) != SSL_SUCCESS) {
+        printf("Error loading server private key file %s as PEM file: %d.\n", tls_config->key_path,err);
         exit(1);
     }
     state->ssl = wolfSSL_new(state->ctx);
