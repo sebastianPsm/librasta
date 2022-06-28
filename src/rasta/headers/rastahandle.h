@@ -483,7 +483,7 @@ struct rasta_handle {
     rasta_hashing_context_t hashing_context;
 
     /**
-     * the global event system on the main threat
+     * the global event system on the main thread
      */
     event_system* ev_sys;
 

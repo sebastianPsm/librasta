@@ -93,8 +93,8 @@ void disable_timed_event(timed_event* event);
 void disable_fd_event(fd_event* event);
 
 /**
- * Add a timed event to an event system. 
- * A event can only be in one event system at a time. 
+ * Add a timed event to an event system.
+ * A event can only be in one event system at a time.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
@@ -102,20 +102,20 @@ void disable_fd_event(fd_event* event);
 void add_timed_event(event_system* ev_sys, timed_event* event);
 
 /**
- * Removes a timed event from its event system. 
+ * Removes a timed event from its event system.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_timed_event(timed_event* event);
+void remove_timed_event(event_system* ev_sys, timed_event* event);
 
 #define EV_READABLE    (1 << 0)
 #define EV_WRITABLE    (1 << 1)
 #define EV_EXCEPTIONAL (1 << 2)
 
 /**
- * Add a fd event to an event system. 
- * A event can only be in one event system at a time. 
+ * Add a fd event to an event system.
+ * A event can only be in one event system at a time.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
@@ -124,12 +124,12 @@ void remove_timed_event(timed_event* event);
 void add_fd_event(event_system* ev_sys, fd_event* event, int options);
 
 /**
- * Removes a fd event from its event system. 
+ * Removes a fd event from its event system.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_fd_event(fd_event* event);
+void remove_fd_event(event_system* ev_sys, fd_event* event);
 
 #ifdef __cplusplus
 }

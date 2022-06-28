@@ -192,8 +192,8 @@ void disable_fd_event(fd_event* event) {
 }
 
 /**
- * Add a timed event to an event system. 
- * A event can only be in one event system at a time. 
+ * Add a timed event to an event system.
+ * A event can only be in one event system at a time.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
@@ -215,20 +215,26 @@ void add_timed_event(event_system* ev_sys, timed_event* event) {
 }
 
 /**
- * Removes a timed event from its event system. 
+ * Removes a timed event from its event system.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_timed_event(timed_event* event) {
+void remove_timed_event(event_system* ev_sys, timed_event* event) {
     // simple linked list remove
+    if (ev_sys->timed_events.first == event) {
+        ev_sys->timed_events.first = ev_sys->timed_events.first->next;
+    }
+    if (ev_sys->timed_events.last == event) {
+        ev_sys->timed_events.last = ev_sys->timed_events.last->prev;
+    }
     if (event->prev) event->prev->next = event->next;
     if (event->next) event->next->prev = event->prev;
 }
 
 /**
- * Add a fd event to an event system. 
- * A event can only be in one event system at a time. 
+ * Add a fd event to an event system.
+ * A event can only be in one event system at a time.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
@@ -253,12 +259,18 @@ void add_fd_event(event_system* ev_sys, fd_event* event, int options) {
 }
 
 /**
- * Removes a fd event from its event system. 
+ * Removes a fd event from its event system.
  * (not thread safe)
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_fd_event(fd_event* event) {
+void remove_fd_event(event_system* ev_sys, fd_event* event) {
+    if (ev_sys->fd_events.first == event) {
+        ev_sys->fd_events.first = ev_sys->fd_events.first->next;
+    }
+    if (ev_sys->fd_events.last == event) {
+        ev_sys->fd_events.last = ev_sys->fd_events.last->prev;
+    }
     if (event->prev) event->prev->next = event->next;
     if (event->next) event->next->prev = event->prev;
 }
