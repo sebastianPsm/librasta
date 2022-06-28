@@ -170,14 +170,16 @@ void receive_packet(redundancy_mux * mux, int channel_id){
     // the sender of the received packet
     struct sockaddr_in sender;
 
-    int fd = mux->udp_socket_fds[channel_id];
-
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, fd);
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, mux->udp_socket_states[channel_id].file_descriptor);
 
     // wait for pdu
-    size_t len = udp_receive(fd, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+    size_t len = udp_receive(&mux->udp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", channel_id);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", channel_id, len);
+
+    if(!len){
+        return;
+    }
 
     struct RastaByteArray incomingData;
     incomingData.length = (unsigned int)len;
@@ -368,7 +370,7 @@ redundancy_mux redundancy_mux_init_(struct logger_t logger, struct RastaConfigIn
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", mux.port_count);
 
     // init and bind udp sockets + threads array
-    mux.udp_socket_fds = rmalloc(mux.port_count * sizeof(int));
+    mux.udp_socket_states = rmalloc(mux.port_count * sizeof(struct RastaUDPState));
 
 
     // allocate memory for connected channels
@@ -386,10 +388,10 @@ redundancy_mux redundancy_mux_init_(struct logger_t logger, struct RastaConfigIn
         mux.listen_ports = rmalloc(sizeof(uint16_t) * mux.config.redundancy.connections.count);
         for (unsigned int j = 0; j < mux.config.redundancy.connections.count; ++j) {
             // init socket
-            mux.udp_socket_fds[j] = udp_init();
+             udp_init(&mux.udp_socket_states[j],&config.tls);
 
             // bind socket to device and port
-            udp_bind_device(mux.udp_socket_fds[j],
+            udp_bind_device(&mux.udp_socket_states[j],
                             (uint16_t )mux.config.redundancy.connections.data[j].port,
                             mux.config.redundancy.connections.data[j].ip);
 
@@ -433,13 +435,13 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t * listen_por
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", port_count);
 
     // init and bind udp sockets + threads array
-    mux.udp_socket_fds = rmalloc(port_count * sizeof(int));
+    mux.udp_socket_states = rmalloc(port_count * sizeof(int));
 
     // set up udp sockets
     for (unsigned int i = 0; i < port_count; ++i) {
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up udp socket %d/%d", i+1,port_count);
-        mux.udp_socket_fds[i] = udp_init();
-        udp_bind(mux.udp_socket_fds[i], listen_ports[i]);
+        udp_init(&mux.udp_socket_states[i],&config.tls);
+        udp_bind(&mux.udp_socket_states[i], listen_ports[i]);
     }
 
     // allocate memory for connected channels
@@ -480,12 +482,12 @@ void redundancy_mux_close(redundancy_mux * mux){
     // close the sockets of the transport channels
     for (unsigned int i = 0; i < mux->port_count; ++i) {
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing udp socket %d/%d", i+1, mux->port_count);
-        udp_close(mux->udp_socket_fds[i]);
+        udp_close(&mux->udp_socket_states[i]);
     }
 
     // free arrays
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "freeing thread data");
-    rfree(mux->udp_socket_fds);
+    rfree(mux->udp_socket_states);
     mux->port_count = 0;
 
     // close the redundancy channels
@@ -553,7 +555,7 @@ void redundancy_mux_send(redundancy_mux * mux, struct RastaPacket data){
         channel = receiver->connected_channels[i];
 
         // send using the channel specific udp socket
-        udp_send(mux->udp_socket_fds[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+        udp_send(&mux->udp_socket_states[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "Sent data over channel %s:%d",
                    channel.ip_address, channel.port);
