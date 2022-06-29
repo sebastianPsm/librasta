@@ -1,6 +1,6 @@
-# if(ENABLE_RASTA_TLS)
-#     find_package(WolfSSL REQUIRED)
-# endif(ENABLE_RASTA_TLS)
+if(ENABLE_RASTA_TLS)
+    find_package(WolfSSL REQUIRED)
+endif(ENABLE_RASTA_TLS)
 
 # Target name
 set(target rasta)
