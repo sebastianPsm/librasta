@@ -150,7 +150,7 @@ install(TARGETS ${target}
 if(USE_UDP)
     message("UDP is enabled")
     target_compile_definitions(${target}
-        PRIVATE
+        PUBLIC
         USE_UDP
     )
 endif(USE_UDP)
@@ -158,7 +158,7 @@ endif(USE_UDP)
 if(USE_TCP)
     message("TCP is enabled")
     target_compile_definitions(${target}
-        PRIVATE
+        PUBLIC
         USE_TCP
     )
 endif(USE_TCP)
