@@ -1731,7 +1731,7 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
 
     // Handshake timeout event
     init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux);
-    if (wait_for_handshake) {
+    if (!wait_for_handshake) {
         enable_timed_event(&channel_timeout_event);
     }
     add_timed_event(event_system, &channel_timeout_event);
