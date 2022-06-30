@@ -16,7 +16,19 @@ int bsd_create_socket(int family, int type, int protocol_type)
     if ((file_desc = socket(family, type, protocol_type)) < 0)
     {
         // creation failed, exit
-        perror("The tcp socket could not be initialized");
+        if (type == IPPROTO_UDP)
+        {
+            perror("The udp socket could not be initialized");
+        }
+        else if (type == IPPROTO_TCP)
+        {
+            perror("The tcp socket could not be initialized");
+        }
+        else
+        {
+            perror("The socket could not be initialized");
+        }
+
         exit(1);
     }
 

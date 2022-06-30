@@ -13,10 +13,9 @@
 #include <wolfssl/ssl.h>
 #endif
 
-
 int tcp_init()
 {
-    return bsd_create_socket(AF_INET, SOCK_DGRAM, IPPROTO_TCP);
+    return bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
 void tcp_bind(int file_descriptor, uint16_t port)
