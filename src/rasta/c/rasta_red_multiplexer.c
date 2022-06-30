@@ -185,8 +185,6 @@ void receive_packet(redundancy_mux *mux, int channel_id)
 
     size_t len = 0;
 #ifdef USE_UDP
-    int fd = mux->udp_socket_fds[channel_id];
-
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, mux->udp_socket_states[channel_id].file_descriptor);
     // wait for pdu
     len =  udp_receive(&mux->udp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
