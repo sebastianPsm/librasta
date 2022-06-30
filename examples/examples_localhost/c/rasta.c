@@ -216,7 +216,7 @@ int main(int argc, char *argv[]){
 
     if (argc != 2) printHelpAndExit();
 
-    rasta_lib_configuration_t rc;
+    rasta_lib_configuration_t rc = {0};
 
     struct RastaIPData toServer[2];
 
