@@ -1707,7 +1707,7 @@ void log_main_loop_state(struct rasta_handle* h, event_system* ev_sys, const cha
 }
 
 #define IO_INTERVAL 10000
-void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_handshake) {
+void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_timeout_ms) {
     timed_event send_event, receive_event;
     timed_event channel_timeout_event;
     struct timeout_event_data timeout_data;
@@ -1730,8 +1730,8 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
     add_timed_event(event_system, &receive_event);
 
     // Handshake timeout event
-    init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux);
-    if (!wait_for_handshake) {
+    init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux, channel_timeout_ms);
+    if (channel_timeout_ms) {
         enable_timed_event(&channel_timeout_event);
     }
     add_timed_event(event_system, &channel_timeout_event);

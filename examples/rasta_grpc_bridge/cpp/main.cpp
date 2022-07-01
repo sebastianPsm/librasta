@@ -116,7 +116,7 @@ class RastaService final : public sci::Rasta::Service
 
         enable_fd_event(&fd_event);
         add_fd_event(&rc->rasta_lib_event_system, &fd_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 0);
 
         std::unique_lock<std::mutex> handshake_complete(s_handshake_mutex);
         if (handshakeTimeout > 0ms) {
@@ -251,7 +251,12 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     enable_fd_event(&fd_event);
 
     add_fd_event(&rc->rasta_lib_event_system, &fd_event, EV_READABLE);
-    rasta_lib_start(rc, rc->h.config.values.general.rasta_id < channel->remote_id);
+    if (rc->h.config.values.general.rasta_id < channel->remote_id) {
+        // Wait for channel establishment indefinitely (server)
+        rasta_lib_start(rc, 0);
+    } else {
+        rasta_lib_start(rc, 2000);
+    }
     remove_fd_event(&rc->rasta_lib_event_system, &fd_event);
 
     existing_connection = NULL;
@@ -321,18 +326,24 @@ void rastaServer(std::string config,
             memset(&data_event, 0, sizeof(fd_event));
             data_event.callback = [](void* carry) {
                 rasta_handle *h = reinterpret_cast<rasta_handle*>(carry);
-                std::lock_guard<std::mutex> guard(s_fifo_mutex);
+                RastaByteArray *msg = nullptr;
 
-                RastaByteArray *msg = reinterpret_cast<RastaByteArray*>(fifo_pop(s_message_fifo));
+                {
+                    std::lock_guard<std::mutex> guard(s_fifo_mutex);
+                    msg = reinterpret_cast<RastaByteArray*>(fifo_pop(s_message_fifo));
+                }
 
-                struct RastaMessageData messageData;
-                allocateRastaMessageData(&messageData, 1);
-                messageData.data_array[0] = *msg;
-                rfree(msg);
+                if (msg != nullptr) {
+                    struct RastaMessageData messageData;
+                    allocateRastaMessageData(&messageData, 1);
+                    messageData.data_array[0] = *msg;
+                    rfree(msg);
 
-                sr_send(h, s_remote_id, messageData);
+                    sr_send(h, s_remote_id, messageData);
 
-                freeRastaMessageData(&messageData); // Also frees the byte array
+                    freeRastaMessageData(&messageData); // Also frees the byte array
+                }
+
                 return 0;
             };
             data_event.carry_data = &rc->h;
@@ -403,7 +414,7 @@ void rastaServer(std::string config,
                 (void)ignore;
             });
 
-            rasta_lib_start(rc, false);
+            rasta_lib_start(rc, 0);
 
             {
                 std::lock_guard<std::mutex> guard(s_busy);
