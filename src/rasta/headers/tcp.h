@@ -46,9 +46,8 @@ size_t tcp_receive(int file_descriptor, unsigned char* received_message,size_t m
  * Await a connection on a @p file_descriptor.
  * When a connection arrives, open a new socket to communicate with it,
  * @param file_descriptor the file descriptor to accept connections from
- * @param sender address of the connecting peer
  */
-int tcp_accept(int file_descriptor, struct sockaddr_in *sender);
+int tcp_accept(int file_descriptor);
 
 /**
  * Open a connection on a @p file_descriptor.

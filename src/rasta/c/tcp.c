@@ -38,12 +38,12 @@ void tcp_listen(int file_descriptor)
     }
 }
 
-int tcp_accept(int file_descriptor, struct sockaddr_in *sender)
+int tcp_accept(int file_descriptor)
 {
     struct sockaddr_in empty_sockaddr_in;
     socklen_t sender_len = sizeof(empty_sockaddr_in);
     int socket;
-    if ((socket = accept(file_descriptor, (struct sockaddr *)sender, &sender_len)) < 0)
+    if ((socket = accept(file_descriptor, (struct sockaddr *)&empty_sockaddr_in, &sender_len)) < 0)
     {
         perror("tcp failed to accept connection");
         exit(1);
