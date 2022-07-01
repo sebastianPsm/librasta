@@ -116,7 +116,7 @@ class RastaService final : public sci::Rasta::Service
 
         enable_fd_event(&fd_event);
         add_fd_event(&rc->rasta_lib_event_system, &fd_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 0);
 
         std::unique_lock<std::mutex> handshake_complete(s_handshake_mutex);
         if (handshakeTimeout > 0ms) {
@@ -251,7 +251,12 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     enable_fd_event(&fd_event);
 
     add_fd_event(&rc->rasta_lib_event_system, &fd_event, EV_READABLE);
-    rasta_lib_start(rc, rc->h.config.values.general.rasta_id < channel->remote_id);
+    if (rc->h.config.values.general.rasta_id < channel->remote_id) {
+        // Wait for channel establishment indefinitely (server)
+        rasta_lib_start(rc, 0);
+    } else {
+        rasta_lib_start(rc, 2000);
+    }
     remove_fd_event(&rc->rasta_lib_event_system, &fd_event);
 
     existing_connection = NULL;
@@ -409,7 +414,7 @@ void rastaServer(std::string config,
                 (void)ignore;
             });
 
-            rasta_lib_start(rc, false);
+            rasta_lib_start(rc, 0);
 
             {
                 std::lock_guard<std::mutex> guard(s_busy);

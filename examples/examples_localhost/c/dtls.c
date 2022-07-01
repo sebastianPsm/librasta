@@ -276,7 +276,7 @@ int main(int argc, char *argv[]){
         disable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, true);
+        rasta_lib_start(rc, 0);
 
         fifo_destroy(server_fifo);
     }
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 2000);
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
@@ -314,7 +314,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 2000);
     }
 }
 
