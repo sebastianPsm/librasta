@@ -72,6 +72,13 @@ typedef struct {
      */
     char * ip_address;
 
+#ifdef USE_TCP
+    /**
+     * filedescriptor
+     * */
+    int fd;
+#endif
+
     /**
      * port number
      */

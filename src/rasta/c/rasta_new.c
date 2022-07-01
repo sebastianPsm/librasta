@@ -14,6 +14,8 @@
 #include <event_system.h>
 #include <rastahandle.h>
 #include <rasta_lib.h>
+#include <tcp.h>
+
 
 /**
  * this will generate a 4 byte timestamp of the current system time
@@ -515,7 +517,7 @@ void sr_diagnostic_interval_init(struct rasta_connection * connection, struct Ra
 
 void sr_init_connection(struct rasta_connection* connection, unsigned long id, struct RastaConfigInfoGeneral info, struct RastaConfigInfoSending cfg, struct logger_t *logger, rasta_role role) {
     (void)logger;
-    sr_reset_connection(connection,id,info);
+    sr_reset_connection(connection, id, info);
     connection->role = role;
 
     // initalize diagnostic interval and store it in connection
@@ -1501,11 +1503,11 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
         if (con->remote_id == id) return;
     }
     //TODO: const ports in redundancy? (why no dynamic port length)
-    redundancy_mux_add_channel(&h->mux,id,channels);
+    redundancy_mux_add_channel(&h->mux, id, channels);
 
     struct rasta_connection new_con;
     memset(&new_con, 0, sizeof(struct rasta_connection));
-    sr_init_connection(&new_con,id,h->config.values.general,h->config.values.sending,&h->logger, RASTA_ROLE_CLIENT);
+    sr_init_connection(&new_con, id, h->config.values.general, h->config.values.sending, &h->logger, RASTA_ROLE_CLIENT);
     redundancy_mux_set_config_id(&h->mux, id);
 
     // initialize seq nums and timestamps
@@ -1529,7 +1531,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
                                                         h->config.values.sending.send_max,
                                                         version, &h->hashing_context);
 
-    redundancy_mux_send(&h->mux,conreq);
+    redundancy_mux_send(&h->mux, conreq);
 
     // increase sequence number
     new_con.sn_t++;
@@ -1743,19 +1745,24 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_ti
     for (int i = 0; i < channel_event_data_len; i++) {
         memset(&channel_events[i], 0, sizeof(fd_event));
         channel_events[i].enabled = 1;
-        channel_events[i].callback = channel_receive_event;
         channel_events[i].carry_data = channel_event_data + i;
 
+        #ifdef USE_UDP
+        channel_events[i].callback = channel_receive_event;
+        channel_events[i].fd = h->mux.udp_socket_states[i].file_descriptor;
+        #endif
+        #ifdef USE_TCP
         // is a server?
         if (!channel_timeout_ms) {
-            #ifdef USE_UDP
-            channel_events[i].fd = h->mux.udp_socket_states[i].file_descriptor;
-            #endif
-            #ifdef USE_TCP
-                channel_events[i].fd = h->mux.tcp_socket_fds[i];
-                h->mux.is_server = 1;
-            #endif
+            tcp_listen(h->mux.tcp_socket_fds[i]);
+            h->mux.is_server = 1;
+        } else {
+            channel_events[i].enabled = 0;
         }
+        channel_events[i].callback = channel_accept_event;
+        channel_events[i].fd = h->mux.tcp_socket_fds[i];
+        #endif
+
         channel_event_data[i].channel_index = i;
         channel_event_data[i].event = channel_events + i;
         channel_event_data[i].h = h;

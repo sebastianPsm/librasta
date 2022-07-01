@@ -185,6 +185,7 @@ extern "C"
      */
     void redundancy_mux_close(redundancy_mux *mux);
 
+    int channel_accept_event(void *carry_data);
     int channel_receive_event(void *carry_data);
 
     /**
