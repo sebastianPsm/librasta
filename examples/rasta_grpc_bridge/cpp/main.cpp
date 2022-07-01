@@ -321,18 +321,24 @@ void rastaServer(std::string config,
             memset(&data_event, 0, sizeof(fd_event));
             data_event.callback = [](void* carry) {
                 rasta_handle *h = reinterpret_cast<rasta_handle*>(carry);
-                std::lock_guard<std::mutex> guard(s_fifo_mutex);
+                RastaByteArray *msg = nullptr;
 
-                RastaByteArray *msg = reinterpret_cast<RastaByteArray*>(fifo_pop(s_message_fifo));
+                {
+                    std::lock_guard<std::mutex> guard(s_fifo_mutex);
+                    msg = reinterpret_cast<RastaByteArray*>(fifo_pop(s_message_fifo));
+                }
 
-                struct RastaMessageData messageData;
-                allocateRastaMessageData(&messageData, 1);
-                messageData.data_array[0] = *msg;
-                rfree(msg);
+                if (msg != nullptr) {
+                    struct RastaMessageData messageData;
+                    allocateRastaMessageData(&messageData, 1);
+                    messageData.data_array[0] = *msg;
+                    rfree(msg);
 
-                sr_send(h, s_remote_id, messageData);
+                    sr_send(h, s_remote_id, messageData);
 
-                freeRastaMessageData(&messageData); // Also frees the byte array
+                    freeRastaMessageData(&messageData); // Also frees the byte array
+                }
+
                 return 0;
             };
             data_event.carry_data = &rc->h;
