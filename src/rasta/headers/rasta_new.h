@@ -106,6 +106,8 @@ void sr_init_handle(struct rasta_handle* handle, const char* config_file_path);
  */
 void sr_init_handle_manually(struct rasta_handle *handle, struct RastaConfigInfo configuration, struct DictionaryArray accepted_version, struct logger_t logger);
 
+void sr_listen(struct rasta_handle *h);
+
 /**
  * connects to another rasta instance
  * @param handle
@@ -145,7 +147,7 @@ void sr_disconnect(struct rasta_handle *h, struct rasta_connection* con);
  */
 void sr_cleanup(struct rasta_handle *h);
 
-void sr_begin(struct rasta_handle * h, event_system* event_system, int wait_for_handshake);
+void sr_begin(struct rasta_handle * h, event_system* event_system, int wait_for_handshake, int listen);
 
 #ifdef __cplusplus
 }

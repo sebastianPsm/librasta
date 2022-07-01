@@ -209,7 +209,11 @@ void rasta_red_wait_for_close(rasta_redundancy_channel * channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-void rasta_red_add_transport_channel(rasta_redundancy_channel * channel, char * ip, uint16_t port);
+void rasta_red_add_transport_channel(rasta_redundancy_channel * channel,
+#ifdef USE_TCP
+    int fd,
+#endif
+    char * ip, uint16_t port);
 
 /**
  * frees memory for the @p channel

@@ -224,8 +224,17 @@ void rasta_red_f_deferTmo(rasta_redundancy_channel * channel){
     deliverDeferQueue(channel);
 }
 
-void rasta_red_add_transport_channel(rasta_redundancy_channel * channel, char * ip, uint16_t port){
+void rasta_red_add_transport_channel(
+    rasta_redundancy_channel * channel,
+#ifdef USE_TCP
+    int fd,
+#endif
+    char * ip, uint16_t port) {
     rasta_transport_channel transport_channel;
+
+#ifdef USE_TCP
+    transport_channel.fd = fd;
+#endif
 
     transport_channel.port = port;
     transport_channel.ip_address = rmalloc(sizeof(char) * 15);

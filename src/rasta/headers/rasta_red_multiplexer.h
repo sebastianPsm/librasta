@@ -103,21 +103,6 @@ extern "C"
          */
         int *tcp_socket_fds;
 
-        /**
-         * determine the role of the mux in a tcp communication
-         */
-        int is_server;
-
-        /**
-         * mux was initialized with ip addresses
-         */
-        int has_ips_configured;
-
-        /**
-         * store established connections
-         */
-        int *tcp_connections;
-
 #endif
 
         /**
@@ -234,6 +219,8 @@ extern "C"
      * @param id the RaSTA ID of the entity
      */
     void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
+
+    void redundancy_mux_listen_channels(redundancy_mux *mux);
 
     /**
      * adds a new redundancy channel to the multiplexer id and given transport channels.

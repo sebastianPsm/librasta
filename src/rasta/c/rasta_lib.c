@@ -10,6 +10,6 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
     user_configuration->h.user_handles = &user_configuration->callback;
 }
 
-void rasta_lib_start(rasta_lib_configuration_t user_configuration, int channel_timeout_ms) {
-    sr_begin(&user_configuration->h, &user_configuration->rasta_lib_event_system, channel_timeout_ms);
+void rasta_lib_start(rasta_lib_configuration_t user_configuration, int channel_timeout_ms, int listen) {
+    sr_begin(&user_configuration->h, &user_configuration->rasta_lib_event_system, channel_timeout_ms, listen);
 }
