@@ -192,7 +192,7 @@ void receive_packet(redundancy_mux *mux, int channel_id)
 #ifdef USE_TCP
 
     // is server establishing connection
-    if (mux->tcp_connections[channel_id] < 0)
+    if (mux->tcp_connections[channel_id] < 0 && mux->is_server == 1)
     {
         if (mux->has_ips_configured)
         {
@@ -202,9 +202,10 @@ void receive_packet(redundancy_mux *mux, int channel_id)
         {
             tcp_bind(mux->tcp_socket_fds[channel_id], mux->listen_ports[channel_id]);
         }
+        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "listening on socket %d", mux->tcp_socket_fds[channel_id]);
         tcp_listen(mux->tcp_socket_fds[channel_id]);
         mux->tcp_connections[channel_id] = tcp_accept(mux->tcp_socket_fds[channel_id]);
-        mux->is_server = 1;
+        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "accepted connection %d", mux->tcp_connections[channel_id]);
     }
     int fd;
     if (mux->is_server)
@@ -423,7 +424,7 @@ redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaCo
     mux.port_count = config.redundancy.connections.count;
     mux.config = config;
     mux.has_ips_configured = 0;
-
+    mux.is_server = -1;
     mux.notifications_running = 0;
 
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", mux.port_count);
@@ -682,6 +683,7 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
         // is client establishing connection
         if (mux->tcp_connections[i] < 0)
         {
+            logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "sending to socket %d", mux->tcp_socket_fds[i]);
             tcp_connect(mux->tcp_socket_fds[i], channel.ip_address, channel.port);
             mux->is_server = 0;
         }
