@@ -26,6 +26,9 @@ jobs:
     - name: Install WolfSSL
       run: sudo apt-get install libwolfssl-dev
 
+    - name: Install libopaque dependencies
+      run: sudo apt-get install libsodium-dev pkgconf
+
     - name: Install gRPC
       run: |
         sudo apt-get install build-essential autoconf libtool

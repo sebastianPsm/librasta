@@ -77,7 +77,7 @@ add_library(${target} SHARED
     sci/c/scils_telegram_factory.c
     sci/c/scip.c
     sci/c/scip_telegram_factory.c
-)
+        rasta/c/key_exchange.c)
 
 # Link system libraries for librasta
 target_link_libraries(${target} rt pthread)
@@ -137,6 +137,26 @@ target_compile_options(${target}
 if(ENABLE_RASTA_TLS)
     target_compile_definitions(rasta PRIVATE ENABLE_TLS)
 endif(ENABLE_RASTA_TLS)
+
+if(ENABLE_RASTA_OPAQUE)
+    include(CheckLinkerFlag)
+    target_compile_definitions(rasta PRIVATE ENABLE_OPAQUE)
+    # libopaque headers
+    include_directories(rasta PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
+    target_link_directories(rasta PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../lib)
+
+    check_linker_flag(C "-Bstatic" LINK_STATIC_SUPPORTED)
+    check_linker_flag(C "-Bdynamic" LINK_DYNAMIC_SUPPORTED)
+    if(${LINK_DYNAMIC_SUPPORTED} AND ${LINK_STATIC_SUPPORTED})
+        message("Linker supports -static")
+        # link only the libopaque library statically
+        target_link_options(rasta PRIVATE "LINKER:-Bstatic")
+        target_link_options(rasta PRIVATE "LINKER:-lopaque")
+        target_link_options(rasta PRIVATE "LINKER:-Bdynamic")
+    else()
+        message("Linker does not support -static - make sure to set the runtime LD_LIBRARY_PATH")
+    endif()
+endif()
 
 # Installation for library
 install(TARGETS ${target}
