@@ -657,8 +657,9 @@ void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con
  * @param port the port where the HB will be sent to
  */
 void send_KexRequest(redundancy_mux *mux, struct rasta_connection * connection, struct rasta_receive_handle *h){
-    struct RastaPacket hb = createKexExchangeRequest(connection->remote_id, connection->my_id, connection->sn_t,
-                                                     connection->cs_t, cur_timestamp(), connection->ts_r, &mux->sr_hashing_context,h->kex.psk,&connection->kex_state,h->logger);
+    struct RastaPacket hb = createKexRequest(connection->remote_id, connection->my_id, connection->sn_t,
+                                             connection->cs_t, cur_timestamp(), connection->ts_r,
+                                             &mux->sr_hashing_context, h->kex.psk, &connection->kex_state, h->logger);
 
     redundancy_mux_send(mux, hb);
 
@@ -682,7 +683,7 @@ struct rasta_connection* handle_conreq(struct rasta_receive_handle *h, struct ra
         sr_init_connection(&new_con,receivedPacket.sender_id,h->info,h->config,h->logger, RASTA_ROLE_SERVER);
 
         // initialize seq num
-        new_con.sn_t = new_con.sn_i = get_initial_seq_num(&h->handle->config);
+        new_con.sn_t = new_con.sn_i = receivedPacket.sequence_number;
         //new_con.sn_t = 55;
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Using %lu as initial sequence number",
             (long unsigned int) new_con.sn_t);
@@ -810,17 +811,15 @@ struct rasta_connection* handle_conresp(struct rasta_receive_handle *h, struct r
 
                 //printf("RECEIVED CS_PDU=%lu (Type=%d)\n", receivedPacket.sequence_number, receivedPacket.type);
 
-                if(h->kex.mode == KEY_EXCHANGE_MODE_NONE) {
-                    // update tls_state, ready to send data
-                    con->current_state = RASTA_CONNECTION_UP;
+                // update tls_state, ready to send data
+                con->current_state = RASTA_CONNECTION_UP;
 
-                    // send hb
-                    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Sending heartbeat..");
-                    send_Heartbeat(h->mux, con, 1);
-                }
-                else{
+                // send hb
+                logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Sending heartbeat..");
+                send_Heartbeat(h->mux, con, 1);
+                if(h->kex.mode == KEY_EXCHANGE_MODE_OPAQUE) {
                     con->current_state = RASTA_CONNECTION_KEX_RESP;
-                    send_KexRequest(h->mux,con,h);
+                    send_KexRequest(h->mux, con, h);
                 }
 
                 // fire connection tls_state changed event
@@ -893,7 +892,11 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req", "CTS in SEQ");
                 // valid Key Exchange request packet received
 
-                response = createKexExchangeResponse(connection->remote_id,connection->my_id,connection->sn_t,receivedPacket.confirmed_sequence_number,current_ts(),receivedPacket.timestamp,h->hashing_context,h->kex.psk,(uint8_t *) response.data.bytes,response.data.length,connection->sn_i,&connection->kex_state,h->logger);
+                response = createKexResponse(connection->remote_id, connection->my_id, connection->sn_t,
+                                             receivedPacket.sequence_number, current_ts(),
+                                             receivedPacket.timestamp, h->hashing_context, h->kex.psk,
+                                             (uint8_t *) receivedPacket.data.bytes, receivedPacket.data.length, connection->sn_i,
+                                             &connection->kex_state, h->logger);
 
                 redundancy_mux_send(h->mux, response);
 
@@ -911,6 +914,8 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
 
                 // wait for client to send auth packet, indicating that on the client's side, the exchange worked
                 connection->current_state = RASTA_CONNECTION_KEX_AUTH;
+
+                logger_hexdump(h->logger,LOG_LEVEL_INFO,connection->kex_state.session_key,sizeof(connection->kex_state.session_key),"Setting hash key to:");
 
                 rasta_set_hash_key_variable(h->hashing_context, (char *) connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
 
@@ -988,6 +993,9 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
 
                 // kex is done from our PoV, can expect data from now
                 connection->current_state = RASTA_CONNECTION_UP;
+
+                logger_hexdump(h->logger,LOG_LEVEL_INFO,connection->kex_state.session_key,sizeof(connection->kex_state.session_key),"Setting hash key to:");
+
                 rasta_set_hash_key_variable(h->hashing_context, (char *) connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
 #else
                 logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Not implemented!");
@@ -1130,8 +1138,14 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
             connection->cs_r = receivedPacket.confirmed_sequence_number;
             connection->ts_r = receivedPacket.timestamp;
 
-            // sequence number correct, ready to receive data
-            connection->current_state = RASTA_CONNECTION_UP;
+            if(h->kex.mode == KEY_EXCHANGE_MODE_NONE) {
+                // sequence number correct, ready to receive data
+                connection->current_state = RASTA_CONNECTION_UP;
+            }
+            else{
+                // need to negotiate session key first
+                connection->current_state = RASTA_CONNECTION_KEX_REQ;
+            }
 
             connection->hb_locked = 0;
 
@@ -1740,7 +1754,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     redundancy_mux_set_config_id(&h->mux, id);
 
     // initialize seq nums and timestamps
-    new_con.sn_t = new_con.sn_i = get_initial_seq_num(&h->config);
+    new_con.sn_t = get_initial_seq_num(&h->config);
     //new_con.sn_t = 66;
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "Using %lu as initial sequence number",
         (long unsigned int) new_con.sn_t);
@@ -1759,6 +1773,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
                                                         new_con.sn_t, cur_timestamp(),
                                                         h->config.values.sending.send_max,
                                                         version, &h->hashing_context);
+    new_con.sn_i = new_con.sn_t;
 
     redundancy_mux_send(&h->mux,conreq);
 

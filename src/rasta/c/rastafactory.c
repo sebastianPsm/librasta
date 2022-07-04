@@ -134,13 +134,13 @@ struct RastaPacket createConnectionResponse(uint32_t receiver_id, uint32_t sende
 }
 
 #ifdef ENABLE_OPAQUE
-struct RastaPacket createKexExchangeRequest(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
-                                               uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, struct key_exchange_state *kex_state, struct logger_t *logger) {
+struct RastaPacket createKexRequest(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, struct key_exchange_state *kex_state, struct logger_t *logger) {
     struct RastaPacket p = initializePacket(RASTA_TYPE_KEX_REQUEST,receiver_id,sender_id,sequence_number,
                                             confirmed_sequence_number,timestamp,confirmed_timestamp,sizeof(kex_state->client_public), hashing_context);
     int ret = key_exchange_prepare_credential_request(kex_state,psk,logger);
     if(ret) {
-        logger_log(logger,LOG_LEVEL_ERROR,"createKexExchangeRequest","kex_exchange_prepare_credential_request failed!");
+        logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","kex_exchange_prepare_credential_request failed!");
         abort();
     }
 
@@ -169,8 +169,8 @@ struct RastaPacket createKexExchangeRequest(uint32_t receiver_id, uint32_t sende
 #endif
 
 #ifdef ENABLE_OPAQUE
-struct RastaPacket createKexExchangeResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
-                                            uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, const size_t client_kex_request_length, const uint32_t initial_sequence_number, struct key_exchange_state *kex_state, struct logger_t *logger) {
+struct RastaPacket createKexResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                     uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, size_t client_kex_request_length, uint32_t initial_sequence_number, struct key_exchange_state *kex_state, struct logger_t *logger) {
     struct RastaPacket p = initializePacket(RASTA_TYPE_KEX_RESPONSE,receiver_id,sender_id,sequence_number,
                                             confirmed_sequence_number,timestamp,confirmed_timestamp,sizeof(kex_state->certificate_response), hashing_context);
 
@@ -179,12 +179,12 @@ struct RastaPacket createKexExchangeResponse(uint32_t receiver_id, uint32_t send
     ret = key_exchange_prepare_from_psk(kex_state,psk,sender_id,receiver_id,logger);
 
     if(ret) {
-        logger_log(logger,LOG_LEVEL_ERROR,"createKexExchangeRequest","key_exchange_prepare_from_psk failed!");
+        logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","key_exchange_prepare_from_psk failed!");
         abort();
     }
 
     if(client_kex_request_length != sizeof(kex_state->client_public)) {
-        logger_log(logger, LOG_LEVEL_ERROR, "createKexExchangeRequest",
+        logger_log(logger, LOG_LEVEL_ERROR, "createKexRequest",
                    "Client sent Key Exchange Request of invalid length: %lu", client_kex_request_length);
         abort();
     }
@@ -192,7 +192,7 @@ struct RastaPacket createKexExchangeResponse(uint32_t receiver_id, uint32_t send
     ret = kex_prepare_credential_response(kex_state,received_client_kex_request,client_kex_request_length,sender_id,receiver_id,initial_sequence_number,logger);
 
     if(ret) {
-        logger_log(logger,LOG_LEVEL_ERROR,"createKexExchangeRequest","kex_prepare_credential_response failed!");
+        logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","kex_prepare_credential_response failed!");
         abort();
     }
 

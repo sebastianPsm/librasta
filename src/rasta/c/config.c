@@ -794,14 +794,23 @@ void config_setstd(struct RastaConfig * cfg) {
 #endif
 
     cfg->values.kex.mode = KEY_EXCHANGE_MODE_NONE;
+
 #ifdef ENABLE_OPAQUE
     entr = config_get(cfg, "RASTA_KEX_MODE");
-    if(entr.type == DICTIONARY_NUMBER){
-        if(entr.value.number == KEY_EXCHANGE_MODE_OPAQUE){
+    if(entr.type == DICTIONARY_STRING) {
+        bool accepted = false;
+        if (!strncmp(entr.value.string.c, stringify(KEY_EXCHANGE_MODE_OPAQUE),
+                     strlen(stringify(KEY_EXCHANGE_MODE_OPAQUE)))) {
             cfg->values.kex.mode = KEY_EXCHANGE_MODE_OPAQUE;
+            accepted = true;
+        }
+        if (!accepted) {
+            fprintf(stderr, "Unknown or unsupported KEX mode: %s\n", entr.value.string.c);
+            exit(1);
         }
     }
     entr = config_get(cfg, "RASTA_KEX_PSK");
+
     if(entr.type == DICTIONARY_STRING){
         strncpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
     }
