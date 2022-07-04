@@ -20,6 +20,14 @@ void rasta_md4_set_key(rasta_hashing_context_t * context, MD4_u32plus a, MD4_u32
     rmemcpy(&context->key.bytes[12], buffer, 4 * sizeof(unsigned char));
 }
 
+void rasta_set_hash_key_variable(rasta_hashing_context_t *context, const char *key, size_t key_length){
+    if(context->key.bytes){
+        freeRastaByteArray(&context->key);
+    }
+    allocateRastaByteArray(&context->key,key_length);
+    memcpy(context->key.bytes,key,key_length);
+}
+
 MD4_CONTEXT rasta_get_md4_ctx_from_key(rasta_hashing_context_t * context){
     MD4_u32plus a, b, c, d;
 

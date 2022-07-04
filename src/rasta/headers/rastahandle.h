@@ -46,6 +46,18 @@ typedef enum {
      */
             RASTA_CONNECTION_START,
     /**
+     * Waiting for Key Exchange Request
+     */
+        RASTA_CONNECTION_KEX_REQ,
+    /**
+     * Waiting for Key Exchange Response
+     */
+        RASTA_CONNECTION_KEX_RESP,
+    /**
+     * Waiting for Key Exchange Authentication
+     */
+        RASTA_CONNECTION_KEX_AUTH,
+    /**
      * The connection was established, ready to send data
      */
             RASTA_CONNECTION_UP,
@@ -114,48 +126,6 @@ struct diagnostic_interval {
      * counts every message assigned to this interval that's T_ALIVE value lies between this interval, too
      */
     unsigned int t_alive_message_count;
-};
-
-enum KEY_EXCHANGE_MODE{
-    KEY_EXCHANGE_MODE_NONE,
-#ifdef ENABLE_OPAQUE
-    KEY_EXCHANGE_MODE_OPAQUE
-#endif
-};
-
-/**
- * Holds state required for key exchange
- */
-struct key_exchange_state {
-#ifdef ENABLE_OPAQUE
-    /**
-     * User "registration" record, based on the PSK and the IDs
-     */
-    uint8_t user_record[OPAQUE_USER_RECORD_LEN];
-    /**
-     * Holds the PSK and other secret data in the client
-     */
-    uint8_t *client_secret;
-    /**
-     * Holds the client public record to be sent to or received by the server
-     */
-    uint8_t client_public[OPAQUE_USER_SESSION_PUBLIC_LEN];
-    /**
-     * Certificate response from server
-     */
-    uint8_t certificate_response[OPAQUE_SERVER_SESSION_LEN];
-    /**
-     * Common secret session key
-     */
-    uint8_t session_key[OPAQUE_SHARED_SECRETBYTES];
-    /**
-     * Data required by server to explicitly authenticate client
-     */
-    uint8_t user_auth_server[crypto_auth_hmacsha512_BYTES];
-
-    size_t password_length;
-#endif
-    enum KEY_EXCHANGE_MODE active_mode;
 };
 
 /**
@@ -230,6 +200,12 @@ struct rasta_connection {
      * receive sequence number (expected seq nr of the next received PDU)
      */
     uint32_t sn_r;
+
+    /**
+     * Initial sequence number
+     */
+    uint32_t sn_i;
+
     /**
      * sequence number that has to be checked in the next sent PDU
      */
@@ -454,6 +430,7 @@ struct rasta_receive_handle {
      */
     struct RastaConfigInfoSending config;
     struct RastaConfigInfoGeneral info;
+    struct RastaConfigKex kex;
     struct DictionaryArray accepted_version;
 
     struct logger_t *logger;

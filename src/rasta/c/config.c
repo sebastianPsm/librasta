@@ -792,6 +792,20 @@ void config_setstd(struct RastaConfig * cfg) {
         strncpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
     }
 #endif
+
+    cfg->values.kex.mode = KEY_EXCHANGE_MODE_NONE;
+#ifdef ENABLE_OPAQUE
+    entr = config_get(cfg, "RASTA_KEX_MODE");
+    if(entr.type == DICTIONARY_NUMBER){
+        if(entr.value.number == KEY_EXCHANGE_MODE_OPAQUE){
+            cfg->values.kex.mode = KEY_EXCHANGE_MODE_OPAQUE;
+        }
+    }
+    entr = config_get(cfg, "RASTA_KEX_PSK");
+    if(entr.type == DICTIONARY_STRING){
+        strncpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
+    }
+#endif
 }
 
 /*

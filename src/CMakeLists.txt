@@ -77,7 +77,7 @@ add_library(${target} SHARED
     sci/c/scils_telegram_factory.c
     sci/c/scip.c
     sci/c/scip_telegram_factory.c
-        rasta/c/key_exchange.c rasta/headers/kex_exchange.h)
+        rasta/c/key_exchange.c rasta/headers/key_exchange.h)
 
 # Link system libraries for librasta
 target_link_libraries(${target} rt pthread)

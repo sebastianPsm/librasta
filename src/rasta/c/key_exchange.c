@@ -44,6 +44,7 @@ int key_exchange_prepare_credential_request(struct key_exchange_state *kex_state
                    "Could not lock client pages!");
         return ret;
     }
+    kex_state->password_length = password_length;
 
     return opaque_CreateCredentialRequest((const uint8_t *) psk, password_length, kex_state->client_secret,
                                           kex_state->client_public);
@@ -51,12 +52,17 @@ int key_exchange_prepare_credential_request(struct key_exchange_state *kex_state
 
 int kex_prepare_credential_response(struct key_exchange_state *kex_state,
                                              const uint8_t *received_client_public,
+                                             const size_t received_client_public_length,
                                              const uint32_t my_id, const uint32_t remote_id,
                                              const uint32_t initial_sequence_number, struct logger_t *logger) {
     const uint32_t my_id_be = htobe32(my_id), remote_id_be= htobe32(remote_id);
     Opaque_Ids ids = rasta_ids_to_opaque_ids(&my_id_be,&remote_id_be);
     const uint32_t isn_be = htobe32(initial_sequence_number);
-    (void) logger;
+
+    if(received_client_public_length != sizeof(kex_state->client_public)){
+        logger_log(logger, LOG_LEVEL_ERROR, "key_exchange:kex_prepare_credential_response","Preparing credential response failed: unexpected length of credential request: %lu",received_client_public_length);
+        return -1;
+    }
     // we use the (random) ISN of the server as connection context here, as we can guarantee that it is different for each new connection
     return opaque_CreateCredentialResponse(received_client_public, kex_state->user_record, &ids,
                                            (const uint8_t *) &isn_be, sizeof(uint32_t),
@@ -66,6 +72,7 @@ int kex_prepare_credential_response(struct key_exchange_state *kex_state,
 
 int kex_recover_credential(struct key_exchange_state *kex_state,
                                              const uint8_t *received_server_response,
+                                             const size_t received_server_response_len,
                                              const uint32_t my_id, const uint32_t remote_id,
                                              const uint32_t initial_sequence_number, struct logger_t *logger) {
     (void) logger;
@@ -74,6 +81,12 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
     // identities are swapped from the PoV of the client
     Opaque_Ids ids = rasta_ids_to_opaque_ids(&remote_id_be,&my_id_be);
     int ret, munlock_ret;
+
+    if(received_server_response_len != sizeof(kex_state->certificate_response)){
+        logger_log(logger, LOG_LEVEL_ERROR, "key_exchange:kex_recover_credential","Recovering credentials failed: unexpected length of credential response: %lu",received_server_response_len);
+        return -1;
+    }
+
     // we use the (random) ISN of the server as connection context here, as we can guarantee that it is different for each new connection
     ret = opaque_RecoverCredentials(received_server_response, kex_state->client_secret, (const uint8_t *) &isn_be, sizeof(uint32_t), &ids,
                                            kex_state->session_key, kex_state->user_auth_server,
@@ -94,8 +107,12 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
     return ret;
 }
 
-int kex_authenticate_user(const struct key_exchange_state *kex_state,const uint8_t *received_user_auth, struct logger_t *logger){
+int kex_authenticate_user(const struct key_exchange_state *kex_state,const uint8_t *received_user_auth, const size_t received_user_auth_length, struct logger_t *logger){
     (void) logger;
+    if(received_user_auth_length != sizeof(kex_state->user_auth_server)){
+        logger_log(logger, LOG_LEVEL_ERROR, "kex_exchange:kex_authenticate_user","User authentication packet has unexpected length: %lu",received_user_auth_length);
+        return 1;
+    }
     return opaque_UserAuth(kex_state->user_auth_server,received_user_auth);
 }
 #else
@@ -121,10 +138,12 @@ int key_exchange_prepare_credential_request(struct key_exchange_state *kex_state
 
 int kex_prepare_credential_response(struct key_exchange_state *kex_state,
                                              const uint8_t *received_client_public,
+                                             const size_t length,
                                              const uint32_t my_id, const uint32_t remote_id,
                                              const uint32_t initial_sequence_number, struct logger_t *logger) {
     (void) kex_state;
     (void) received_client_public;
+    (void) length;
     (void) my_id;
     (void) remote_id;
     (void) initial_sequence_number;
@@ -135,10 +154,12 @@ int kex_prepare_credential_response(struct key_exchange_state *kex_state,
 
 int kex_recover_credential(struct key_exchange_state *kex_state,
                                              const uint8_t *received_server_response,
+                                             const size_t length;
                                              const uint32_t my_id, const uint32_t remote_id,
                                              const uint32_t initial_sequence_number, struct logger_t *logger) {
     (void) kex_state;
     (void) received_server_response;
+    (void) length,
     (void) my_id;
     (void) remote_id;
     (void) initial_sequence_number;
@@ -147,9 +168,10 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
     return 1;
 }
 
-int kex_authenticate_user(const struct key_exchange_state *kex_state,const uint8_t *received_user_auth, struct logger_t *logger){
+int kex_authenticate_user(const struct key_exchange_state *kex_state,const uint8_t *received_user_auth, const size_t received_user_auth_length, struct logger_t *logger){
     (void) kex_state;
     (void) received_user_auth;
+    (void) received_user_auth_length;
     logger_log(logger, LOG_LEVEL_ERROR, "key_exchange:kex_authenticate_user",
                    "Error: not implemented!");
     return 1;
