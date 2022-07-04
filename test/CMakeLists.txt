@@ -28,10 +28,13 @@ add_executable(rastaTest
     rastaTest/c/rastamd4Test.c
     rastaTest/c/rastamoduleTest.c
     rastaTest/c/registerTests.c
-    rastaTest/c/siphash24test.c)
+    rastaTest/c/siphash24test.c rastaTest/c/opaquetest.c
+    rastaTest/headers/opaquetest.h)
 target_include_directories(rastaTest PRIVATE rastaTest/headers)
 target_link_libraries(rastaTest rasta PkgConfig::CUnit)
 target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
+
+add_dependencies(rastaTest rasta)
 
 add_test(NAME test_rastaTest
          COMMAND rastaTest)

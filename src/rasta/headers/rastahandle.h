@@ -19,6 +19,9 @@ extern "C" {  // only need to export C interface if
 #include "config.h"
 #include "rasta_red_multiplexer.h"
 
+#ifdef ENABLE_OPAQUE
+#include <opaque.h>
+#endif
 
 typedef enum {
     RASTA_ROLE_CLIENT = 0,
@@ -111,6 +114,48 @@ struct diagnostic_interval {
      * counts every message assigned to this interval that's T_ALIVE value lies between this interval, too
      */
     unsigned int t_alive_message_count;
+};
+
+enum KEY_EXCHANGE_MODE{
+    KEY_EXCHANGE_MODE_NONE,
+#ifdef ENABLE_OPAQUE
+    KEY_EXCHANGE_MODE_OPAQUE
+#endif
+};
+
+/**
+ * Holds state required for key exchange
+ */
+struct key_exchange_state {
+#ifdef ENABLE_OPAQUE
+    /**
+     * User "registration" record, based on the PSK and the IDs
+     */
+    uint8_t user_record[OPAQUE_USER_RECORD_LEN];
+    /**
+     * Holds the PSK and other secret data in the client
+     */
+    uint8_t *client_secret;
+    /**
+     * Holds the client public record to be sent to or received by the server
+     */
+    uint8_t client_public[OPAQUE_USER_SESSION_PUBLIC_LEN];
+    /**
+     * Certificate response from server
+     */
+    uint8_t certificate_response[OPAQUE_SERVER_SESSION_LEN];
+    /**
+     * Common secret session key
+     */
+    uint8_t session_key[OPAQUE_SHARED_SECRETBYTES];
+    /**
+     * Data required by server to explicitly authenticate client
+     */
+    uint8_t user_auth_server[crypto_auth_hmacsha512_BYTES];
+
+    size_t password_length;
+#endif
+    enum KEY_EXCHANGE_MODE active_mode;
 };
 
 /**
@@ -244,6 +289,12 @@ struct rasta_connection {
     *   the error counters as specified in 5.5.5
     */
     struct rasta_error_counters errors;
+
+    /**
+     * Session data for and derived from key exchange
+     */
+    struct key_exchange_state kex_state;
+
 };
 
 /**
