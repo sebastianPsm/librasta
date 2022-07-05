@@ -324,7 +324,6 @@ void rasta_handle_init(struct rasta_handle *h, const char* config_file_path) {
     //receive
     h->receive_handle->config = h->config.values.sending;
     h->receive_handle->info = h->config.values.general;
-    h->receive_handle->kex = h->config.values.kex;
     h->receive_handle->handle = h;
     h->receive_handle->running = &h->recv_running;
     h->receive_handle->logger = &h->logger;

@@ -438,7 +438,6 @@ struct rasta_receive_handle {
      */
     struct RastaConfigInfoSending config;
     struct RastaConfigInfoGeneral info;
-    struct RastaConfigKex kex;
     struct DictionaryArray accepted_version;
 
     struct logger_t *logger;

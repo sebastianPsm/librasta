@@ -21,7 +21,7 @@
 #define ID_S2 0x63
 
 void printHelpAndExit(void){
-    printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
+    printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode. Optionally, add a second parameter to disable rekeying.\n");
     exit(1);
 }
 
@@ -214,9 +214,13 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
 }
 
 int main(int argc, char *argv[]){
+    bool force_disable_rekeying = false;
+    if (argc < 2) printHelpAndExit();
 
-    if (argc != 2) printHelpAndExit();
-
+    if(argc > 2){
+        force_disable_rekeying = true;
+        printf("Disabling rekeying!");
+    }
     rasta_lib_configuration_t rc;
 
     struct RastaIPData toServer[2];
@@ -249,6 +253,10 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
+
         printf("->   Press Enter to listen\n");
         fflush(stdout);
         int c;
@@ -275,6 +283,10 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
+
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
@@ -293,9 +305,14 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
+
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
+
 
         printf("->   Press Enter to connect\n");
         disable_fd_event(&termination_event);
