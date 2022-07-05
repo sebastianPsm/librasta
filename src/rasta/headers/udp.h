@@ -36,6 +36,18 @@ struct RastaState
     const struct RastaConfigTLS *tls_config;
 #ifdef ENABLE_TLS
     WOLFSSL_CTX* ctx;
+#ifdef ENABLE_UDP
+    WOLFSSL* ssl;
+    enum RastaTLSConnectionState tls_state;
+#endif
+#endif
+};
+
+
+#if defined(ENABLE_TLS) && defined(ENABLE_UDP)
+struct RastaConnectionState
+{
+    int file_descriptor;
     WOLFSSL* ssl;
     enum RastaTLSConnectionState tls_state;
 #endif

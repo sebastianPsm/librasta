@@ -316,7 +316,8 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
 int channel_accept_event(void *carry_data) {
 #ifdef USE_TCP
     struct receive_event_data *data = carry_data;
-    int connected_fd = tcp_accept(data->h->mux.tcp_socket_fds[data->channel_index].file_descriptor);
+    struct RastaConnectionState connection;
+    tcp_accept(&data->h->mux.tcp_socket_fds[data->channel_index], &connection);
 
     fd_event* evt = rmalloc(sizeof(fd_event));
     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
@@ -326,7 +327,7 @@ int channel_accept_event(void *carry_data) {
     evt->enabled = 1;
     evt->carry_data = channel_event_data;
     evt->callback = channel_receive_event;
-    evt->fd = connected_fd;
+    evt->fd = connection.file_descriptor;
 
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
 #endif
@@ -585,7 +586,7 @@ void redundancy_mux_close(redundancy_mux *mux)
 #endif
 #ifdef USE_TCP
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing tcp socket %d/%d", i + 1, mux->port_count);
-        tcp_close(mux->tcp_socket_fds[i].file_descriptor);
+        tcp_close(&mux->tcp_socket_fds[i]);
 #endif
     }
 
@@ -754,7 +755,7 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id)
 
 void redundancy_mux_listen_channels(redundancy_mux *mux) {
     for (unsigned i = 0; i < mux->port_count; ++i) {
-        tcp_listen(mux->tcp_socket_fds[i].file_descriptor);
+        tcp_listen(&mux->tcp_socket_fds[i]);
     }
 }
 

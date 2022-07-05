@@ -1532,7 +1532,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     #ifdef USE_TCP
     for (unsigned int i = 0; i < h->mux.port_count; ++i)
     {
-        tcp_connect(h->mux.tcp_socket_fds[i].file_descriptor, channels[i].ip, (uint16_t)channels[i].port);
+        tcp_connect(&h->mux.tcp_socket_fds[i], channels[i].ip, (uint16_t)channels[i].port);
 
         fd_event* evt = rmalloc(sizeof(fd_event));
         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));

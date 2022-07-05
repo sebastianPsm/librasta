@@ -23,7 +23,7 @@ void tcp_bind(struct RastaState *state, uint16_t port);
  * Prepare to accept connections on the given @p file_descriptor.
  * @param file_descriptor the file descriptor to accept connections from
  */
-void tcp_listen(int socket);
+void tcp_listen(struct RastaState *state);
 
 /**
  * Binds a given file descriptor to the given @p port at the network interface with IPv4 address @p ip
@@ -42,14 +42,14 @@ void tcp_bind_device(struct RastaState *state, uint16_t port, char * ip);
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-size_t tcp_receive(int file_descriptor, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
+size_t tcp_receive(struct RastaState *state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 
 /**
  * Await a connection on a @p file_descriptor.
  * When a connection arrives, open a new socket to communicate with it,
  * @param file_descriptor the file descriptor to accept connections from
  */
-int tcp_accept(int file_descriptor);
+void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectionState);
 
 /**
  * Open a connection on a @p file_descriptor.
@@ -58,7 +58,7 @@ int tcp_accept(int file_descriptor);
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void tcp_connect(int file_descriptor,  char *host, uint16_t port);
+void tcp_connect(struct RastaState *state,  char *host, uint16_t port);
 
 /**
  * Sends a message via the given file descriptor to a @p host and @p port
@@ -68,12 +68,12 @@ void tcp_connect(int file_descriptor,  char *host, uint16_t port);
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void tcp_send(int file_descriptor, unsigned char* message, size_t message_len, char* host, uint16_t port);
+void tcp_send(struct RastaState *state, unsigned char* message, size_t message_len, char* host, uint16_t port);
 
 /**
  * Closes the tcp socket
  * @param file_descriptor the file descriptor which identifies the socket
  */
-void tcp_close(int file_descriptor);
+void tcp_close(struct RastaState *state);
 
 void sockaddr_to_host(struct sockaddr_in sockaddr, char* host);

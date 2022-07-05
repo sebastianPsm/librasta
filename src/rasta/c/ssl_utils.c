@@ -152,7 +152,7 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
     state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
-void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
+void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
 {
     if (state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED)
     {
