@@ -16,6 +16,11 @@ void wolfssl_start_dtls_server(struct RastaState *state, const struct RastaConfi
     wolfssl_start_server(state, tls_config, wolfDTLSv1_2_server_method());
 }
 
+void wolfssl_start_tls_server(struct RastaState *state, const struct RastaConfigTLS *tls_config)
+{
+    wolfssl_start_server(state, tls_config, wolfTLSv1_3_server_method());
+}
+
 void wolfssl_start_server(struct RastaState *state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *server_method)
 {
     int err;
@@ -95,6 +100,11 @@ void set_socket_async(struct RastaState *state, WOLFSSL_ASYNC_METHOD *wolfssl_as
 void wolfssl_start_dtls_client(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 {
     wolfssl_start_client(state, tls_config, wolfDTLSv1_2_client_method());
+}
+
+void wolfssl_start_tls_client(struct RastaState *state, const struct RastaConfigTLS *tls_config)
+{
+    wolfssl_start_client(state, tls_config, wolfTLSv1_2_client_method());
 }
 
 void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method)

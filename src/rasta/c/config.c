@@ -757,13 +757,17 @@ void config_setstd(struct RastaConfig * cfg) {
     if(entr.type == DICTIONARY_STRING){
         bool accepted = false;
 #ifdef ENABLE_TLS
-        if(!strncmp(entr.value.string.c,stringify(TLS_MODE_DTLS_1_2),strlen(stringify(TLS_MODE_DTLS_1_2)))){
+        if (!strncmp(entr.value.string.c, stringify(TLS_MODE_DTLS_1_2), strlen(stringify(TLS_MODE_DTLS_1_2)))){
             cfg->values.tls.mode = TLS_MODE_DTLS_1_2;
+            accepted = true;
+        }
+        if (!strncmp(entr.value.string.c, stringify(TLS_MODE_TLS_1_3), strlen(stringify(TLS_MODE_TLS_1_3)))){
+            cfg->values.tls.mode = TLS_MODE_TLS_1_3;
             accepted = true;
         }
 #endif
         if(!accepted){
-            fprintf(stderr, "Unknown or unsupported TLS mode: %s\n",entr.value.string.c);
+            fprintf(stderr, "Unknown or unsupported TLS mode: %s\n", entr.value.string.c);
             exit(1);
         }
     }

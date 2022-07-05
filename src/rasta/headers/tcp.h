@@ -1,21 +1,23 @@
 #include <stdint.h>
 #include <netinet/in.h>
+#include "udp.h"
 
 #define MAX_PENDING_CONNECTIONS 5
 
 /**
- * This function will initialise an tcp socket and return its file descriptor, which is used to reference it in later
+ * This function will initialise a tcp socket and return its file descriptor, which is used to reference it in later
  * function calls
- * @return the tcp socket's file descriptor
+ * @param state the tcp socket's tls_state buffer
+ * @param tls_config TLS options
  */
-int tcp_init();
+void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config);
 
 /**
  * Binds a given file descriptor to the given @p port
  * @param file_descriptor the is the file descriptor which will be bound to to the @p port.
  * @param port the port the socket will listen on
  */
-void tcp_bind(int file_descriptor, uint16_t port);
+void tcp_bind(struct RastaState *state, uint16_t port);
 
 /**
  * Prepare to accept connections on the given @p file_descriptor.
@@ -29,7 +31,7 @@ void tcp_listen(int socket);
  * @param port the port the socket will listen on
  * @param ip the IPv4 address of the network interface the socket will listen on.
  */
-void tcp_bind_device(int file_descriptor, uint16_t port, char * ip);
+void tcp_bind_device(struct RastaState *state, uint16_t port, char * ip);
 
 /**
  * Receive data on the given @p file descriptor and store it in the given buffer.

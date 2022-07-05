@@ -7,25 +7,66 @@
 #include "tcp.h"
 #include "rmemory.h"
 #include "bsd_utils.h"
+#include <stdbool.h>
 
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
+#include "ssl_utils.h"
 #endif
 
-int tcp_init()
+void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 {
-    return bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    state->tls_config = tls_config;
+    state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-void tcp_bind(int file_descriptor, uint16_t port)
+#ifdef ENABLE_TLS
+
+static bool is_tls_server(const struct RastaConfigTLS *tls_config)
 {
-    bsd_bind_port(file_descriptor, port);
+    // client has CA cert but no server certs
+    return tls_config->cert_path[0] && tls_config->key_path[0];
+}
+#endif
+
+static void handle_tls_mode(struct RastaState *state)
+{
+    const struct RastaConfigTLS *tls_config = state->tls_config;
+    switch (tls_config->mode)
+    {
+    case TLS_MODE_DISABLED:
+        state->activeMode = TLS_MODE_DISABLED;
+        break;
+#ifdef ENABLE_TLS
+    case TLS_MODE_TLS_1_3:
+        state->activeMode = TLS_MODE_TLS_1_3;
+        if (is_tls_server(tls_config))
+        {
+            wolfssl_start_tls_server(state, tls_config);
+        }
+        else
+        {
+            wolfssl_start_tls_client(state, tls_config);
+        }
+        break;
+#endif
+    default:
+        fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
+        exit(1);
+    }
 }
 
-void tcp_bind_device(int file_descriptor, uint16_t port, char *ip)
+void tcp_bind(struct RastaState *state, uint16_t port)
 {
-    bsd_bind_device(file_descriptor, port, ip);
+    bsd_bind_port(state->file_descriptor, port);
+    handle_tls_mode(state);
+}
+
+void tcp_bind_device(struct RastaState *state, uint16_t port, char *ip)
+{
+    bsd_bind_device(state->file_descriptor, port, ip);
+    handle_tls_mode(state);
 }
 
 void tcp_listen(int file_descriptor)

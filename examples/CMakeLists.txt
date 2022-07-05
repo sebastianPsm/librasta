@@ -30,17 +30,30 @@ target_compile_options(event_system_example_local PRIVATE ${DEFAULT_COMPILE_OPTI
 target_link_libraries(event_system_example_local rasta)
 
 if(ENABLE_RASTA_TLS)
+if(USE_UDP)
 add_executable(dtls_example_local
         examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
 set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(dtls_example_local rasta wolfssl)
 endif()
+if(USE_TCP)
+add_executable(tls_example_local
+        examples_localhost/c/tls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
+set_target_properties(tls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+target_compile_options(tls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+target_link_libraries(tls_example_local rasta wolfssl)
+endif()
+endif()
 
 # Copy RaSTA configs to build directory
 configure_file(config/rasta_server_local.cfg rasta_server_local.cfg COPYONLY)
 configure_file(config/rasta_client1_local.cfg rasta_client1_local.cfg COPYONLY)
 configure_file(config/rasta_client2_local.cfg rasta_client2_local.cfg COPYONLY)
+
+configure_file(config/rasta_server_local_dtls.cfg rasta_server_local_dtls.cfg COPYONLY)
+configure_file(config/rasta_client1_local_dtls.cfg rasta_client1_local_dtls.cfg COPYONLY)
+configure_file(config/rasta_client2_local_dtls.cfg rasta_client2_local_dtls.cfg COPYONLY)
 
 configure_file(config/rasta_server_local_tls.cfg rasta_server_local_tls.cfg COPYONLY)
 configure_file(config/rasta_client1_local_tls.cfg rasta_client1_local_tls.cfg COPYONLY)

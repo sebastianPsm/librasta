@@ -435,7 +435,7 @@ redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaCo
     // mux.has_ips_configured = 0;
     // mux.is_server = -1;
     // init and bind tcp sockets + threads array
-    mux.tcp_socket_fds = rmalloc(mux.port_count * sizeof(int));
+    mux.tcp_socket_fds = rmalloc(mux.port_count * sizeof(struct RastaState));
     // mux.tcp_connections = rmalloc(mux.port_count * sizeof(int));
 #endif
 
@@ -467,8 +467,8 @@ redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaCo
 #endif
 #ifdef USE_TCP
             // init socket
-            mux.tcp_socket_fds[j].file_descriptor = tcp_init();
-            tcp_bind_device(mux.tcp_socket_fds[j].file_descriptor,
+            tcp_init(&mux.tcp_socket_fds[j], &config.tls);
+            tcp_bind_device(&mux.tcp_socket_fds[j],
                             (uint16_t)mux.config.redundancy.connections.data[j].port,
                             mux.config.redundancy.connections.data[j].ip);
 #endif
@@ -534,8 +534,8 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
 #endif
 #ifdef USE_TCP
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
-        mux.tcp_socket_fds[i].file_descriptor = tcp_init();
-        tcp_bind_device(mux.tcp_socket_fds[i].file_descriptor, mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
+        tcp_init(&mux.tcp_socket_fds[i], &config.tls);
+        tcp_bind_device(&mux.tcp_socket_fds[i], mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
 #endif
     }
 

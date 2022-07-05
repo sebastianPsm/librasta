@@ -1,7 +1,3 @@
-//
-// Created by tobia on 24.02.2018.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,9 +8,9 @@
 #include <fifo.h>
 #include "wolfssl_certificate_helper.h"
 
-#define CONFIG_PATH_S "rasta_server_local_dtls.cfg"
-#define CONFIG_PATH_C1 "rasta_client1_local_dtls.cfg"
-#define CONFIG_PATH_C2 "rasta_client2_local_dtls.cfg"
+#define CONFIG_PATH_S "rasta_server_local_tls.cfg"
+#define CONFIG_PATH_C1 "rasta_client1_local_tls.cfg"
+#define CONFIG_PATH_C2 "rasta_client2_local_tls.cfg"
 
 #define ID_R 0x61
 #define ID_S1 0x62
