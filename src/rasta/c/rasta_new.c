@@ -14,6 +14,8 @@
 #include <event_system.h>
 #include <rastahandle.h>
 #include <rasta_lib.h>
+#include <slcurses.h>
+#include <stdbool.h>
 
 /**
  * this will generate a 4 byte timestamp of the current system time
@@ -529,6 +531,11 @@ void sr_init_connection(struct rasta_connection* connection, unsigned long id, s
 
     // create send queue
     connection->fifo_send = fifo_init(2* cfg.max_packet);
+
+    // reset last rekeying time
+#ifdef ENABLE_OPAQUE
+    connection->kex_state.last_key_exchanged_millis = 0;
+#endif
 }
 
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection * connection){
@@ -625,11 +632,30 @@ void init_send_heartbeat_event(timed_event* ev, struct timed_event_data* carry_d
     enable_timed_event(ev);
 }
 
+int send_timed_key_exchange(void *arg);
+void init_send_key_exchange_event(timed_event* ev, struct timed_event_data* carry_data,
+                                  struct rasta_connection* connection, struct rasta_handle* h) {
+    ev->callback = send_timed_key_exchange;
+    ev->carry_data = carry_data;
+    ev->interval = h->config.values.kex.rekeying_interval_ms  * NS_PER_MS;
+    // add some headroom for computation and communication
+    ev->interval /= 2;
+    carry_data->handle = h->receive_handle;
+    carry_data->connection = connection;
+    enable_timed_event(ev);
+}
+
 void init_connection_events(struct rasta_handle* h, struct rasta_connection* connection) {
     init_connection_timeout_event(&connection->timeout_event, &connection->timeout_carry_data, connection, h);
     init_send_heartbeat_event(&connection->send_heartbeat_event, &connection->timeout_carry_data, connection, h);
     add_timed_event(h->ev_sys, &connection->timeout_event);
     add_timed_event(h->ev_sys, &connection->send_heartbeat_event);
+#ifdef ENABLE_OPAQUE
+    if(connection->role == RASTA_ROLE_CLIENT && h->config.values.kex.rekeying_interval_ms) {
+        init_send_key_exchange_event(&connection->rekeying_event, &connection->rekeying_carry_data, connection, h);
+        add_timed_event(h->ev_sys, &connection->rekeying_event);
+    }
+#endif
 }
 
 void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con) {
@@ -650,6 +676,15 @@ void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con
  * Handle packet functions
  */
 
+static uint64_t get_current_time_ms() {
+    uint64_t current_time;
+    struct timespec current_time_tv;
+    clock_gettime(CLOCK_MONOTONIC, &current_time_tv);
+
+    current_time = current_time_tv.tv_nsec/NS_PER_MS + current_time_tv.tv_sec * MS_PER_S;
+    return current_time;
+}
+
 /**
  * send a Key Exchange Request to the specified host
  * @param connection the connection which should be used
@@ -657,14 +692,40 @@ void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con
  * @param port the port where the HB will be sent to
  */
 void send_KexRequest(redundancy_mux *mux, struct rasta_connection * connection, struct rasta_receive_handle *h){
+#ifdef ENABLE_OPAQUE
     struct RastaPacket hb = createKexRequest(connection->remote_id, connection->my_id, connection->sn_t,
                                              connection->cs_t, cur_timestamp(), connection->ts_r,
                                              &mux->sr_hashing_context, h->kex.psk, &connection->kex_state, h->logger);
+
+    if(!connection->kex_state.last_key_exchanged_millis && h->kex.rekeying_interval_ms){
+        // first key exchanged - need to enable periodic rekeying
+        init_send_key_exchange_event(&connection->rekeying_event,&connection->rekeying_carry_data,connection,h->handle);
+        add_timed_event(h->handle->ev_sys, &connection->rekeying_event);
+    }
+    else{
+        logger_log(h->logger,LOG_LEVEL_INFO,"RaSTA KEX", "Rekeying at %"PRIu64,get_current_time_ms());
+    }
 
     redundancy_mux_send(mux, hb);
 
     connection->sn_t = connection->sn_t +1;
 
+    connection->kex_state.last_key_exchanged_millis = get_current_time_ms();
+    connection->current_state = RASTA_CONNECTION_KEX_RESP;
+#else
+    // should never be called
+    abort();
+#endif
+}
+
+int send_timed_key_exchange(void *arg){
+    struct timed_event_data *event_data = (struct timed_event_data *) arg;
+    struct rasta_receive_handle *handle = (struct rasta_receive_handle *) event_data->handle;
+    send_KexRequest(handle->mux,event_data->connection,handle);
+
+    // call periodically
+    reschedule_event(&event_data->connection->rekeying_event);
+    return 0;
 }
 
 struct rasta_connection* handle_conreq(struct rasta_receive_handle *h, struct rasta_connection* connection, struct RastaPacket receivedPacket) {
@@ -818,7 +879,6 @@ struct rasta_connection* handle_conresp(struct rasta_receive_handle *h, struct r
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Sending heartbeat..");
                 send_Heartbeat(h->mux, con, 1);
                 if(h->kex.mode == KEY_EXCHANGE_MODE_OPAQUE) {
-                    con->current_state = RASTA_CONNECTION_KEX_RESP;
                     send_KexRequest(h->mux, con, h);
                 }
 
@@ -872,7 +932,7 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Request", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)){
-        if (connection->current_state != RASTA_CONNECTION_KEX_REQ){
+        if (connection->current_state != RASTA_CONNECTION_KEX_REQ && (!h->kex.rekeying_interval_ms || connection->current_state != RASTA_CONNECTION_UP)){
             // received Key Exchange Request in the wrong phase -> disconnect and close
             sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
         } else{
@@ -889,7 +949,15 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
                     return;
                 }
 #ifdef ENABLE_OPAQUE
+                connection->kex_state.last_key_exchanged_millis = get_current_time_ms();
+
+                if(connection->kex_state.last_key_exchanged_millis){
+                    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "Accepted rekeying at %"PRIu64,connection->kex_state.last_key_exchanged_millis);
+                }
+
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req", "CTS in SEQ");
+
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req","Key exchange request received at %"PRIu64,connection->kex_state.last_key_exchanged_millis);
                 // valid Key Exchange request packet received
 
                 response = createKexResponse(connection->remote_id, connection->my_id, connection->sn_t,
@@ -966,6 +1034,7 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
                     return;
                 }
 #ifdef ENABLE_OPAQUE
+
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "CTS in SEQ");
                 // valid Key Exchange response packet received
                 ret = kex_recover_credential(&connection->kex_state,(const uint8_t *) receivedPacket.data.bytes,receivedPacket.data.length,connection->my_id,connection->remote_id,connection->sn_i,h->logger);
@@ -1171,8 +1240,8 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
 
     if (sr_sn_in_seq(connection, receivedPacket)){
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "SN in SEQ");
-
-        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN){
+        // heartbeats also permissible during key exchange phase, since computation could exceed heartbeat interval
+        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN || connection->current_state == RASTA_CONNECTION_KEX_REQ || connection->current_state == RASTA_CONNECTION_KEX_RESP || connection->current_state == RASTA_CONNECTION_KEX_AUTH){
             // check cts_in_seq
             if (sr_cts_in_seq(connection,h->config, receivedPacket)){
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "CTS in SEQ");
@@ -1433,6 +1502,36 @@ void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *co
         }
     }
 }
+
+#ifdef ENABLE_OPAQUE
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig) {
+    uint64_t current_time;
+    if(connection->current_state == RASTA_CONNECTION_KEX_REQ){
+        // already waiting for key exchange
+        return false;
+    }
+
+    if(connection->role != RASTA_ROLE_SERVER){
+        // client cannot expect to receive key requests from server
+        return false;
+    }
+
+    if(!kexConfig->rekeying_interval_ms || !connection->kex_state.last_key_exchanged_millis){
+        // no rekeying or no initial time yet
+        return false;
+    }
+
+    current_time = get_current_time_ms();
+
+    return current_time - connection->kex_state.last_key_exchanged_millis > REKEYING_ALLOWED_DELAY_MS + kexConfig->rekeying_interval_ms;
+}
+#else
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig){
+    // no rekeying possible without key exchange
+    return false;
+}
+#endif
+
 /*
  * threads
  */
@@ -1518,6 +1617,13 @@ int on_readable_event(void* handle) {
         // invalid -> increase error counter and discard packet
         con->errors.cs++;
 
+        freeRastaByteArray(&receivedPacket.data);
+        return 0;
+    }
+
+    if(sr_rekeying_skipped(con,&h->kex)){
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %"PRIu64" - disconnecting!",get_current_time_ms());
+        sr_close_connection(con,h->handle,h->mux,h->info,RASTA_DISC_REASON_TIMEOUT,0);
         freeRastaByteArray(&receivedPacket.data);
         return 0;
     }
@@ -1884,6 +1990,13 @@ void sr_disconnect(struct rasta_handle* h, struct rasta_connection* con) {
 
     remove_timed_event(&con->timeout_event);
     remove_timed_event(&con->send_heartbeat_event);
+
+#ifdef ENABLE_OPAQUE
+    if(h->config.values.kex.rekeying_interval_ms) {
+        remove_timed_event(&con->rekeying_event);
+    }
+#endif
+
     h->user_handles->on_disconnect(con, con);
 }
 

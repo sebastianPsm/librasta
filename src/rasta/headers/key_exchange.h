@@ -18,7 +18,10 @@ enum KEY_EXCHANGE_MODE{
     KEY_EXCHANGE_MODE_OPAQUE
 #endif
 };
-
+/**
+ * Allow client's rekeying Key Exchange Request to be received up to 500 ms after it was due
+ */
+#define REKEYING_ALLOWED_DELAY_MS 500
 /**
  * Holds state required for key exchange
  */
@@ -50,6 +53,11 @@ struct key_exchange_state {
     uint8_t user_auth_server[crypto_auth_hmacsha512_BYTES];
 
     size_t password_length;
+
+    /**
+     * Timestamp when last key exchange happened
+     */
+    uint64_t last_key_exchanged_millis;
 #endif
     enum KEY_EXCHANGE_MODE active_mode;
 };

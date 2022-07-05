@@ -153,6 +153,14 @@ struct rasta_connection {
     timed_event timeout_event;
     struct timed_event_data timeout_carry_data;
 
+#ifdef ENABLE_OPAQUE
+    /**
+     * triggers new key exchange
+     */
+    timed_event rekeying_event;
+    struct timed_event_data rekeying_carry_data;
+#endif
+
     /**
      * 1 if the process for sending heartbeats should be paused, otherwise 0
      */

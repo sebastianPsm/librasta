@@ -15,6 +15,7 @@ extern "C" {  // only need to export C interface if
 #include "rastafactory.h"
 #include "key_exchange.h"
 #include <limits.h>
+#include <stdint.h>
 
 #define CONFIG_BUFFER_LENGTH 10000
 
@@ -113,6 +114,10 @@ struct RastaConfigKex{
      * Configured PSK, might be nullptr if mode is KEX_EXCHANGE_MODE_NONE
      */
     char psk[KEX_PSK_MAX];
+    /**
+     * Rekeying interval or 0 when no rekeying is disabled
+     */
+    uint64_t rekeying_interval_ms;
 };
 
 /**

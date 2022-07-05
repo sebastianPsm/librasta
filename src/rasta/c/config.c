@@ -814,6 +814,13 @@ void config_setstd(struct RastaConfig * cfg) {
     if(entr.type == DICTIONARY_STRING){
         strncpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
     }
+
+    entr = config_get(cfg, "RASTA_KEX_REKEYING_INTERVAL_MS");
+    // default = no rekeying
+    cfg->values.kex.rekeying_interval_ms = 0;
+    if(entr.type == DICTIONARY_NUMBER){
+        cfg->values.kex.rekeying_interval_ms = entr.value.number;
+    }
 #endif
 }
 
