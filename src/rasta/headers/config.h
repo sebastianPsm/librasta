@@ -71,9 +71,11 @@ struct RastaConfigInfoGeneral {
     unsigned long rasta_id;
 };
 
-enum RastaTLSMode{
+enum RastaTLSMode
+{
     TLS_MODE_DISABLED,
-    TLS_MODE_DTLS_1_2
+    TLS_MODE_DTLS_1_2,
+    TLS_MODE_TLS_1_2
 };
 // max length of CN in ASN.1
 #define MAX_DOMAIN_LENGTH 64
