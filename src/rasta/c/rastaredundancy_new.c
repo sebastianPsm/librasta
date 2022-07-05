@@ -225,15 +225,16 @@ void rasta_red_f_deferTmo(rasta_redundancy_channel * channel){
 }
 
 void rasta_red_add_transport_channel(
-    rasta_redundancy_channel * channel,
+    rasta_redundancy_channel *channel,
 #ifdef USE_TCP
-    int fd,
+    struct RastaState state,
 #endif
-    char * ip, uint16_t port) {
+    char *ip, uint16_t port)
+{
     rasta_transport_channel transport_channel;
 
 #ifdef USE_TCP
-    transport_channel.fd = fd;
+    transport_channel.fd = state.file_descriptor;
 #endif
 
     transport_channel.port = port;
@@ -243,7 +244,6 @@ void rasta_red_add_transport_channel(
     channel->connected_channels[channel->connected_channel_count] = transport_channel;
     channel->connected_channel_count++;
 }
-
 
 void rasta_red_cleanup(rasta_redundancy_channel * channel){
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "destroying defer queues");

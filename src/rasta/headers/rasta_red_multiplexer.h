@@ -95,13 +95,13 @@ extern "C"
         /**
          * the file descriptors of the used udp sockes. array has length port_count
          */
-        struct RastaUDPState *udp_socket_states;
+        struct RastaState *udp_socket_states;
 #endif
 #ifdef USE_TCP
         /**
          * the file descriptors of the used tcp sockets. array has length port_count
          */
-        int *tcp_socket_fds;
+        struct RastaState *tcp_socket_fds;
 
 #endif
 

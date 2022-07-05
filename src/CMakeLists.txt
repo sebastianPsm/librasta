@@ -31,6 +31,7 @@ set(RASTA_HDRS
     rasta/headers/udp.h
     rasta/headers/tcp.h
     rasta/headers/bsd_utils.h
+    rasta/headers/ssl_utils.h
     rasta/headers/rastablake2.h
     rasta/headers/rastasiphash24.h
     rasta/headers/rastahashing.h
@@ -70,6 +71,7 @@ add_library(${target} SHARED
     rasta/c/udp.c
     rasta/c/tcp.c
     rasta/c/bsd_utils.c
+    rasta/c/ssl_utils.c
     sci/c/hashmap.c
     rasta/c/rastablake2.c
     rasta/c/rastasiphash24.c

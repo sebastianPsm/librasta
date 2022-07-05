@@ -29,7 +29,8 @@ enum RastaTLSConnectionState{
 };
 #endif
 
-struct RastaUDPState{
+struct RastaState
+{
     int file_descriptor;
     enum RastaTLSMode activeMode;
     const struct RastaConfigTLS *tls_config;
@@ -46,14 +47,14 @@ struct RastaUDPState{
  * @param state the udp socket's tls_state buffer
  * @param tls_config TLS options
  */
-void udp_init(struct RastaUDPState * state,const struct RastaConfigTLS *tls_config);
+void udp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config);
 
 /**
  * Binds a given file descriptor to the given @p port
  * @param state tls_state with the file descriptor which will be bound to to the @p port.
  * @param port the port the socket will listen on
  */
-void udp_bind(struct RastaUDPState * state, uint16_t port);
+void udp_bind(struct RastaState *state, uint16_t port);
 
 /**
  * Binds a given file descriptor to the given @p port at the network interface with IPv4 address @p ip
@@ -61,7 +62,7 @@ void udp_bind(struct RastaUDPState * state, uint16_t port);
  * @param port the port the socket will listen on
  * @param ip the IPv4 address of the network interface the socket will listen on.
  */
-void udp_bind_device(struct RastaUDPState * state, uint16_t port, char * ip);
+void udp_bind_device(struct RastaState *state, uint16_t port, char *ip);
 
 /**
  * Receive data on the given @p file descriptor and store it in the given buffer.
@@ -72,7 +73,7 @@ void udp_bind_device(struct RastaUDPState * state, uint16_t port, char * ip);
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-size_t udp_receive(struct RastaUDPState * state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
+size_t udp_receive(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 
 /**
  * Sends a message via the given file descriptor to a @p host and @p port
@@ -82,7 +83,7 @@ size_t udp_receive(struct RastaUDPState * state, unsigned char* received_message
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void udp_send(struct RastaUDPState * state, unsigned char* message, size_t message_len, char* host, uint16_t port);
+void udp_send(struct RastaState *state, unsigned char *message, size_t message_len, char *host, uint16_t port);
 
 /**
  * Sends a message via the given file descriptor to a host, the address information is stored in the
@@ -93,13 +94,13 @@ void udp_send(struct RastaUDPState * state, unsigned char* message, size_t messa
  * @param receiver address information about the receiver of the message
  * @param tls_config TLS configuration to use
  */
-void udp_send_sockaddr(struct RastaUDPState * state, unsigned char* message, size_t message_len, struct sockaddr_in receiver);
+void udp_send_sockaddr(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in receiver);
 
 /**
  * Closes the udp socket
  * @param state the tls_state which identifies the socket
  */
-void udp_close(struct RastaUDPState * state);
+void udp_close(struct RastaState *state);
 
 void sockaddr_to_host(struct sockaddr_in sockaddr, char* host);
 

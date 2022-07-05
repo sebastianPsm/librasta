@@ -12,6 +12,7 @@ extern "C" {  // only need to export C interface if
 #include "logging.h"
 #include "config.h"
 #include "fifo.h"
+#include "udp.h"
 
 /**
  * maximum size of messages in the defer queue in bytes
@@ -209,11 +210,11 @@ void rasta_red_wait_for_close(rasta_redundancy_channel * channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-void rasta_red_add_transport_channel(rasta_redundancy_channel * channel,
+void rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
 #ifdef USE_TCP
-    int fd,
+                                     struct RastaState state,
 #endif
-    char * ip, uint16_t port);
+                                     char *ip, uint16_t port);
 
 /**
  * frees memory for the @p channel

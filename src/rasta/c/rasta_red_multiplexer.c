@@ -316,7 +316,7 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
 int channel_accept_event(void *carry_data) {
 #ifdef USE_TCP
     struct receive_event_data *data = carry_data;
-    int connected_fd = tcp_accept(data->h->mux.tcp_socket_fds[data->channel_index]);
+    int connected_fd = tcp_accept(data->h->mux.tcp_socket_fds[data->channel_index].file_descriptor);
 
     fd_event* evt = rmalloc(sizeof(fd_event));
     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
@@ -429,7 +429,7 @@ redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaCo
 
 #ifdef USE_UDP
     // init and bind udp sockets + threads array
-    mux.udp_socket_states = rmalloc(mux.port_count * sizeof(struct RastaUDPState));
+    mux.udp_socket_states = rmalloc(mux.port_count * sizeof(struct RastaState));
 #endif
 #ifdef USE_TCP
     // mux.has_ips_configured = 0;
@@ -467,8 +467,8 @@ redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaCo
 #endif
 #ifdef USE_TCP
             // init socket
-            mux.tcp_socket_fds[j] = tcp_init();
-            tcp_bind_device(mux.tcp_socket_fds[j],
+            mux.tcp_socket_fds[j].file_descriptor = tcp_init();
+            tcp_bind_device(mux.tcp_socket_fds[j].file_descriptor,
                             (uint16_t)mux.config.redundancy.connections.data[j].port,
                             mux.config.redundancy.connections.data[j].ip);
 #endif
@@ -534,8 +534,8 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
 #endif
 #ifdef USE_TCP
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
-        mux.tcp_socket_fds[i] = tcp_init();
-        tcp_bind_device(mux.tcp_socket_fds[i], mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
+        mux.tcp_socket_fds[i].file_descriptor = tcp_init();
+        tcp_bind_device(mux.tcp_socket_fds[i].file_descriptor, mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
 #endif
     }
 
@@ -585,7 +585,7 @@ void redundancy_mux_close(redundancy_mux *mux)
 #endif
 #ifdef USE_TCP
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing tcp socket %d/%d", i + 1, mux->port_count);
-        tcp_close(mux->tcp_socket_fds[i]);
+        tcp_close(mux->tcp_socket_fds[i].file_descriptor);
 #endif
     }
 
@@ -754,7 +754,7 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id)
 
 void redundancy_mux_listen_channels(redundancy_mux *mux) {
     for (unsigned i = 0; i < mux->port_count; ++i) {
-        tcp_listen(mux->tcp_socket_fds[i]);
+        tcp_listen(mux->tcp_socket_fds[i].file_descriptor);
     }
 }
 
