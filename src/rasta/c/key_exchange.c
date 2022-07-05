@@ -154,7 +154,7 @@ int kex_prepare_credential_response(struct key_exchange_state *kex_state,
 
 int kex_recover_credential(struct key_exchange_state *kex_state,
                                              const uint8_t *received_server_response,
-                                             const size_t length;
+                                             const size_t length,
                                              const uint32_t my_id, const uint32_t remote_id,
                                              const uint32_t initial_sequence_number, struct logger_t *logger) {
     (void) kex_state;

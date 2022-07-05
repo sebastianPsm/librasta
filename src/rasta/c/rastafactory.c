@@ -5,6 +5,7 @@
 #include "key_exchange.h"
 #include "rastafactory.h"
 #include "rmemory.h"
+#include <stdlib.h>
 
 
 /*
