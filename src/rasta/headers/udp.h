@@ -22,7 +22,7 @@ extern "C" {  // only need to export C interface if
 #define IPV4_STR_LEN 16
 
 #ifdef ENABLE_TLS
-enum RastaTLSConnectionState{
+enum RastaTLSConnectionState {
     RASTA_TLS_CONNECTION_READY,
     RASTA_TLS_CONNECTION_ESTABLISHED,
     RASTA_TLS_CONNECTION_CLOSED
@@ -44,14 +44,14 @@ struct RastaState
 };
 
 
-#if defined(ENABLE_TLS) && defined(ENABLE_UDP)
+#if defined(ENABLE_TLS) && defined(ENABLE_TCP)
 struct RastaConnectionState
 {
     int file_descriptor;
     WOLFSSL* ssl;
     enum RastaTLSConnectionState tls_state;
-#endif
 };
+#endif
 
 /**
  * This function will initialise an udp socket and return its file descriptor, which is used to reference it in later
