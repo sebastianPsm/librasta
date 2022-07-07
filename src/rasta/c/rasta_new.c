@@ -14,7 +14,6 @@
 #include <event_system.h>
 #include <rastahandle.h>
 #include <rasta_lib.h>
-#include <slcurses.h>
 #include <stdbool.h>
 
 /**

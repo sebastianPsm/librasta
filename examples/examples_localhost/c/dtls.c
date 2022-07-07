@@ -183,7 +183,7 @@ struct connect_event_data {
     fd_event * schwarzenegger;
 };
 
-int connect_on_stdin(void* carry_data) {
+int connect_timed(void* carry_data) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF);
 
@@ -249,7 +249,7 @@ int main(int argc, char *argv[]){
     termination_event.carry_data = &rc->h;
     termination_event.fd = STDIN_FILENO;
 
-    connect_on_stdin_event.callback = connect_on_stdin;
+    connect_on_stdin_event.callback = connect_timed;
     connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
     connect_on_stdin_event.fd = STDIN_FILENO;
 
