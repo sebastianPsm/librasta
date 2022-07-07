@@ -1,7 +1,6 @@
 //
 // Created by erica on 04/07/2022.
 //
-#pragma once
 #ifndef RASTA_KEY_EXCHANGE_H
 #define RASTA_KEY_EXCHANGE_H
 #include <stdint.h>

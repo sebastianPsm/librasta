@@ -2,8 +2,6 @@
 // Created by tobia on 29.11.2017.
 //
 
-#include "key_exchange.h"
-#include "config.h"
 #include "rastafactory.h"
 #include "rmemory.h"
 #include <stdlib.h>
