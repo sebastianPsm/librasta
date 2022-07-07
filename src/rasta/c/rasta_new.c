@@ -612,6 +612,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
 int event_connection_expired(void* carry_data);
 void init_connection_timeout_event(timed_event* ev, struct timed_event_data* carry_data,
         struct rasta_connection* connection, struct rasta_handle* h) {
+    memset(ev, 0, sizeof(timed_event));
     ev->callback = event_connection_expired;
     ev->carry_data = carry_data;
     ev->interval = h->heartbeat_handle->config.t_max * 1000000lu;
@@ -623,6 +624,7 @@ void init_connection_timeout_event(timed_event* ev, struct timed_event_data* car
 int heartbeat_send_event(void* carry_data);
 void init_send_heartbeat_event(timed_event* ev, struct timed_event_data* carry_data,
         struct rasta_connection* connection, struct rasta_handle* h) {
+    memset(ev, 0, sizeof(timed_event));
     ev->callback = heartbeat_send_event;
     ev->carry_data = carry_data;
     ev->interval = h->heartbeat_handle->config.t_h * 1000000lu;
@@ -669,6 +671,17 @@ void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con
         con->linkedlist_prev = NULL;
         con->linkedlist_next = NULL;
     }
+}
+
+void remove_connection_from_list(struct rasta_handle* h, struct rasta_connection* con) {
+    if (h->first_con == con) {
+        h->first_con = con->linkedlist_next;
+    }
+    if (h->last_con == con) {
+        h->last_con = con->linkedlist_prev;
+    }
+    if (con->linkedlist_prev) con->linkedlist_prev->linkedlist_next = con->linkedlist_next;
+    if (con->linkedlist_next) con->linkedlist_next->linkedlist_prev = con->linkedlist_prev;
 }
 
 /*
@@ -1873,6 +1886,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     redundancy_mux_add_channel(&h->mux,id,channels);
 
     struct rasta_connection new_con;
+    memset(&new_con, 0, sizeof(struct rasta_connection));
     sr_init_connection(&new_con,id,h->config.values.general,h->config.values.sending,&h->logger, RASTA_ROLE_CLIENT);
     redundancy_mux_set_config_id(&h->mux, id);
 
@@ -1997,20 +2011,20 @@ rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rast
 
 /**
  * cleanup a connection after a disconnect
- * @param h 
- * @param remote_id 
+ * @param h
+ * @param remote_id
  */
 void sr_disconnect(struct rasta_handle* h, struct rasta_connection* con) {
     logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA connection", "disconnected %X", con->remote_id);
 
     sr_close_connection(con, h, &h->mux, h->config.values.general, RASTA_DISC_REASON_USERREQUEST, 0);
 
-    remove_timed_event(&con->timeout_event);
-    remove_timed_event(&con->send_heartbeat_event);
-
+    remove_timed_event(h->ev_sys,&con->timeout_event);
+    remove_timed_event(h->ev_sys,&con->send_heartbeat_event);
+    remove_connection_from_list(h,con);
 #ifdef ENABLE_OPAQUE
     if(h->config.values.kex.rekeying_interval_ms) {
-        remove_timed_event(&con->rekeying_event);
+        remove_timed_event(h->ev_sys,&con->rekeying_event);
     }
 #endif
 
@@ -2082,7 +2096,7 @@ void log_main_loop_state(struct rasta_handle* h, event_system* ev_sys, const cha
 }
 
 #define IO_INTERVAL 10000
-void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_handshake) {
+void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_timeout_ms) {
     timed_event send_event, receive_event;
     timed_event channel_timeout_event;
     struct timeout_event_data timeout_data;
@@ -2090,12 +2104,14 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
     h->ev_sys = event_system;
 
     // busy wait like io events TODO: move to a position so it is only called when needed
+    memset(&send_event, 0, sizeof(timed_event));
     send_event.callback = data_send_event;
     send_event.interval = IO_INTERVAL * 1000lu;
     send_event.carry_data = h->send_handle;
     enable_timed_event(&send_event);
     add_timed_event(event_system, &send_event);
 
+    memset(&receive_event, 0, sizeof(timed_event));
     receive_event.callback = on_readable_event;
     receive_event.interval = IO_INTERVAL * 1000lu;
     receive_event.carry_data = h->receive_handle;
@@ -2103,12 +2119,17 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
     add_timed_event(event_system, &receive_event);
 
     // Handshake timeout event
-    init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux, !wait_for_handshake);
+    init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux, channel_timeout_ms);
+    if (channel_timeout_ms) {
+        enable_timed_event(&channel_timeout_event);
+    }
+    add_timed_event(event_system, &channel_timeout_event);
 
     int channel_event_data_len = h->mux.port_count;
     fd_event channel_events[channel_event_data_len];
     struct receive_event_data channel_event_data[channel_event_data_len];
     for (int i = 0; i < channel_event_data_len; i++) {
+        memset(&channel_events[i], 0, sizeof(fd_event));
         channel_events[i].enabled = 1;
         channel_events[i].callback = channel_receive_event;
         channel_events[i].carry_data = channel_event_data + i;
@@ -2123,4 +2144,12 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int wait_for_h
 
     log_main_loop_state(h, event_system, "event-system started");
     event_system_start(event_system);
+
+    // Remove all stack entries from linked lists...
+    remove_timed_event(event_system, &send_event);
+    remove_timed_event(event_system, &receive_event);
+    remove_timed_event(event_system, &channel_timeout_event);
+    for (int i = 0; i < channel_event_data_len; i++) {
+        remove_fd_event(event_system, &channel_events[i]);
+    }
 }

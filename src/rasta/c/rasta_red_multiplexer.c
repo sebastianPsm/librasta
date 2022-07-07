@@ -345,14 +345,13 @@ int channel_timeout_event(void * carry_data) {
  * @param t_data the carry data for the first event
  * @param mux the redundancy multiplexer that will contain the channels
  */
-void init_channel_timeout_events(timed_event * event, struct timeout_event_data * t_data, struct redundancy_mux * mux, int open) {
+void init_channel_timeout_events(timed_event * event, struct timeout_event_data * t_data, struct redundancy_mux * mux, int channel_timeout_ms) {
+    memset(event, 0, sizeof(timed_event));
     t_data->mux = mux;
     t_data->event = event;
     event->callback = channel_timeout_event;
     event->carry_data = t_data;
-    event->enabled = !open;
-    // Where does this constant come from?
-    event->interval = 2 * 1000000000lu;
+    event->interval = channel_timeout_ms * 1000000lu;
 }
 
 /* ----------------------------*/
