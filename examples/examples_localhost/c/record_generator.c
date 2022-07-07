@@ -55,7 +55,11 @@ int main(int argc, char* argv[]){
   }
 
   if(!input_passphrase){
-      fgets(passphrase_buffer,MAX_PASSWORD_LENGTH,stdin);
+      if(!fgets(passphrase_buffer,MAX_PASSWORD_LENGTH,stdin)){
+          fprintf(stderr, "Could not read passphrase from stdin!\n");
+          return 1;
+      }
+
       // remove trailing newline character if present, so that the PSK is interoperable with the config file
       passphrase_buffer[strcspn(passphrase_buffer,"\n")] = '\0';
       input_passphrase = passphrase_buffer;

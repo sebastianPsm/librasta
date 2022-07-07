@@ -776,23 +776,27 @@ void config_setstd(struct RastaConfig * cfg) {
 
     entr = config_get(cfg, "RASTA_CA_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.ca_cert_path[PATH_MAX-1]=0;
+        memcpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_CERT_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.cert_path[PATH_MAX-1] = 0;
+        memcpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_KEY_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.key_path[PATH_MAX-1]=0;
+        memcpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
     }
 
 #ifdef ENABLE_TLS
     entr = config_get(cfg, "RASTA_TLS_HOSTNAME");
-    if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
+    if(entr.type== DICTIONARY_STRING){
+        cfg->values.tls.tls_hostname[MAX_DOMAIN_LENGTH-1] = 0;
+        memcpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
     }
 #endif
 
@@ -815,7 +819,8 @@ void config_setstd(struct RastaConfig * cfg) {
     entr = config_get(cfg, "RASTA_KEX_PSK");
 
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
+        cfg->values.kex.psk[KEX_PSK_MAX-1]=0;
+        memcpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
     }
 
     entr = config_get(cfg, "RASTA_KEX_REKEYING_INTERVAL_MS");

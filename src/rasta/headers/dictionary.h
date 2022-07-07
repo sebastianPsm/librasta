@@ -9,6 +9,7 @@
 extern "C" {  // only need to export C interface if
               // used by C++ source code
 #endif
+#include <limits.h>
 
 /**
  * Defines the type of an entry
@@ -20,7 +21,7 @@ typedef enum {
     DICTIONARY_ERROR
 }dic_entry_type;
 
-#define MAX_DICTIONARY_STRING_LENGTH_BYTES 1024
+#define MAX_DICTIONARY_STRING_LENGTH_BYTES PATH_MAX
 
 /**
  * represents a string

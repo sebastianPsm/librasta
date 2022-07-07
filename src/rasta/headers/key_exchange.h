@@ -10,9 +10,8 @@
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>
-#include <stdbool.h>
-
 #endif
+#include <stdbool.h>
 
 enum KEY_EXCHANGE_MODE{
     KEY_EXCHANGE_MODE_NONE,
