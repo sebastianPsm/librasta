@@ -3,6 +3,7 @@
 
 #ifdef ENABLE_TLS
 
+// #define DEBUG_WOLFSSL
 void wolfssl_initialize_if_necessary()
 {
     static bool wolfssl_initialized = false;
@@ -10,6 +11,11 @@ void wolfssl_initialize_if_necessary()
     {
         wolfssl_initialized = true;
         wolfSSL_Init();
+        // if (wolfSSL_Debugging_ON() != 0)
+        // {
+        //     fprintf(stderr, "Debugging could not be enabled.\n");
+        //     exit(1);
+        // }
     }
 }
 
@@ -106,7 +112,7 @@ void wolfssl_start_dtls_client(struct RastaState *state, const struct RastaConfi
 
 void wolfssl_start_tls_client(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 {
-    wolfssl_start_client(state, tls_config, wolfTLSv1_2_client_method());
+    wolfssl_start_client(state, tls_config, wolfTLSv1_3_client_method());
 }
 
 void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method)
@@ -133,6 +139,7 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
         fprintf(stderr, "Error loading CA certificate file %s\n", tls_config->ca_cert_path);
         exit(1);
     }
+#ifdef USE_UDP
     state->ssl = wolfSSL_new(state->ctx);
     if (!state->ssl)
     {
@@ -152,24 +159,11 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
 
     wolfSSL_set_fd(state->ssl, state->file_descriptor);
     state->tls_state = RASTA_TLS_CONNECTION_READY;
+#endif
 }
 
-void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver, WOLFSSL_SET_PEER_METHOD peer_method, WOLFSSL_ASYNC_METHOD *wolfssl_async_method)
+void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len)
 {
-    if (state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED)
-    {
-        peer_method(state->ssl, receiver, sizeof(*receiver));
-
-        if (wolfSSL_connect(state->ssl) != SSL_SUCCESS)
-        {
-            int connect_error = wolfSSL_get_error(state->ssl, 0);
-            fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
-            exit(1);
-        }
-        state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
-        set_socket_async(state, wolfssl_async_method);
-    }
-
     if (wolfSSL_write(state->ssl, message, (int)message_len) != (int)message_len)
     {
         fprintf(stderr, "WolfSSL write error!");
@@ -179,13 +173,26 @@ void wolfssl_send(struct RastaState *state, unsigned char *message, size_t messa
 
 void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
 {
-    wolfssl_send(state, message, message_len, receiver, wolfSSL_dtls_set_peer, wolfSSL_dtls_set_using_nonblock);
+    if (state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED)
+    {
+        wolfSSL_dtls_set_peer(state->ssl, receiver, sizeof(*receiver));
+
+        if (wolfSSL_connect(state->ssl) != SSL_SUCCESS)
+        {
+            int connect_error = wolfSSL_get_error(state->ssl, 0);
+            fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
+            exit(1);
+        }
+        state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
+        set_socket_async(state, wolfSSL_dtls_set_using_nonblock);
+    }
+
+    wolfssl_send(state, message, message_len);
 }
 
-// TODO whats the right callback for tls
-void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
+void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len)
 {
-    wolfssl_send(state, message, message_len, receiver, wolfSSL_dtls_set_peer, wolfSSL_dtls_set_using_nonblock);
+    wolfssl_send(state, message, message_len);
 }
 
 void wolfssl_cleanup(struct RastaState *state)

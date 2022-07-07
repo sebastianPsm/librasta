@@ -23,9 +23,9 @@ void wolfssl_start_tls_client(struct RastaState *state, const struct RastaConfig
 
 void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method);
 
-void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver, WOLFSSL_SET_PEER_METHOD peer_method, WOLFSSL_ASYNC_METHOD *wolfssl_async_method);
+void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len);
 
-void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver);
+void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len);
 
 void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver);
 

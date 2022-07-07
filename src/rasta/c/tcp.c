@@ -45,38 +45,29 @@ size_t wolfssl_receive_tls(struct RastaState *state, unsigned char *received_mes
 
     get_client_addr_from_socket(state, sender, &sender_size);
 
-    if (state->tls_state == RASTA_TLS_CONNECTION_READY)
+    // read as many bytes as available at this time
+    do
     {
-        wolfSSL_accept(state->ssl);
-        // wolfSSL_accept(state->file_descriptor);
-        state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
-        return 0;
-    }
-    if (state->tls_state == RASTA_TLS_CONNECTION_ESTABLISHED)
-    {
-        // read as many bytes as available at this time
-        do
-        {
-            receive_len = wolfSSL_read(state->ssl, received_message, (int)max_buffer_len);
-            if (receive_len < 0)
-            {
-                break;
-            }
-            received_message += receive_len;
-            max_buffer_len -= receive_len;
-            received_total += receive_len;
-        } while (receive_len > 0 && max_buffer_len);
-
+        receive_len = wolfSSL_read(state->ssl, received_message, (int)max_buffer_len);
         if (receive_len < 0)
         {
-            int readErr = wolfSSL_get_error(state->ssl, 0);
-            if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
-            {
-                fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
-                exit(1);
-            }
+            break;
+        }
+        received_message += receive_len;
+        max_buffer_len -= receive_len;
+        received_total += receive_len;
+    } while (receive_len > 0 && max_buffer_len);
+
+    if (receive_len < 0)
+    {
+        int readErr = wolfSSL_get_error(state->ssl, 0);
+        if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
+        {
+            fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
+            exit(1);
         }
     }
+
     return received_total;
 }
 
@@ -149,7 +140,8 @@ void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectio
 
 #ifdef ENABLE_TLS
     /* Create a WOLFSSL object */
-    if ((connectionState->ssl = wolfSSL_new(state->ctx)) == NULL) {
+    if ((connectionState->ssl = wolfSSL_new(state->ctx)) == NULL)
+    {
         fprintf(stderr, "ERROR: failed to create WOLFSSL object\n");
         exit(1);
     }
@@ -189,6 +181,39 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
         perror("tcp connection failed");
         exit(1);
     }
+
+#ifdef ENABLE_TLS
+    state->ssl = wolfSSL_new(state->ctx);
+    if (!state->ssl)
+    {
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(state->ssl, 0));
+        fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
+        exit(1);
+    }
+
+    if (state->tls_config->tls_hostname[0])
+    {
+        wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+    }
+    else
+    {
+        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.");
+    }
+    /* Attach wolfSSL to the socket */
+    if (wolfSSL_set_fd(state->ssl, state->file_descriptor) != WOLFSSL_SUCCESS)
+    {
+        fprintf(stderr, "ERROR: Failed to set the file descriptor\n");
+        exit(1);
+    }
+
+    /* Connect to wolfSSL on the server side */
+    if (wolfSSL_connect(state->ssl) != WOLFSSL_SUCCESS)
+    {
+        // int readErr = wolfSSL_get_error(state->ssl, 0);
+        fprintf(stderr, "ERROR: failed to connect to wolfSSL\n");
+        exit(1);
+    }
+#endif
 }
 
 size_t tcp_receive(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
@@ -206,7 +231,8 @@ size_t tcp_receive(struct RastaState *state, unsigned char *received_message, si
             exit(1);
         }
 
-        return (size_t)recv_len; }
+        return (size_t)recv_len;
+    }
 #ifdef ENABLE_TLS
     else
     {
@@ -218,15 +244,15 @@ size_t tcp_receive(struct RastaState *state, unsigned char *received_message, si
 
 void tcp_send(struct RastaState *state, unsigned char *message, size_t message_len, char *host, uint16_t port)
 {
-    struct sockaddr_in receiver = host_port_to_sockaddr(host, port);
     if (state->activeMode == TLS_MODE_DISABLED)
     {
-        bsd_send(state->file_descriptor, message, message_len, host, port); }
+        bsd_send(state->file_descriptor, message, message_len, host, port);
+    }
 #ifdef ENABLE_TLS
 #ifdef USE_TCP
     else
     {
-        wolfssl_send_tls(state, message, message_len, &receiver);
+        wolfssl_send_tls(state, message, message_len);
     }
 #endif
 #endif
@@ -235,10 +261,10 @@ void tcp_send(struct RastaState *state, unsigned char *message, size_t message_l
 void tcp_close(struct RastaState *state)
 {
 #ifdef ENABLE_TLS
-        if (state->activeMode != TLS_MODE_DISABLED)
-        {
-            wolfssl_cleanup(state);
-        }
+    if (state->activeMode != TLS_MODE_DISABLED)
+    {
+        wolfssl_cleanup(state);
+    }
 #endif
 
     bsd_close(state->file_descriptor);
