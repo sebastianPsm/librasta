@@ -3,16 +3,25 @@
 //
 #ifndef RASTA_KEY_EXCHANGE_H
 #define RASTA_KEY_EXCHANGE_H
+
+#ifdef __cplusplus
+extern "C" {  // only need to export C interface if
+              // used by C++ source code
+#endif
+
 #include <stdint.h>
 
 #include "logging.h"
 
 #ifdef ENABLE_OPAQUE
+
 #include <opaque.h>
+
 #endif
+
 #include <stdbool.h>
 
-enum KEY_EXCHANGE_MODE{
+enum KEY_EXCHANGE_MODE {
     KEY_EXCHANGE_MODE_NONE,
 #ifdef ENABLE_OPAQUE
     KEY_EXCHANGE_MODE_OPAQUE
@@ -66,7 +75,7 @@ struct key_exchange_state {
 
 #define KEX_PSK_MAX 128
 
-struct RastaConfigKex{
+struct RastaConfigKex {
     /**
      * Active Kex mode for the server
      */
@@ -97,6 +106,7 @@ struct RastaConfigKex{
  */
 int key_exchange_prepare_from_psk(struct key_exchange_state *kex_state, const char *psk, uint32_t my_id,
                                   uint32_t remote_id, struct logger_t *logger);
+
 /**
  * [CLIENT] Prepare an opaque client request to be sent to the server.
  * @param kex_state Key exchange state
@@ -106,6 +116,7 @@ int key_exchange_prepare_from_psk(struct key_exchange_state *kex_state, const ch
  */
 int key_exchange_prepare_credential_request(struct key_exchange_state *kex_state, const char *psk,
                                             struct logger_t *logger);
+
 /**
  * [SERVER] process client connection request and prepare connection response in kex_state
  * @param kex_state Key exchange state
@@ -122,6 +133,7 @@ int kex_prepare_credential_response(struct key_exchange_state *kex_state,
                                     size_t received_client_public_length,
                                     uint32_t my_id, uint32_t remote_id,
                                     uint32_t initial_sequence_number, struct logger_t *logger);
+
 /**
  * [CLIENT] recover credential from key exchange
  * @param kex_state Key exchange state
@@ -137,6 +149,7 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
                            size_t received_server_response_len,
                            uint32_t my_id, uint32_t remote_id,
                            uint32_t initial_sequence_number, struct logger_t *logger);
+
 /**
  * [SERVER] Compares authentication token received from client with authentication token received from server
  * @param kex_state Kex exchange state
@@ -145,6 +158,11 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
  * @param logger
  * @return 0 on success
  */
-int kex_authenticate_user(const struct key_exchange_state *kex_state,const uint8_t *received_user_auth, size_t received_user_auth_length, struct logger_t *logger);
+int kex_authenticate_user(const struct key_exchange_state *kex_state, const uint8_t *received_user_auth,
+                          size_t received_user_auth_length, struct logger_t *logger);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //RASTA_KEY_EXCHANGE_H
