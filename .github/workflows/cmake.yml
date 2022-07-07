@@ -27,7 +27,7 @@ jobs:
       run: sudo apt-get install libwolfssl-dev
 
     - name: Install libopaque dependencies
-      run: sudo apt-get install libsodium-dev pkgconf gdb
+      run: sudo apt-get install libsodium-dev pkgconf
 
 #    - name: Install gRPC
 #      run: |
@@ -59,7 +59,7 @@ jobs:
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
 
     - name: Key Exchange Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_key.sh
+      run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
 
     - name: Configure CMake without extensions
       # force full rebuild

@@ -2,11 +2,8 @@
 # needs to be run from top-level directory, i.e. ./examples/example_scripts/example_kex.sh
 cd build/examples || exit 1
 
-echo "run r" > commands
-echo "bt" >> commands
-
 # let server generate certificates
-gdb --command=commands ../dtls_example_local &
+../dtls_example_local r >/dev/null 2>&1 &
 SERVER_INITIAL_PID=$!
 
 sleep 5
