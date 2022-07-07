@@ -24,7 +24,7 @@ make_directory(${CMAKE_BINARY_DIR}/include)
 
 ExternalProject_Add(libopaque
 GIT_REPOSITORY https://github.com/WorldofJARcraft/libopaque.git
-GIT_TAG f8ff3efa330f08ba33e40cbcaee0648302d97cc3
+GIT_TAG f88f3efa330f08ba33e40cbcaee0648302d97cc3
 GIT_SUBMODULES "" # update all submodules
 SOURCE_DIR        "${CMAKE_BINARY_DIR}/opaque-src"
 BUILD_IN_SOURCE TRUE
