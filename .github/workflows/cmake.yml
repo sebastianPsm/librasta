@@ -27,7 +27,7 @@ jobs:
       run: sudo apt-get install libwolfssl-dev
 
     - name: Install libopaque dependencies
-      run: sudo apt-get install libsodium-dev pkgconf
+      run: sudo apt-get install libsodium-dev pkgconf strace
 
 #    - name: Install gRPC
 #      run: |
@@ -51,9 +51,9 @@ jobs:
 
     - name: Test
       run: cd ${{github.workspace}}/build && ctest .
-
-    - name: Local Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+#
+#    - name: Local Test
+#      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
 
     - name: DTLS Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh

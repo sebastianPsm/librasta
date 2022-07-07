@@ -3,16 +3,16 @@
 cd build/examples || exit 1
 
 # let server generate certificates
-../dtls_example_local r &
+strace ../dtls_example_local r &
 SERVER_INITIAL_PID=$!
 
 sleep 5
 kill $SERVER_INITIAL_PID
 
-../dtls_example_local s1 > client.log 2>&1 &
+strace ../dtls_example_local s1 > client.log 2>&1 &
 CLIENT_PID=$!
 
-../dtls_example_local r > server.log 2>&1
+strace ../dtls_example_local r > server.log 2>&1
 SERVER_EXIT_CODE=$?
 
 # give client chance to terminate
