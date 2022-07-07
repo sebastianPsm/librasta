@@ -23,27 +23,9 @@ void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 }
 
 #ifdef ENABLE_TLS
-void get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *client_addr, socklen_t *addr_len)
-{
-    ssize_t received_bytes;
-    char buffer;
-    // wait for the first byte of the DTLS Client hello to identify the prospective client
-    received_bytes = recvfrom(state->file_descriptor, &buffer, sizeof(buffer), MSG_PEEK,
-                              (struct sockaddr *)client_addr, addr_len);
-
-    if (received_bytes < 0)
-    {
-        perror("No clients waiting to connect");
-        exit(1);
-    }
-}
-
-size_t wolfssl_receive_tls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+size_t wolfssl_receive_tls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len)
 {
     int receive_len, received_total = 0;
-    socklen_t sender_size = sizeof(*sender);
-
-    get_client_addr_from_socket(state, sender, &sender_size);
 
     // read as many bytes as available at this time
     do
@@ -236,7 +218,8 @@ size_t tcp_receive(struct RastaState *state, unsigned char *received_message, si
 #ifdef ENABLE_TLS
     else
     {
-        return wolfssl_receive_tls(state, received_message, max_buffer_len, sender);
+        (void)sender;
+        return wolfssl_receive_tls(state, received_message, max_buffer_len);
     }
 #endif
     return 0;
