@@ -3,7 +3,7 @@
 cd build/examples || exit 1
 
 # let server generate certificates
-../dtls_example_local r >/dev/null 2>&1 &
+../dtls_example_local r &
 SERVER_INITIAL_PID=$!
 
 sleep 5
