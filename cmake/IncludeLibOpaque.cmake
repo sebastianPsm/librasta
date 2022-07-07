@@ -18,20 +18,20 @@ if(BUILD_TESTING)
 endif()
 
 # directories for output library and headers
-make_directory(${CMAKE_CURRENT_BINARY_DIR}/lib)
-make_directory(${CMAKE_CURRENT_BINARY_DIR}/bin)
-make_directory(${CMAKE_CURRENT_BINARY_DIR}/include)
+make_directory(${CMAKE_BINARY_DIR}/lib)
+make_directory(${CMAKE_BINARY_DIR}/bin)
+make_directory(${CMAKE_BINARY_DIR}/include)
 
 ExternalProject_Add(libopaque
 GIT_REPOSITORY https://github.com/stef/libopaque.git
 GIT_TAG 0eba83f8054e4ba1c387714d265914abb8aecd68
 GIT_SUBMODULES "" # update all submodules
-SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/opaque-src"
+SOURCE_DIR        "${CMAKE_BINARY_DIR}/opaque-src"
 BUILD_IN_SOURCE TRUE
 CONFIGURE_COMMAND ""
-BUILD_COMMAND ${GNU_MAKE_PATH} -C ${CMAKE_CURRENT_BINARY_DIR}/opaque-src/src PREFIX=${CMAKE_CURRENT_BINARY_DIR} ${opaque_CFLAGS}
-INSTALL_COMMAND ${GNU_MAKE_PATH} -C ${CMAKE_CURRENT_BINARY_DIR}/opaque-src/src install PREFIX=${CMAKE_CURRENT_BINARY_DIR}
+BUILD_COMMAND ${GNU_MAKE_PATH} -C ${CMAKE_BINARY_DIR}/opaque-src/src PREFIX=${CMAKE_BINARY_DIR} ${opaque_CFLAGS}
+INSTALL_COMMAND ${GNU_MAKE_PATH} -C ${CMAKE_BINARY_DIR}/opaque-src/src install PREFIX=${CMAKE_BINARY_DIR}
 BUILD_BYPRODUCTS ${opaque_LIBRARY}
 )
 
-message("Installed libopaque headers to ${CMAKE_CURRENT_BINARY_DIR}/include, libraries to ${CMAKE_CURRENT_BINARY_DIR}/lib, binaries to ${CMAKE_CURRENT_BINARY_DIR}/bin")
+message("Installed libopaque headers to ${CMAKE_BINARY_DIR}/include, libraries to ${CMAKE_BINARY_DIR}/lib, binaries to ${CMAKE_BINARY_DIR}/bin")

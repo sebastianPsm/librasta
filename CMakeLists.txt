@@ -56,13 +56,13 @@ if(ENABLE_RASTA_OPAQUE)
     configure_file(cmake/IncludeLibOpaque.cmake libopaque-timeout/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -DGNU_MAKE_PATH=${GNU_MAKE_PATH} -G "${CMAKE_GENERATOR}" .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libopaque-timeout)
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libopaque-timeout)
     if (result)
         message(FATAL_ERROR "CMake step for libopaque failed: ${result}")
     endif ()
     execute_process(COMMAND ${CMAKE_COMMAND} --build .
             RESULT_VARIABLE result
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libopaque-timeout)
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libopaque-timeout)
     if (result)
         message(FATAL_ERROR "Build step for libopaque failed: ${result}")
     endif ()
