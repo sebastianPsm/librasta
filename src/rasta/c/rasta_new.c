@@ -1510,7 +1510,7 @@ void sr_listen(struct rasta_handle *h) {
         channel_events[i].carry_data = channel_event_data + i;
 
         channel_events[i].callback = channel_accept_event;
-        channel_events[i].fd = h->mux.tcp_socket_fds[i].file_descriptor;
+        channel_events[i].fd = h->mux.tcp_socket_connection_states[i].file_descriptor;
         channel_events[i].enabled = 1;
 
         channel_event_data[i].channel_index = i;
@@ -1532,7 +1532,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     #ifdef USE_TCP
     for (unsigned int i = 0; i < h->mux.port_count; ++i)
     {
-        tcp_connect(&h->mux.tcp_socket_fds[i], channels[i].ip, (uint16_t)channels[i].port);
+        tcp_connect(&h->mux.tcp_socket_connection_states[i], channels[i].ip, (uint16_t)channels[i].port);
 
         fd_event* evt = rmalloc(sizeof(fd_event));
         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
@@ -1544,7 +1544,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
         evt->enabled = 1;
         evt->carry_data = channel_event_data;
         evt->callback = channel_receive_event;
-        evt->fd = h->mux.tcp_socket_fds[i].file_descriptor;
+        evt->fd = h->mux.tcp_socket_connection_states[i].file_descriptor;
 
         add_fd_event(h->ev_sys, evt, EV_READABLE);
     }

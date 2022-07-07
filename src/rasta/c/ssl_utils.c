@@ -1,6 +1,8 @@
 #include "ssl_utils.h"
 #include <stdbool.h>
 
+#ifdef ENABLE_TLS
+
 void wolfssl_initialize_if_necessary()
 {
     static bool wolfssl_initialized = false;
@@ -152,11 +154,11 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
     state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
-void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
+void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver, WOLFSSL_SET_PEER_METHOD peer_method, WOLFSSL_ASYNC_METHOD *wolfssl_async_method)
 {
     if (state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED)
     {
-        wolfSSL_dtls_set_peer(state->ssl, receiver, sizeof(*receiver));
+        peer_method(state->ssl, receiver, sizeof(*receiver));
 
         if (wolfSSL_connect(state->ssl) != SSL_SUCCESS)
         {
@@ -165,7 +167,7 @@ void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t 
             exit(1);
         }
         state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
-        set_dtls_async(state);
+        set_socket_async(state, wolfssl_async_method);
     }
 
     if (wolfSSL_write(state->ssl, message, (int)message_len) != (int)message_len)
@@ -173,6 +175,17 @@ void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t 
         fprintf(stderr, "WolfSSL write error!");
         exit(1);
     }
+}
+
+void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
+{
+    wolfssl_send(state, message, message_len, receiver, wolfSSL_dtls_set_peer, wolfSSL_dtls_set_using_nonblock);
+}
+
+// TODO whats the right callback for tls
+void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver)
+{
+    wolfssl_send(state, message, message_len, receiver, wolfSSL_dtls_set_peer, wolfSSL_dtls_set_using_nonblock);
 }
 
 void wolfssl_cleanup(struct RastaState *state)
@@ -183,3 +196,5 @@ void wolfssl_cleanup(struct RastaState *state)
     wolfSSL_free(state->ssl);
     wolfSSL_CTX_free(state->ctx);
 }
+
+#endif

@@ -15,23 +15,6 @@
 #include "ssl_utils.h"
 #endif
 
-struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port)
-{
-    struct sockaddr_in receiver;
-
-    rmemset((char *)&receiver, 0, sizeof(receiver));
-    receiver.sin_family = AF_INET;
-    receiver.sin_port = htons(port);
-
-    // convert host string to usable format
-    if (inet_aton(host, &receiver.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
-    return receiver;
-}
-
 #define MAX_WARNING_LENGTH_BYTES 128
 
 static void handle_port_unavailable(const uint16_t port)
@@ -47,6 +30,7 @@ static void handle_port_unavailable(const uint16_t port)
 
 #ifdef ENABLE_TLS
 
+#ifdef ENABLE_UDP
 static void
 get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *client_addr, socklen_t *addr_len)
 {
@@ -62,7 +46,9 @@ get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *
         exit(1);
     }
 }
+#endif
 
+#ifdef ENABLE_UDP
 static void wolfssl_accept(struct RastaState *state)
 {
     struct sockaddr_in client_addr;
@@ -89,10 +75,12 @@ static void wolfssl_accept(struct RastaState *state)
     }
     set_dtls_async(state);
 }
+#endif
 
 static size_t wolfssl_receive_dtls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
     int receive_len, received_total = 0;
+#ifdef ENABLE_UDP
     socklen_t sender_size = sizeof(*sender);
 
     get_client_addr_from_socket(state, sender, &sender_size);
@@ -128,6 +116,13 @@ static size_t wolfssl_receive_dtls(struct RastaState *state, unsigned char *rece
             }
         }
     }
+#else
+    (void)(receive_len);
+    (void)(state);
+    (void)(received_message);
+    (void)(max_buffer_len);
+    (void)(sender);
+#endif
     return received_total;
 }
 
@@ -271,7 +266,7 @@ void udp_send(struct RastaState *state, unsigned char *message, size_t message_l
 #ifdef ENABLE_TLS
     else
     {
-        wolfssl_send_tls(state, message, message_len, &receiver);
+        wolfssl_send_dtls(state, message, message_len, &receiver);
     }
 #endif
 }
@@ -292,7 +287,7 @@ void udp_send_sockaddr(struct RastaState *state, unsigned char *message, size_t 
     {
         const struct RastaConfigTLS *tls_config = state->tls_config;
         state->tls_config = tls_config;
-        wolfssl_send_tls(state, message, message_len, &receiver);
+        wolfssl_send_dtls(state, message, message_len, &receiver);
     }
 #endif
 }

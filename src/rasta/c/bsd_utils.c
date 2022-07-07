@@ -153,3 +153,20 @@ void sockaddr_to_host(struct sockaddr_in sockaddr, char *host)
 {
     inet_ntop(AF_INET, &(sockaddr.sin_addr), host, IPV4_STR_LEN);
 }
+
+struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port)
+{
+    struct sockaddr_in receiver;
+
+    rmemset((char *)&receiver, 0, sizeof(receiver));
+    receiver.sin_family = AF_INET;
+    receiver.sin_port = htons(port);
+
+    // convert host string to usable format
+    if (inet_aton(host, &receiver.sin_addr) == 0)
+    {
+        fprintf(stderr, "inet_aton() failed\n");
+        exit(1);
+    }
+    return receiver;
+}

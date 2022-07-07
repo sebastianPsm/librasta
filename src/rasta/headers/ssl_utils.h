@@ -3,6 +3,7 @@
 #include "udp.h"
 
 typedef void(WOLFSSL_ASYNC_METHOD)(WOLFSSL *, int);
+typedef int(WOLFSSL_SET_PEER_METHOD)(WOLFSSL *, void *, unsigned int);
 
 void wolfssl_initialize_if_necessary();
 
@@ -22,6 +23,12 @@ void wolfssl_start_tls_client(struct RastaState *state, const struct RastaConfig
 
 void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method);
 
+void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver, WOLFSSL_SET_PEER_METHOD peer_method, WOLFSSL_ASYNC_METHOD *wolfssl_async_method);
+
+void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver);
+
 void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver);
+
+size_t wolfssl_receive_tls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 
 void wolfssl_cleanup(struct RastaState *state);

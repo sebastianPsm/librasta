@@ -68,3 +68,5 @@ void bsd_close(int file_descriptor);
 int getSO_ERROR(int fd);
 
 void sockaddr_to_host(struct sockaddr_in sockaddr, char *host);
+
+struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port);

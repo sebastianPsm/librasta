@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
+// TODO: move RastaState/RastaConnectionState
 #include "tcp.h"
 #include "rmemory.h"
 #include "bsd_utils.h"
@@ -22,8 +23,7 @@ void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 }
 
 #ifdef ENABLE_TLS
-static void
-get_client_addr_from_socket(const struct RastaConnectionState *state, struct sockaddr_in *client_addr, socklen_t *addr_len)
+void get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *client_addr, socklen_t *addr_len)
 {
     ssize_t received_bytes;
     char buffer;
@@ -37,7 +37,8 @@ get_client_addr_from_socket(const struct RastaConnectionState *state, struct soc
         exit(1);
     }
 }
-static size_t wolfssl_receive_tls(struct RastaConnectionState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+
+size_t wolfssl_receive_tls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
     int receive_len, received_total = 0;
     socklen_t sender_size = sizeof(*sender);
@@ -46,7 +47,8 @@ static size_t wolfssl_receive_tls(struct RastaConnectionState *state, unsigned c
 
     if (state->tls_state == RASTA_TLS_CONNECTION_READY)
     {
-        wolfSSL_accept(state->file_descriptor);
+        wolfSSL_accept(state->ssl);
+        // wolfSSL_accept(state->file_descriptor);
         state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
         return 0;
     }
@@ -155,16 +157,16 @@ void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectio
     /* Attach wolfSSL to the socket */
     wolfSSL_set_fd(connectionState->ssl, socket);
 
-    if (wolfSSL_accept(ssl) != SSL_SUCCESS)
+    if (wolfSSL_accept(connectionState->ssl) != SSL_SUCCESS)
     {
 
-        int e = wolfSSL_get_error(ssl, 0);
+        int e = wolfSSL_get_error(connectionState->ssl, 0);
 
         fprintf(stderr, "WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
     }
 #endif
 
-    return connectionState->file_descriptor = socket;
+    connectionState->file_descriptor = socket;
 }
 
 void tcp_connect(struct RastaState *state, char *host, uint16_t port)
@@ -221,10 +223,12 @@ void tcp_send(struct RastaState *state, unsigned char *message, size_t message_l
     {
         bsd_send(state->file_descriptor, message, message_len, host, port); }
 #ifdef ENABLE_TLS
+#ifdef USE_TCP
     else
     {
         wolfssl_send_tls(state, message, message_len, &receiver);
     }
+#endif
 #endif
 }
 
