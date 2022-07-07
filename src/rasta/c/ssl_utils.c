@@ -11,11 +11,6 @@ void wolfssl_initialize_if_necessary()
     {
         wolfssl_initialized = true;
         wolfSSL_Init();
-        // if (wolfSSL_Debugging_ON() != 0)
-        // {
-        //     fprintf(stderr, "Debugging could not be enabled.\n");
-        //     exit(1);
-        // }
     }
 }
 

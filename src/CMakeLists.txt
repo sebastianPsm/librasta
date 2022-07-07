@@ -142,7 +142,6 @@ target_compile_options(${target}
 
 if(ENABLE_RASTA_TLS)
     target_compile_definitions(rasta PRIVATE ENABLE_TLS)
-    #  PUBLIC DEBUG_WOLFSSL
 endif(ENABLE_RASTA_TLS)
 
 # Installation for library
