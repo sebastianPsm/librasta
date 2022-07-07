@@ -143,7 +143,7 @@ if(ENABLE_RASTA_OPAQUE)
     target_compile_definitions(rasta PUBLIC ENABLE_OPAQUE)
     # libopaque headers
     target_include_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/include)
-    target_link_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/../lib)
+    target_link_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/lib)
 
     check_linker_flag(C "-static" LINK_STATIC_SUPPORTED)
     check_linker_flag(C "-dynamic" LINK_DYNAMIC_SUPPORTED)
