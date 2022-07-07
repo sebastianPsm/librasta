@@ -36,3 +36,5 @@ BUILD_BYPRODUCTS ${opaque_LIBRARY}
 
 include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/include)
 link_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/lib)
+
+message("Installed libopaque headers to ${CMAKE_CURRENT_BINARY_DIR}/include, libraries to ${CMAKE_CURRENT_BINARY_DIR}/lib, binaries to ${CMAKE_CURRENT_BINARY_DIR}/bin")
