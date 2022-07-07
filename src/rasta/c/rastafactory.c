@@ -210,7 +210,7 @@ struct RastaPacket createKexResponse(uint32_t receiver_id, uint32_t sender_id, u
 }
 #else
 struct RastaPacket createKexExchangeResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
-                                            uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, const size_t client_kex_request_length, const uint32_t initial_sequence_number, struct key_exchange_state *kex_state,  struct RastaConfigKex *kex_config, const struct RastaConfigKex *kex_config, struct logger_t *logger) {
+                                            uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, const size_t client_kex_request_length, const uint32_t initial_sequence_number, struct key_exchange_state *kex_state, const struct RastaConfigKex *kex_config, const struct RastaConfigKex *kex_config, struct logger_t *logger) {
     (void) receiver_id;
     (void) sender_id;
     (void) sequence_number;
