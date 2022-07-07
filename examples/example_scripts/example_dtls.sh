@@ -2,7 +2,8 @@
 # needs to be run from top-level directory, i.e. ./examples/example_scripts/example_kex.sh
 cd build/examples || exit 1
 
-echo -e "run r\nbt" > commands
+echo "run r" > commands
+echo "bt" >> commands
 
 # let server generate certificates
 gdb --command=commands ../dtls_example_local &
