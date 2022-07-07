@@ -10,6 +10,8 @@
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>
+#include <stdbool.h>
+
 #endif
 
 enum KEY_EXCHANGE_MODE{
@@ -62,6 +64,29 @@ struct key_exchange_state {
     enum KEY_EXCHANGE_MODE active_mode;
 };
 
+#define CONFIGURATION_FILE_USER_RECORD_HEADER "URV1"
+
+#define KEX_PSK_MAX 128
+
+struct RastaConfigKex{
+    /**
+     * Active Kex mode for the server
+     */
+    enum KEY_EXCHANGE_MODE mode;
+    /**
+     * Configured PSK, might be nullptr if mode is KEX_EXCHANGE_MODE_NONE
+     */
+    char psk[KEX_PSK_MAX];
+    /**
+     * Rekeying interval or 0 when no rekeying is disabled
+     */
+    uint64_t rekeying_interval_ms;
+
+#ifdef ENABLE_OPAQUE
+    bool has_psk_record;
+    uint8_t psk_record[OPAQUE_USER_RECORD_LEN];
+#endif
+};
 
 /**
  * [SERVER] Prepare a user record from a PSK and the RaSTA IDs

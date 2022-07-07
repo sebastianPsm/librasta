@@ -42,6 +42,11 @@ if(ENABLE_RASTA_OPAQUE)
         set_target_properties(kex_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(kex_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
         target_link_libraries(kex_example_local rasta sodium)
+
+        add_executable(record_generator examples_localhost/c/record_generator.c)
+        set_target_properties(record_generator PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+        target_compile_options(record_generator PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+        target_link_libraries(record_generator rasta sodium)
 endif()
 
 # Copy RaSTA configs to build directory

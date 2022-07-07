@@ -974,7 +974,8 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
                                              receivedPacket.sequence_number, current_ts(),
                                              receivedPacket.timestamp, h->hashing_context, h->handle->config.values.kex.psk,
                                              (uint8_t *) receivedPacket.data.bytes, receivedPacket.data.length, connection->sn_i,
-                                             &connection->kex_state, h->logger);
+                                             &connection->kex_state,
+                                             &h->handle->config.values.kex, h->logger);
 
                 redundancy_mux_send(h->mux, response);
 

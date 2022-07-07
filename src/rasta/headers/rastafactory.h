@@ -119,11 +119,12 @@ struct RastaPacket createKexRequest(uint32_t receiver_id, uint32_t sender_id, ui
  * @param client_kex_request_length
  * @param initial_sequence_number
  * @param kex_state
+ * @param kex_config
  * @param logger
  * @return
  */
 struct RastaPacket createKexResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
-                                     uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, size_t client_kex_request_length, uint32_t initial_sequence_number, struct key_exchange_state *kex_state, struct logger_t *logger);
+                                     uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, size_t client_kex_request_length, uint32_t initial_sequence_number, struct key_exchange_state *kex_state, const struct RastaConfigKex *kex_config, struct logger_t *logger);
 /**
  * Non-standard. Creates a Key Exchange Authentication PDU.
  * @param receiver_id

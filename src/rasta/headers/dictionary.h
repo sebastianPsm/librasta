@@ -20,11 +20,13 @@ typedef enum {
     DICTIONARY_ERROR
 }dic_entry_type;
 
+#define MAX_DICTIONARY_STRING_LENGTH_BYTES 1024
+
 /**
  * represents a string
  */
 struct DictionaryString {
-    char c[256];
+    char c[MAX_DICTIONARY_STRING_LENGTH_BYTES];
 };
 
 /**
