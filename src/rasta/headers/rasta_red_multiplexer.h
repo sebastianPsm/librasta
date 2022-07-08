@@ -160,7 +160,7 @@ extern "C"
      * @param config configuration for redundancy channels
      * @return an initialized redundancy layer multiplexer
      */
-    redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaConfigInfo config);
+    void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, struct RastaConfigInfo config);
     /**
      * starts the redundancy layer multiplexer and opens (if specified) all redundancy channels
      * @param mux the multiplexer that will be opened

@@ -442,91 +442,88 @@ void init_channel_timeout_events(timed_event *event, struct timeout_event_data *
 
 /* ----------------------------*/
 
-redundancy_mux redundancy_mux_init_config(struct logger_t logger, struct RastaConfigInfo config)
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, struct RastaConfigInfo config)
 {
-    redundancy_mux mux;
+    mux->logger = logger;
+    // mux->listen_ports = listen_ports;
+    mux->port_count = config.redundancy.connections.count;
+    mux->config = config;
+    mux->notifications_running = 0;
 
-    mux.logger = logger;
-    // mux.listen_ports = listen_ports;
-    mux.port_count = config.redundancy.connections.count;
-    mux.config = config;
-    mux.notifications_running = 0;
-
-    logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", mux.port_count);
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", mux->port_count);
 
 #ifdef USE_UDP
     // init and bind udp sockets + threads array
-    mux.udp_socket_states = rmalloc(mux.port_count * sizeof(struct RastaState));
+    mux->udp_socket_states = rmalloc(mux->port_count * sizeof(struct RastaState));
 #endif
 #ifdef USE_TCP
-    // mux.has_ips_configured = 0;
-    // mux.is_server = -1;
+    // mux->has_ips_configured = 0;
+    // mux->is_server = -1;
     // init and bind tcp sockets + threads array
-    mux.rasta_tcp_socket_states = rmalloc(mux.port_count * sizeof(struct RastaState));
-    // mux.tcp_connections = rmalloc(mux.port_count * sizeof(int));
+    mux->rasta_tcp_socket_states = rmalloc(mux->port_count * sizeof(struct RastaState));
+    // mux->tcp_connections = rmalloc(mux->port_count * sizeof(int));
 #endif
 
     // allocate memory for connected channels
-    mux.connected_channels = rmalloc(sizeof(rasta_redundancy_channel));
-    mux.channel_count = 0;
+    mux->connected_channels = rmalloc(sizeof(rasta_redundancy_channel));
+    mux->channel_count = 0;
 
     // init notifications to NULL
-    mux.notifications.on_diagnostics_available = NULL;
-    mux.notifications.on_new_connection = NULL;
+    mux->notifications.on_diagnostics_available = NULL;
+    mux->notifications.on_new_connection = NULL;
 
     // load ports that are specified in config
-    if (mux.config.redundancy.connections.count > 0)
+    if (mux->config.redundancy.connections.count > 0)
     {
-        logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading listen from config");
+        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading listen from config");
 
-        mux.listen_ports = rmalloc(sizeof(uint16_t) * mux.config.redundancy.connections.count);
-        for (unsigned int j = 0; j < mux.config.redundancy.connections.count; ++j)
+        mux->listen_ports = rmalloc(sizeof(uint16_t) * mux->config.redundancy.connections.count);
+        for (unsigned int j = 0; j < mux->config.redundancy.connections.count; ++j)
         {
 
 #ifdef USE_UDP
             // init socket
-            udp_init(&mux.udp_socket_states[j], &config.tls);
+            udp_init(&mux->udp_socket_states[j], &mux->config.tls);
 
             // bind socket to device and port
-            udp_bind_device(&mux.udp_socket_states[j],
-                            (uint16_t)mux.config.redundancy.connections.data[j].port,
-                            mux.config.redundancy.connections.data[j].ip);
+            udp_bind_device(&mux->udp_socket_states[j],
+                            (uint16_t)mux->config.redundancy.connections.data[j].port,
+                            mux->config.redundancy.connections.data[j].ip);
 #endif
 #ifdef USE_TCP
             // init socket
-            tcp_init(&mux.rasta_tcp_socket_states[j], &config.tls);
-            tcp_bind_device(&mux.rasta_tcp_socket_states[j],
-                            (uint16_t)mux.config.redundancy.connections.data[j].port,
-                            mux.config.redundancy.connections.data[j].ip);
+            tcp_init(&mux->rasta_tcp_socket_states[j], &mux->config.tls);
+            tcp_bind_device(&mux->rasta_tcp_socket_states[j],
+                            (uint16_t)mux->config.redundancy.connections.data[j].port,
+                            mux->config.redundancy.connections.data[j].ip);
 #endif
-            mux.listen_ports[j] = (uint16_t)mux.config.redundancy.connections.data[j].port;
+            mux->listen_ports[j] = (uint16_t)mux->config.redundancy.connections.data[j].port;
         }
     }
 
     // init hashing context
-    mux.sr_hashing_context.hash_length = config.sending.md4_type;
-    mux.sr_hashing_context.algorithm = config.sending.sr_hash_algorithm;
+    mux->sr_hashing_context.hash_length = config.sending.md4_type;
+    mux->sr_hashing_context.algorithm = config.sending.sr_hash_algorithm;
 
-    if (mux.sr_hashing_context.algorithm == RASTA_ALGO_MD4)
+    if (mux->sr_hashing_context.algorithm == RASTA_ALGO_MD4)
     {
         // use MD4 IV as key
-        rasta_md4_set_key(&mux.sr_hashing_context, config.sending.md4_a, config.sending.md4_b,
+        rasta_md4_set_key(&mux->sr_hashing_context, config.sending.md4_a, config.sending.md4_b,
                           config.sending.md4_c, config.sending.md4_d);
     }
     else
     {
         // use the sr_hash_key
-        allocateRastaByteArray(&mux.sr_hashing_context.key, sizeof(unsigned int));
+        allocateRastaByteArray(&mux->sr_hashing_context.key, sizeof(unsigned int));
 
         // convert unsigned in to byte array
-        mux.sr_hashing_context.key.bytes[0] = (config.sending.sr_hash_key >> 24) & 0xFF;
-        mux.sr_hashing_context.key.bytes[1] = (config.sending.sr_hash_key >> 16) & 0xFF;
-        mux.sr_hashing_context.key.bytes[2] = (config.sending.sr_hash_key >> 8) & 0xFF;
-        mux.sr_hashing_context.key.bytes[3] = (config.sending.sr_hash_key) & 0xFF;
+        mux->sr_hashing_context.key.bytes[0] = (config.sending.sr_hash_key >> 24) & 0xFF;
+        mux->sr_hashing_context.key.bytes[1] = (config.sending.sr_hash_key >> 16) & 0xFF;
+        mux->sr_hashing_context.key.bytes[2] = (config.sending.sr_hash_key >> 8) & 0xFF;
+        mux->sr_hashing_context.key.bytes[3] = (config.sending.sr_hash_key) & 0xFF;
     }
 
-    logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
-    return mux;
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
 }
 
 redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)

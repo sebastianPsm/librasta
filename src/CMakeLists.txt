@@ -141,7 +141,7 @@ target_compile_options(${target}
 )
 
 if(ENABLE_RASTA_TLS)
-    target_compile_definitions(rasta PRIVATE ENABLE_TLS)
+    target_compile_definitions(rasta PUBLIC ENABLE_TLS)
 endif(ENABLE_RASTA_TLS)
 
 # Installation for library
