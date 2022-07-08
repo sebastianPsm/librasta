@@ -194,11 +194,10 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
     len = udp_receive(&mux->udp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #endif
 #ifdef USE_TCP
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd ...", channel_id);
     // wait for pdu
-    len = tcp_receive(ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #ifdef ENABLE_TLS
     len = tcp_receive(ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd ...", channel_id);
 #else
     len = tcp_receive(&mux->rasta_tcp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #endif
