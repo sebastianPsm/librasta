@@ -44,8 +44,11 @@ void tcp_bind_device(struct RastaState *state, uint16_t port, char * ip);
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
+#ifdef ENABLE_TLS
+size_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
+#else
 size_t tcp_receive(struct RastaState *state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
-
+#endif
 /**
  * Await a connection on a @p file_descriptor.
  * When a connection arrives, open a new socket to communicate with it,
@@ -70,7 +73,11 @@ void tcp_connect(struct RastaState *state,  char *host, uint16_t port);
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
+#ifdef ENABLE_TLS
+void tcp_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
+#else
 void tcp_send(struct RastaState *state, unsigned char* message, size_t message_len, char* host, uint16_t port);
+#endif
 
 /**
  * Closes the tcp socket

@@ -23,6 +23,9 @@ extern "C"
         fd_event *event;
         struct rasta_handle *h;
         int channel_index;
+#ifdef ENABLE_TLS
+        WOLFSSL *ssl;
+#endif
     };
 
     /**

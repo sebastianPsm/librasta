@@ -17,6 +17,18 @@ void wolfssl_initialize_if_necessary()
 void wolfssl_start_dtls_server(struct RastaState *state, const struct RastaConfigTLS *tls_config)
 {
     wolfssl_start_server(state, tls_config, wolfDTLSv1_2_server_method());
+
+    // TODO: remove duplicated code in tcp_accept
+    state->ssl = wolfSSL_new(state->ctx);
+    if (!state->ssl)
+    {
+        fprintf(stderr, "Error allocating WolfSSL object.\n");
+        exit(1);
+    }
+    wolfSSL_set_fd(state->ssl, state->file_descriptor);
+
+    // wolfSSL_set_fd(state->ssl, state->file_descriptor);
+    state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
 void wolfssl_start_tls_server(struct RastaState *state, const struct RastaConfigTLS *tls_config)
@@ -62,15 +74,6 @@ void wolfssl_start_server(struct RastaState *state, const struct RastaConfigTLS 
         printf("Error loading server private key file %s as PEM file: %d.\n", tls_config->key_path, err);
         exit(1);
     }
-    state->ssl = wolfSSL_new(state->ctx);
-    if (!state->ssl)
-    {
-        fprintf(stderr, "Error allocating WolfSSL object.\n");
-        exit(1);
-    }
-
-    wolfSSL_set_fd(state->ssl, state->file_descriptor);
-    state->tls_state = RASTA_TLS_CONNECTION_READY;
     state->tls_config = tls_config;
 }
 
@@ -157,9 +160,9 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
 #endif
 }
 
-void wolfssl_send(struct RastaState *state, unsigned char *message, size_t message_len)
+void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len)
 {
-    if (wolfSSL_write(state->ssl, message, (int)message_len) != (int)message_len)
+    if (wolfSSL_write(ssl, message, (int)message_len) != (int)message_len)
     {
         fprintf(stderr, "WolfSSL write error!");
         exit(1);
@@ -182,12 +185,42 @@ void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t 
         set_socket_async(state, wolfSSL_dtls_set_using_nonblock);
     }
 
-    wolfssl_send(state, message, message_len);
+    wolfssl_send(state->ssl, message, message_len);
 }
 
-void wolfssl_send_tls(struct RastaState *state, unsigned char *message, size_t message_len)
+void wolfssl_send_tls(WOLFSSL *ssl, unsigned char *message, size_t message_len)
 {
-    wolfssl_send(state, message, message_len);
+    wolfssl_send(ssl, message, message_len);
+}
+
+size_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len)
+{
+    int receive_len, received_total = 0;
+
+    // read as many bytes as available at this time
+    do
+    {
+        receive_len = wolfSSL_read(ssl, received_message, (int)max_buffer_len);
+        if (receive_len < 0)
+        {
+            break;
+        }
+        received_message += receive_len;
+        max_buffer_len -= receive_len;
+        received_total += receive_len;
+    } while (receive_len > 0 && max_buffer_len);
+
+    if (receive_len < 0)
+    {
+        int readErr = wolfSSL_get_error(ssl, 0);
+        if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
+        {
+            fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
+            exit(1);
+        }
+    }
+
+    return received_total;
 }
 
 void wolfssl_cleanup(struct RastaState *state)

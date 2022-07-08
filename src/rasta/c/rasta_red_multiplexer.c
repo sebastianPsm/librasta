@@ -173,7 +173,11 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
  * @param mux the multiplexer that is used
  * @param channel_id the index of the udp socket
  */
+#ifdef ENABLE_TLS
+void receive_packet(redundancy_mux *mux, int channel_id, WOLFSSL *ssl)
+#else
 void receive_packet(redundancy_mux *mux, int channel_id, int fd)
+#endif
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
 
@@ -190,9 +194,14 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
     len = udp_receive(&mux->udp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 #endif
 #ifdef USE_TCP
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, fd);
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd ...", channel_id);
     // wait for pdu
+    len = tcp_receive(ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+#ifdef ENABLE_TLS
+    len = tcp_receive(ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+#else
     len = tcp_receive(&mux->rasta_tcp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+#endif
 #endif
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", channel_id);
@@ -256,7 +265,11 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].ip_address = connected_channel.ip_address;
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].port = connected_channel.port;
 #ifdef USE_TCP
+#ifdef ENABLE_TLS
+                    mux->connected_channels[i].connected_channels[channel.connected_channel_count].ssl = ssl;
+#else
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].fd = fd;
+#endif
 #endif
                     mux->connected_channels[i].connected_channel_count++;
 
@@ -291,7 +304,11 @@ void receive_packet(redundancy_mux *mux, int channel_id, int fd)
     new_channel.connected_channels[0].ip_address = connected_channel.ip_address;
     new_channel.connected_channels[0].port = connected_channel.port;
 #ifdef USE_TCP
+#ifdef ENABLE_TLS
+    new_channel.connected_channels[0].ssl = ssl;
+#else
     new_channel.connected_channels[0].fd = fd;
+#endif
 #endif
     new_channel.connected_channel_count++;
 
@@ -322,6 +339,10 @@ int channel_accept_event(void *carry_data) {
 
     fd_event* evt = rmalloc(sizeof(fd_event));
     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
+
+#ifdef ENABLE_TLS
+    data->ssl = connection.ssl;
+#endif
     *channel_event_data = *data;
     channel_event_data->event = evt;
     memset(evt, 0, sizeof(fd_event));
@@ -384,7 +405,11 @@ int channel_receive_event(void *carry_data)
 
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
                data->channel_index);
+#ifdef ENABLE_TLS
+    receive_packet(&h->mux, data->channel_index, data->ssl);
+#else
     receive_packet(&h->mux, data->channel_index, data->event->fd);
+#endif
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
                data->channel_index);
     return 0;
@@ -681,7 +706,11 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 #endif
 #ifdef USE_TCP
         // send using the connection specific tcp socket
+#ifdef ENABLE_TLS
+        tcp_send(channel.ssl, data_to_send.bytes, data_to_send.length);
+#else
         tcp_send(&mux->rasta_tcp_socket_states[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+#endif
 #endif
 
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "Sent data over channel %s:%d",

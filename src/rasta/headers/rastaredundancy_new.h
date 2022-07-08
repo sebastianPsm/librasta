@@ -78,6 +78,9 @@ typedef struct {
      * filedescriptor
      * */
     int fd;
+#ifdef ENABLE_TLS
+    WOLFSSL *ssl;
+#endif
 #endif
 
     /**
