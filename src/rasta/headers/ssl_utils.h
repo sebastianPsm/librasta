@@ -15,6 +15,8 @@ void wolfssl_start_server(struct RastaState *state, const struct RastaConfigTLS 
 
 void set_dtls_async(struct RastaState *state);
 
+void set_tls_async(int fd, WOLFSSL *ssl);
+
 void set_socket_async(struct RastaState *state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method);
 
 void wolfssl_start_dtls_client(struct RastaState *state, const struct RastaConfigTLS *tls_config);

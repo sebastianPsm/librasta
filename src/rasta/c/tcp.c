@@ -111,6 +111,8 @@ void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectio
                 wolfSSL_get_error(connectionState->ssl, ret));
         exit(1);
     }
+
+    set_tls_async(socket, connectionState->ssl);
 #endif
 
     connectionState->file_descriptor = socket;
@@ -168,6 +170,8 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
         fprintf(stderr, "ERROR: failed to connect to wolfSSL\n");
         exit(1);
     }
+
+    set_tls_async(state->file_descriptor, state->ssl);
 #endif
 }
 #ifdef ENABLE_TLS
