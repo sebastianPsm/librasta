@@ -82,6 +82,27 @@ void set_dtls_async(struct RastaState *state)
     set_socket_async(state, wolfSSL_dtls_set_using_nonblock);
 }
 
+void set_tls_async(int fd, WOLFSSL *ssl)
+{
+    int socket_flags;
+    // set socket to non-blocking so we can select() on it
+    socket_flags = fcntl(fd, F_GETFL, 0);
+    if (socket_flags < 0)
+    {
+        perror("Error getting socket flags");
+        exit(1);
+    }
+    socket_flags |= O_NONBLOCK;
+    if (fcntl(fd, F_SETFL, socket_flags) != 0)
+    {
+        perror("Error setting socket non-blocking");
+        exit(1);
+    }
+
+    // inform wolfssl to expect read / write errors due to non-blocking nature of socket
+    wolfSSL_set_using_nonblock(ssl, 1);
+}
+
 void set_socket_async(struct RastaState *state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method)
 {
     int socket_flags;
