@@ -42,12 +42,14 @@ static void handle_tls_mode(struct RastaState *state)
 #ifdef ENABLE_TLS
     case TLS_MODE_TLS_1_3:
         state->activeMode = TLS_MODE_TLS_1_3;
-        if (is_tls_server(tls_config))
+        if (is_tls_server(tls_config) && false)
         {
+            fprintf(stderr, "Starting wolfssl in server mode");
             wolfssl_start_tls_server(state, tls_config);
         }
         else
         {
+            fprintf(stderr, "Starting wolfssl in client mode");
             wolfssl_start_tls_client(state, tls_config);
         }
         break;
@@ -150,7 +152,8 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 
     if (state->tls_config->tls_hostname[0])
     {
-        wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+        fprintf(stderr, "TLS Hostname is : %s.\n", state->tls_config->tls_hostname);
+        // wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
     }
     else
     {
@@ -166,8 +169,8 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
     /* Connect to wolfSSL on the server side */
     if (wolfSSL_connect(state->ssl) != WOLFSSL_SUCCESS)
     {
-        // int readErr = wolfSSL_get_error(state->ssl, 0);
-        fprintf(stderr, "ERROR: failed to connect to wolfSSL\n");
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(state->ssl, 0));
+        fprintf(stderr, "ERROR: failed to connect to wolfSSL %s.\n", error_str);
         exit(1);
     }
 

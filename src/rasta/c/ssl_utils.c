@@ -158,6 +158,23 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
         fprintf(stderr, "Error loading CA certificate file %s\n", tls_config->ca_cert_path);
         exit(1);
     }
+
+    /* Load client certificates */
+    if (wolfSSL_CTX_use_certificate_file(state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
+        SSL_SUCCESS)
+    {
+        printf("Error loading client certificate file %s as PEM file.\n", tls_config->cert_path);
+        exit(1);
+    }
+    /* Load client Keys */
+    int err;
+    if ((err = wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
+                                               SSL_FILETYPE_PEM)) != SSL_SUCCESS)
+    {
+        printf("Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
+        exit(1);
+    }
+
 #ifdef USE_UDP
     state->ssl = wolfSSL_new(state->ctx);
     if (!state->ssl)
