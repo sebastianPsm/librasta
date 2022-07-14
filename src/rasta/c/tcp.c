@@ -22,7 +22,7 @@ void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
     state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-static void handle_tls_mode_server(struct RastaState *state)
+static void apply_tls_mode(struct RastaState *state)
 {
     const struct RastaConfigTLS *tls_config = state->tls_config;
     switch (tls_config->mode)
@@ -33,7 +33,6 @@ static void handle_tls_mode_server(struct RastaState *state)
 #ifdef ENABLE_TLS
     case TLS_MODE_TLS_1_3:
         state->activeMode = TLS_MODE_TLS_1_3;
-        wolfssl_start_tls_server(state, tls_config);
         break;
 #endif
     default:
@@ -42,24 +41,26 @@ static void handle_tls_mode_server(struct RastaState *state)
     }
 }
 
+static void handle_tls_mode_server(struct RastaState *state)
+{
+    apply_tls_mode(state);
+#ifdef ENABLE_TLS
+    if (state->activeMode == TLS_MODE_TLS_1_3)
+    {
+        wolfssl_start_tls_server(state, state->tls_config);
+    }
+#endif
+}
+
 static void handle_tls_mode_client(struct RastaState *state)
 {
-    const struct RastaConfigTLS *tls_config = state->tls_config;
-    switch (tls_config->mode)
-    {
-    case TLS_MODE_DISABLED:
-        state->activeMode = TLS_MODE_DISABLED;
-        break;
+    apply_tls_mode(state);
 #ifdef ENABLE_TLS
-    case TLS_MODE_TLS_1_3:
-        state->activeMode = TLS_MODE_TLS_1_3;
-        wolfssl_start_tls_client(state, tls_config);
-        break;
-#endif
-    default:
-        fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
-        exit(1);
+    if (state->activeMode == TLS_MODE_TLS_1_3)
+    {
+        wolfssl_start_tls_client(state, state->tls_config);
     }
+#endif
 }
 
 void tcp_bind(struct RastaState *state, uint16_t port)
