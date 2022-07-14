@@ -173,7 +173,7 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
         if ((err = wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
                                                 SSL_FILETYPE_PEM)) != SSL_SUCCESS)
         {
-            printf("Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
+            fprintf(stderr,"Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
             exit(1);
         }
     }
@@ -189,7 +189,11 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
 
     if (state->tls_config->tls_hostname[0])
     {
-        wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+        const int ret = wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+        if(ret != SSL_SUCCESS){
+            fprintf(stderr,"Could not add domain name check for domain %s: %d",state->tls_config->tls_hostname,ret);
+            exit(1);
+        }
     }
     else
     {
