@@ -32,6 +32,21 @@ int bsd_create_socket(int family, int type, int protocol_type)
         exit(1);
     }
 
+    // Make socket reusable
+    if (setsockopt(file_desc, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+    {
+        perror("setsockopt(SO_REUSEADDR) failed");
+        exit(1);
+    }
+
+#ifdef SO_REUSEPORT
+    if (setsockopt(file_desc, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0)
+    {
+        perror("setsockopt(SO_REUSEPORT) failed");
+        exit(1);
+    }
+#endif
+
     return file_desc;
 }
 
@@ -45,12 +60,6 @@ void bsd_bind_port(int file_descriptor, uint16_t port)
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    int yes = 1;
-    if (setsockopt(file_descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-        perror("setsockopt");
-        exit(1);
-    }
 
     // bind socket to port
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(local)) < 0)
@@ -71,12 +80,6 @@ void bsd_bind_device(int file_descriptor, uint16_t port, char *ip)
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
     local.sin_addr.s_addr = inet_addr(ip);
-
-    int yes = 1;
-    if (setsockopt(file_descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-        perror("setsockopt");
-        exit(1);
-    }
 
     // bind socket to port
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) < 0)
