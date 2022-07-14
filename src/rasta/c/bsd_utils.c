@@ -45,6 +45,13 @@ void bsd_bind_port(int file_descriptor, uint16_t port)
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    int yes = 1;
+    if (setsockopt(file_descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        perror("setsockopt");
+        exit(1);
+    }
+
     // bind socket to port
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(local)) < 0)
     {
@@ -64,6 +71,12 @@ void bsd_bind_device(int file_descriptor, uint16_t port, char *ip)
     local.sin_family = AF_INET;
     local.sin_port = htons(port);
     local.sin_addr.s_addr = inet_addr(ip);
+
+    int yes = 1;
+    if (setsockopt(file_descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+        perror("setsockopt");
+        exit(1);
+    }
 
     // bind socket to port
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) < 0)

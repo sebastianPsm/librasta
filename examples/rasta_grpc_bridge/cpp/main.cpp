@@ -289,7 +289,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     return result == &accept_connection;
 }
 
-void rastaServer(std::string config,
+void processRasta(std::string config,
                 std::string rasta_channel1_address, std::string rasta_channel1_port,
                 std::string rasta_channel2_address, std::string rasta_channel2_port,
                 std::string rasta_local_id, std::string rasta_target_id, std::string grpc_server_address) {
@@ -318,7 +318,8 @@ void rastaServer(std::string config,
         struct rasta_connection new_connection;
         if (rasta_accept(rc, &channel, &new_connection)) {
             static std::mutex s_fifo_mutex;
-            static fifo_t *s_message_fifo = fifo_init(128);
+            static fifo_t *s_message_fifo;
+            s_message_fifo = fifo_init(128);
 
             // Data event
             s_data_fd = eventfd(0, 0);
@@ -433,12 +434,12 @@ void rastaServer(std::string config,
 
             fifo_destroy(s_message_fifo);
         }
+
+        // Give the remote the chance to notice the possibly broken connection
+        sleep(1);
     }
 
     sr_cleanup(&rc->h);
-
-    // Give the remote the chance to notice the possibly broken connection
-    usleep(1000);
 }
 
 int main(int argc, char * argv[]) {
@@ -490,7 +491,7 @@ int main(int argc, char * argv[]) {
         server->Wait();
     } else {
         // Establish a RaSTA connection and connect to gRPC server afterwards
-        rastaServer(config,
+        processRasta(config,
                         rasta_channel1_address, rasta_channel1_port,
                         rasta_channel2_address, rasta_channel2_port,
                         rasta_local_id, rasta_target_id, grpc_server_address);

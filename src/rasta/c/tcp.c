@@ -22,16 +22,7 @@ void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
     state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-#ifdef ENABLE_TLS
-
-static bool is_tls_server(const struct RastaConfigTLS *tls_config)
-{
-    // client has CA cert but no server certs
-    return tls_config->cert_path[0] && tls_config->key_path[0];
-}
-#endif
-
-static void handle_tls_mode(struct RastaState *state)
+static void handle_tls_mode_server(struct RastaState *state)
 {
     const struct RastaConfigTLS *tls_config = state->tls_config;
     switch (tls_config->mode)
@@ -42,16 +33,27 @@ static void handle_tls_mode(struct RastaState *state)
 #ifdef ENABLE_TLS
     case TLS_MODE_TLS_1_3:
         state->activeMode = TLS_MODE_TLS_1_3;
-        if (is_tls_server(tls_config) && false)
-        {
-            fprintf(stderr, "Starting wolfssl in server mode");
-            wolfssl_start_tls_server(state, tls_config);
-        }
-        else
-        {
-            fprintf(stderr, "Starting wolfssl in client mode");
-            wolfssl_start_tls_client(state, tls_config);
-        }
+        wolfssl_start_tls_server(state, tls_config);
+        break;
+#endif
+    default:
+        fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
+        exit(1);
+    }
+}
+
+static void handle_tls_mode_client(struct RastaState *state)
+{
+    const struct RastaConfigTLS *tls_config = state->tls_config;
+    switch (tls_config->mode)
+    {
+    case TLS_MODE_DISABLED:
+        state->activeMode = TLS_MODE_DISABLED;
+        break;
+#ifdef ENABLE_TLS
+    case TLS_MODE_TLS_1_3:
+        state->activeMode = TLS_MODE_TLS_1_3;
+        wolfssl_start_tls_client(state, tls_config);
         break;
 #endif
     default:
@@ -63,13 +65,11 @@ static void handle_tls_mode(struct RastaState *state)
 void tcp_bind(struct RastaState *state, uint16_t port)
 {
     bsd_bind_port(state->file_descriptor, port);
-    handle_tls_mode(state);
 }
 
 void tcp_bind_device(struct RastaState *state, uint16_t port, char *ip)
 {
     bsd_bind_device(state->file_descriptor, port, ip);
-    handle_tls_mode(state);
 }
 
 void tcp_listen(struct RastaState *state)
@@ -80,6 +80,8 @@ void tcp_listen(struct RastaState *state)
         perror("error whe listening to file_descriptor " + state->file_descriptor);
         exit(1);
     }
+
+    handle_tls_mode_server(state);
 }
 
 void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectionState)
@@ -142,6 +144,10 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
     }
 
 #ifdef ENABLE_TLS
+    if (state->ctx == NULL) {
+        handle_tls_mode_client(state);
+    }
+
     state->ssl = wolfSSL_new(state->ctx);
     if (!state->ssl)
     {
@@ -152,7 +158,7 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 
     if (state->tls_config->tls_hostname[0])
     {
-        fprintf(stderr, "TLS Hostname is : %s.\n", state->tls_config->tls_hostname);
+        fprintf(stderr, "TLS Hostname is: '%s'. (Hostname checking is disabled.)\n", state->tls_config->tls_hostname);
         // wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
     }
     else
@@ -178,7 +184,7 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 #endif
 }
 #ifdef ENABLE_TLS
-size_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+ssize_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
     (void)sender;
     return wolfssl_receive_tls(ssl, received_message, max_buffer_len);

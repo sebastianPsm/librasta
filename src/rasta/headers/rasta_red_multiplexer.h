@@ -223,7 +223,8 @@ extern "C"
      */
     void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
 
-    void redundancy_mux_listen_channels(redundancy_mux *mux);
+    int redundancy_mux_listen_channels(redundancy_mux *mux);
+    void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port);
 
     /**
      * adds a new redundancy channel to the multiplexer id and given transport channels.

@@ -4,6 +4,7 @@
 #include<stdbool.h>
 
 void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, const char* config_file_path) {
+    memset(user_configuration, 0, sizeof(rasta_lib_configuration_t));
     sr_init_handle(&user_configuration->h, config_file_path);
     memset(&user_configuration->rasta_lib_event_system, 0, sizeof(user_configuration->rasta_lib_event_system));
     memset(&user_configuration->callback, 0, sizeof(user_configuration->callback));

@@ -1,5 +1,6 @@
 #include "ssl_utils.h"
 #include <stdbool.h>
+#include <wolfssl/error-ssl.h>
 
 #ifdef ENABLE_TLS
 
@@ -159,20 +160,22 @@ void wolfssl_start_client(struct RastaState *state, const struct RastaConfigTLS 
         exit(1);
     }
 
-    /* Load client certificates */
-    if (wolfSSL_CTX_use_certificate_file(state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
-        SSL_SUCCESS)
-    {
-        printf("Error loading client certificate file %s as PEM file.\n", tls_config->cert_path);
-        exit(1);
-    }
-    /* Load client Keys */
-    int err;
-    if ((err = wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
-                                               SSL_FILETYPE_PEM)) != SSL_SUCCESS)
-    {
-        printf("Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
-        exit(1);
+    if (tls_config->cert_path[0] && tls_config->key_path[0]) {
+        /* Load client certificates */
+        if (wolfSSL_CTX_use_certificate_file(state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
+            SSL_SUCCESS)
+        {
+            printf("Error loading client certificate file %s as PEM file.\n", tls_config->cert_path);
+            exit(1);
+        }
+        /* Load client Keys */
+        int err;
+        if ((err = wolfSSL_CTX_use_PrivateKey_file(state->ctx, tls_config->key_path,
+                                                SSL_FILETYPE_PEM)) != SSL_SUCCESS)
+        {
+            printf("Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
+            exit(1);
+        }
     }
 
 #ifdef USE_UDP
@@ -231,7 +234,7 @@ void wolfssl_send_tls(WOLFSSL *ssl, unsigned char *message, size_t message_len)
     wolfssl_send(ssl, message, message_len);
 }
 
-size_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len)
+ssize_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len)
 {
     int receive_len, received_total = 0;
 
@@ -251,7 +254,10 @@ size_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t
     if (receive_len < 0)
     {
         int readErr = wolfSSL_get_error(ssl, 0);
-        if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
+        if (readErr == SOCKET_PEER_CLOSED_E) {
+            return -1;
+        }
+        else if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
         {
             fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
             exit(1);

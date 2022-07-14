@@ -31,6 +31,6 @@ void wolfssl_send_tls(WOLFSSL *ssl, unsigned char *message, size_t message_len);
 
 void wolfssl_send_dtls(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver);
 
-size_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len);
+ssize_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len);
 
 void wolfssl_cleanup(struct RastaState *state);

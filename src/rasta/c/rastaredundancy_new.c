@@ -234,10 +234,9 @@ void rasta_red_add_transport_channel(
     rasta_transport_channel transport_channel;
 
 #ifdef USE_TCP
+    transport_channel.fd = state.file_descriptor;
 #ifdef ENABLE_TLS
     transport_channel.ssl = state.ssl;
-#else
-    transport_channel.fd = state.file_descriptor;
 #endif
 #endif
 

@@ -474,19 +474,23 @@ void sr_reset_connection(struct rasta_connection* connection, unsigned long id, 
     connection->errors = error_counters;
 }
 
-void sr_close_connection(struct rasta_connection * connection,struct rasta_handle *handle, redundancy_mux *mux,
-        struct RastaConfigInfoGeneral info, rasta_disconnect_reason reason, unsigned short details){
-    if (connection->current_state == RASTA_CONNECTION_DOWN || connection->current_state == RASTA_CONNECTION_CLOSED){
-        sr_reset_connection(connection,connection->remote_id,info);
+void sr_close_connection(struct rasta_connection * connection, struct rasta_handle *handle, redundancy_mux *mux,
+        struct RastaConfigInfoGeneral info, rasta_disconnect_reason reason, unsigned short details) {
+    if (connection->current_state == RASTA_CONNECTION_DOWN || connection->current_state == RASTA_CONNECTION_CLOSED) {
+        sr_reset_connection(connection, connection->remote_id, info);
+
+        redundancy_mux_remove_channel(&handle->mux, connection->remote_id);
 
         // fire connection tls_state changed event
         fire_on_connection_state_change(sr_create_notification_result(handle, connection));
-    } else{
+    } else {
         // need to send DiscReq
-        sr_reset_connection(connection,connection->remote_id,info);
+        sr_reset_connection(connection, connection->remote_id, info);
         send_DisconnectionRequest(mux,connection, reason, details);
 
         connection->current_state = RASTA_CONNECTION_CLOSED;
+
+        redundancy_mux_remove_channel(&handle->mux, connection->remote_id);
 
         // fire connection tls_state changed event
         fire_on_connection_state_change(sr_create_notification_result(handle, connection));
@@ -692,7 +696,7 @@ struct rasta_connection* handle_conreq(struct rasta_receive_handle *h, struct ra
         // check received packet (5.5.2)
         if (!sr_check_packet(&new_con,h->logger,h->config,receivedPacket, "RaSTA HANDLE: ConnectionRequest")) {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Packet is not valid");
-            sr_close_connection(&new_con,h->handle,h->mux,h->info,RASTA_DISC_REASON_PROTOCOLERROR,0);
+            sr_close_connection(&new_con, h->handle, h->mux, h->info, RASTA_DISC_REASON_PROTOCOLERROR, 0);
             return connection;
         }
 
@@ -1498,27 +1502,31 @@ void sr_init_handle(struct rasta_handle* handle, const char* config_file_path) {
 }
 
 void sr_listen(struct rasta_handle *h) {
-    redundancy_mux_listen_channels(&h->mux);
+    int was_not_already_initialized = redundancy_mux_listen_channels(&h->mux);
+    (void)was_not_already_initialized;
 
 #ifdef USE_TCP
-    int channel_event_data_len = h->mux.port_count;
-    fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
-    struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
+    if (was_not_already_initialized) {
+        int channel_event_data_len = h->mux.port_count;
+        fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
+        struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
 
-    for (int i = 0; i < channel_event_data_len; i++) {
-        memset(&channel_events[i], 0, sizeof(fd_event));
-        channel_events[i].carry_data = channel_event_data + i;
+        for (int i = 0; i < channel_event_data_len; i++) {
+            memset(&channel_events[i], 0, sizeof(fd_event));
+            channel_events[i].carry_data = channel_event_data + i;
 
-        channel_events[i].callback = channel_accept_event;
-        channel_events[i].fd = h->mux.rasta_tcp_socket_states[i].file_descriptor;
-        channel_events[i].enabled = 1;
+            channel_events[i].callback = channel_accept_event;
+            channel_events[i].fd = h->mux.rasta_tcp_socket_states[i].file_descriptor;
+            channel_events[i].enabled = 1;
 
-        channel_event_data[i].channel_index = i;
-        channel_event_data[i].event = channel_events + i;
-        channel_event_data[i].h = h;
-    }
-    for (int i = 0; i < channel_event_data_len; i++) {
-        add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
+            channel_event_data[i].channel_index = i;
+            channel_event_data[i].event = channel_events + i;
+            channel_event_data[i].h = h;
+        }
+        for (int i = 0; i < channel_event_data_len; i++) {
+            // TODO: Leaked Events
+            add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
+        }
     }
 #endif
 }
@@ -1532,7 +1540,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     #ifdef USE_TCP
     for (unsigned int i = 0; i < h->mux.port_count; ++i)
     {
-        tcp_connect(&h->mux.rasta_tcp_socket_states[i], channels[i].ip, (uint16_t)channels[i].port);
+        redundancy_mux_connect(&h->mux, i, channels[i].ip, (uint16_t)channels[i].port);
 
         fd_event* evt = rmalloc(sizeof(fd_event));
         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
