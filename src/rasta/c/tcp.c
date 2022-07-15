@@ -192,8 +192,9 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 #endif
 }
 #ifdef ENABLE_TLS
-ssize_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
+    // TODO how do we determine the sender?
     (void)sender;
     return wolfssl_receive_tls(ssl, received_message, max_buffer_len);
 }

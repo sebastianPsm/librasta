@@ -168,45 +168,86 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 
 /* --------------------- */
 
-/**
- * received data on a UDP socket
- * @param mux the multiplexer that is used
- * @param channel_id the index of the udp socket
- */
-#ifdef ENABLE_TLS
-int receive_packet(redundancy_mux *mux, int channel_id, int fd, WOLFSSL *ssl)
-#else
-int receive_packet(redundancy_mux *mux, int channel_id, int fd)
+typedef int (*RastaReceiveFunction)(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
+
+#ifdef USE_TCP
+int receive_packet(redundancy_mux *mux, struct receive_event_data *data)
+{
+    unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
+    struct sockaddr_in sender = {0};
+    ssize_t len = abstract_receive_packet(mux, data, &buffer, &sender, tcp_receive_callback);
+    struct RastaRedundancyPacket receivedPacket = handle_received_data(buffer, len);
+    update_redundancy_channels(mux,data, receivedPacket, &sender, tcp_redundancy_channel_extension_callback);
+}
+
+int tcp_receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender)
+{
+    return tcp_receive(&mux->rasta_tcp_socket_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
+}
+
+void tcp_redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data)
+{
+    channel->fd = data->event->fd;
+}
 #endif
+
+#ifdef USE_UDP
+int receive_packet(redundancy_mux *mux, struct receive_event_data *data)
+{
+    unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
+    struct sockaddr_in sender = {0};
+    ssize_t len = abstract_receive_packet(mux, data, &buffer, &sender, udp_receive_callback);
+    struct RastaRedundancyPacket receivedPacket = handle_received_data(buffer, len);
+    update_redundancy_channels(mux,data, receivedPacket, &sender, udp_redundancy_channel_extension_callback);
+}
+
+int udp_receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender)
+{
+    return udp_receive(&mux->udp_socket_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+}
+
+// UDP doesn't need the extension function, as it es the default behavior.
+// This callback just fits the signatur of update_redundancy_cdhannels.
+void udp_redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data)
+{
+    (void)channel;
+    (void)data;
+}
+#endif
+
+#ifdef ENABLE_TLS
+int receive_packet(redundancy_mux *mux, struct receive_event_data *data)
+{
+    unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
+    struct sockaddr_in sender = {0};
+    ssize_t len = abstract_receive_packet(mux, data, &buffer, &sender, tls_receive_callback);
+    struct RastaRedundancyPacket receivedPacket = handle_received_data(buffer, len);
+    update_redundancy_channels(mux,data, receivedPacket, &sender, tls_redundancy_channel_extension_callback);
+}
+
+int tls_receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender)
+{
+    return tls_receive(data->ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+}
+
+void tls_redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data)
+{
+    channel->fd = data->event->fd;
+    channel->ssl = data->ssl;
+}
+#endif
+
+ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in sender, RastaReceiveFunction receive_callback)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
 
-    // receive a packet
-    unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
-
-    // the sender of the received packet
-    struct sockaddr_in sender = { 0 };
-
-    ssize_t len = 0;
-#ifdef USE_UDP
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd %d...", channel_id, mux->udp_socket_states[channel_id].file_descriptor);
-    // wait for pdu
-    len = udp_receive(&mux->udp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
-#endif
-#ifdef USE_TCP
-    // wait for pdu
-#ifdef ENABLE_TLS
-    len = tcp_receive(ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d waiting for data on fd ...", channel_id);
-#else
-    len = tcp_receive(&mux->rasta_tcp_socket_states[channel_id], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
-#endif
-#endif
+    ssize_t len = receive_callback(&mux, data, buffer, &sender);
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", channel_id);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", channel_id, len);
 
-    if (len < 0) {
+    if (len < 0)
+    {
         return 1;
     }
 
@@ -214,6 +255,11 @@ int receive_packet(redundancy_mux *mux, int channel_id, int fd)
     {
         return 0;
     }
+    return len;
+}
+
+struct RastaRedundancyPacket handle_received_data(unsigned char *buffer, ssize_t len)
+{
 
     struct RastaByteArray incomingData;
     incomingData.length = (unsigned int)len;
@@ -232,6 +278,13 @@ int receive_packet(redundancy_mux *mux, int channel_id, int fd)
                                                                                options, &test);
 
     freeRastaByteArray(&test.key);
+    return receivedPacket;
+}
+
+typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
+
+void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback)
+{
 
     rasta_transport_channel connected_channel;
     connected_channel.ip_address = rmalloc(sizeof(char) * 15);
@@ -267,12 +320,18 @@ int receive_packet(redundancy_mux *mux, int channel_id, int fd)
                     // channel wasn't saved yet -> add to list
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].ip_address = connected_channel.ip_address;
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].port = connected_channel.port;
+
+                    extension_callback(mux->connected_channels[i].connected_channels[channel.connected_channel_count], data);
+                    //
 #ifdef USE_TCP
+                    // data->event->fd
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].fd = fd;
 #ifdef ENABLE_TLS
+                    // data->ssl
                     mux->connected_channels[i].connected_channels[channel.connected_channel_count].ssl = ssl;
 #endif
 #endif
+
                     mux->connected_channels[i].connected_channel_count++;
 
                     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d discovered client transport channel %s:%d for connection to 0x%lX",
@@ -428,26 +487,6 @@ void run_channel_diagnostics(struct rasta_handle *h, int channel_count)
     }
 }
 
-#ifdef ENABLE_TLS
-int channel_receive_event_tls(void *carry_data)
-{
-    struct receive_event_data *data = carry_data;
-    struct rasta_handle *h = data->h;
-    unsigned int mux_channel_count = h->mux.channel_count;
-
-    run_channel_diagnostics(h, max_channel_count);
-
-    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
-               data->channel_index);
-
-    int result = receive_packet_tls(&h->mux, data->channel_index, data->event->fd, data->ssl);
-
-    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
-               data->channel_index);
-    return !!result;
-}
-#endif
-
 int channel_receive_event(void *carry_data)
 {
     struct receive_event_data *data = carry_data;
@@ -459,7 +498,7 @@ int channel_receive_event(void *carry_data)
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
                data->channel_index);
 
-    int result = receive_packet(&h->mux, data->channel_index, data->event->fd);
+    int result = receive_packet(&h->mux, data);
 
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
                data->channel_index);
@@ -617,7 +656,6 @@ redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up udp socket %d/%d", i + 1, port_count);
         udp_init(&mux.udp_socket_states[i], &config.tls);
         udp_bind(&mux.udp_socket_states[i], listen_ports[i]);
-
     }
 
     // allocate memory for connected channels
@@ -652,7 +690,8 @@ redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_
 }
 #endif
 
-void cleanup_rasta_states(struct RastaState * rasta_states, int count){
+void cleanup_rasta_states(struct RastaState *rasta_states, int count)
+{
     for (unsigned int i = 0; i < count; ++i)
     {
         bsd_close(&rasta_states[i]->file_descriptor);
@@ -674,7 +713,7 @@ void redundancy_mux_close_udp(redundancy_mux *mux)
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
 
     // close the sockets of the transport channels
-    cleanup_rasta_states(&mux->udp_socket_states,mux->port_count);
+    cleanup_rasta_states(&mux->udp_socket_states, mux->port_count);
 
     // close the redundancy channels
     for (unsigned int j = 0; j < mux->channel_count; ++j)
@@ -691,10 +730,9 @@ void redundancy_mux_close_tcp(redundancy_mux *mux)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
     // close the sockets of the transport channels
-    cleanup_rasta_states(&mux->rasta_tcp_socket_states,mux->port_count);
+    cleanup_rasta_states(&mux->rasta_tcp_socket_states, mux->port_count);
 }
 #endif
-
 
 rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsigned long id)
 {
@@ -721,32 +759,38 @@ void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id)
     }
 }
 
-typedef void (*RastaSendFunction)(struct RastaState* rasta_state, struct RastaByteArray bytes_to_send, rasta_transport_channel channel);
+typedef void (*RastaSendFunction)(struct RastaState *rasta_state, struct RastaByteArray bytes_to_send, rasta_transport_channel channel);
 
 #ifdef USE_UDP
-void udp_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+void udp_send_callback(struct RastaState *rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel)
+{
     udp_send(rasta_state, data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 }
 
-void redundancy_mux_send_udp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+void redundancy_mux_send_udp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
+{
     redundancy_mux_send(mux, data, udp_send_callback);
 }
 #endif
 #ifdef USE_TCP
-void tcp_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+void tcp_send_callback(struct RastaState *rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel)
+{
     tcp_send(rasta_state, data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 }
 
-void redundancy_mux_send_tcp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+void redundancy_mux_send_tcp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
+{
     redundancy_mux_send(mux, data, tcp_send_callback);
 }
 #endif
 #ifdef ENABLE_TLS
-void tls_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+void tls_send_callback(struct RastaState *rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel)
+{
     tcp_send(channel.ssl, data_to_send.bytes, data_to_send.length);
 }
 
-void redundancy_mux_send_tls(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+void redundancy_mux_send_tls(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
+{
     redundancy_mux_send(mux, data, tls_send_callback);
 }
 #endif
@@ -873,26 +917,19 @@ int redundancy_mux_listen_channels(redundancy_mux *mux)
             tcp_listen(&mux->rasta_tcp_socket_states[i]);
             result = 1;
         }
-    #endif
+#endif
     }
     return result;
 }
 
-void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port) {
+void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port)
+{
     // init socket
     tcp_init(&mux->rasta_tcp_socket_states[channel], &mux->config.tls);
     tcp_bind_device(&mux->rasta_tcp_socket_states[channel],
                     (uint16_t)mux->config.redundancy.connections.data[channel].port,
                     mux->config.redundancy.connections.data[channel].ip);
     tcp_connect(&mux->rasta_tcp_socket_states[channel], host, port);
-}
-
-void redundancy_mux_close_channels(redundancy_mux *mux, unsigned long receiver) {
-    (void)mux;
-    (void)receiver;
-#ifdef USE_TCP
-
-#endif
 }
 
 void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels)
@@ -940,19 +977,20 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
         if (c.associated_id == channel_id)
         {
             logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux remove channel", "skipping channel with ID=0x%lX", c.associated_id);
-        #ifdef USE_TCP
+#ifdef USE_TCP
             for (unsigned int i = 0; i < c.connected_channel_count; ++i)
             {
                 rasta_transport_channel *channel = &c.connected_channels[i];
                 bsd_close(channel->fd);
-            #ifdef ENABLE_TLS
-                if (channel->ssl) {
+#ifdef ENABLE_TLS
+                if (channel->ssl)
+                {
                     wolfSSL_shutdown(channel->ssl);
                     wolfSSL_free(channel->ssl);
                 }
-            #endif
+#endif
             }
-        #endif
+#endif
             // channel to remove, skip
             continue;
         }
