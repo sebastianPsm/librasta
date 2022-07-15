@@ -721,7 +721,36 @@ void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id)
     }
 }
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
+typedef void (*RastaSendFunction)(struct RastaState* rasta_state, struct RastaByteArray bytes_to_send, rasta_transport_channel channel);
+
+#ifdef USE_UDP
+void udp_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+    udp_send(rasta_state, data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+}
+
+void redundancy_mux_send_udp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+    redundancy_mux_send(mux, data, udp_send_callback);
+}
+#endif
+#ifdef USE_TCP
+void tcp_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+    tcp_send(rasta_state, data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+}
+
+void redundancy_mux_send_tcp(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+    redundancy_mux_send(mux, data, tcp_send_callback);
+}
+#endif
+#ifdef ENABLE_TLS
+void tls_send_callback(struct RastaState* rasta_state, struct RastaByteArray data_to_send, rasta_transport_channel channel){
+    tcp_send(channel.ssl, data_to_send.bytes, data_to_send.length);
+}
+
+void redundancy_mux_send_tls(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback){
+    redundancy_mux_send(mux, data, tls_send_callback);
+}
+#endif
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "sending a data packet to id 0x%lX",
                (long unsigned int)data.receiver_id);
@@ -756,18 +785,7 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 
         channel = receiver->connected_channels[i];
 
-#ifdef USE_UDP
-        // send using the channel specific udp socket
-        udp_send(&mux->udp_socket_states[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
-#endif
-#ifdef USE_TCP
-        // send using the connection specific tcp socket
-#ifdef ENABLE_TLS
-        tcp_send(channel.ssl, data_to_send.bytes, data_to_send.length);
-#else
-        tcp_send(&mux->rasta_tcp_socket_states[i], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
-#endif
-#endif
+        send_callback(mux, data_to_send, channel);
 
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "Sent data over channel %s:%d",
                    channel.ip_address, channel.port);
@@ -839,11 +857,14 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id)
     logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux wait", "entity with id=0x%lX available", id);
 }
 
-int redundancy_mux_listen_channels(redundancy_mux *mux) {
+int redundancy_mux_listen_channels(redundancy_mux *mux)
+{
     int result = 0;
-    for (unsigned i = 0; i < mux->port_count; ++i) {
-    #ifdef USE_TCP
-        if (mux->rasta_tcp_socket_states[i].file_descriptor == 0) {
+    for (unsigned i = 0; i < mux->port_count; ++i)
+    {
+#ifdef USE_TCP
+        if (mux->rasta_tcp_socket_states[i].file_descriptor == 0)
+        {
             // init socket
             tcp_init(&mux->rasta_tcp_socket_states[i], &mux->config.tls);
             tcp_bind_device(&mux->rasta_tcp_socket_states[i],
