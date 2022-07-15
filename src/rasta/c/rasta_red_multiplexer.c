@@ -584,41 +584,45 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
     mux.port_count = port_count;
     mux.config = config;
     mux.notifications_running = 0;
-
+    mux.notifications.on_diagnostics_available = NULL;
+    mux.notifications.on_new_connection = NULL;
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "init memory for %d listen ports", port_count);
-
-    // init and bind sockets + threads array
-
-#ifdef USE_UDP
-    mux.udp_socket_states = rmalloc(port_count * sizeof(int));
-#endif
+}
 
 #ifdef USE_TCP
+redundancy_mux redundancy_mux_init_tcp(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
+{
+    redundancy_mux_init(logger, listen_ports, port_count, config);
     mux.rasta_tcp_socket_states = rmalloc(port_count * sizeof(int));
+
+    // logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
+    // tcp_init(&mux.rasta_tcp_socket_states[i], &config.tls);
+    // tcp_bind_device(&mux.rasta_tcp_socket_states[i], mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
+}
 #endif
+
+#ifdef USE_UDP
+redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
+{
+
+    redundancy_mux_init(logger, listen_ports, port_count, config);
+
+    mux.udp_socket_states = rmalloc(port_count * sizeof(int));
 
     // set up udp sockets
     for (unsigned int i = 0; i < port_count; ++i)
     {
-#ifdef USE_UDP
+
+        // init and bind sockets + threads array
         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up udp socket %d/%d", i + 1, port_count);
         udp_init(&mux.udp_socket_states[i], &config.tls);
         udp_bind(&mux.udp_socket_states[i], listen_ports[i]);
-#endif
-#ifdef USE_TCP
-        // logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
-        // tcp_init(&mux.rasta_tcp_socket_states[i], &config.tls);
-        // tcp_bind_device(&mux.rasta_tcp_socket_states[i], mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
-#endif
+
     }
 
     // allocate memory for connected channels
     mux.connected_channels = rmalloc(sizeof(rasta_redundancy_channel));
     mux.channel_count = 0;
-
-    // init notifications to NULL
-    mux.notifications.on_diagnostics_available = NULL;
-    mux.notifications.on_new_connection = NULL;
 
     // load channel that is specified in config
     // if (mux.config.redundancy.connections.count > 0)
@@ -646,32 +650,31 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
     return mux;
 }
+#endif
 
-void redundancy_mux_close(redundancy_mux *mux)
-{
-    // close the sockets of the transport channels
-    for (unsigned int i = 0; i < mux->port_count; ++i)
+void cleanup_rasta_states(struct RastaState * rasta_states, int count){
+    for (unsigned int i = 0; i < count; ++i)
     {
-#ifdef USE_UDP
-        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing udp socket %d/%d", i + 1, mux->port_count);
-        udp_close(&mux->udp_socket_states[i]);
-#endif
-#ifdef USE_TCP
-        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing tcp socket %d/%d", i + 1, mux->port_count);
-        tcp_close(&mux->rasta_tcp_socket_states[i]);
-#endif
+        bsd_close(&rasta_states[i]->file_descriptor);
     }
 
     // free arrays
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "freeing thread data");
+    rfree(rasta_states);
+
+    mux->port_count = 0;
+    freeRastaByteArray(&mux->sr_hashing_context.key);
+
+    logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux close", "redundancy multiplexer closed");
+}
 
 #ifdef USE_UDP
-    rfree(mux->udp_socket_states);
-#endif
-#ifdef USE_TCP
-    rfree(mux->rasta_tcp_socket_states);
-#endif
-    mux->port_count = 0;
+void redundancy_mux_close_udp(redundancy_mux *mux)
+{
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
+
+    // close the sockets of the transport channels
+    cleanup_rasta_states(&mux->udp_socket_states,mux->port_count);
 
     // close the redundancy channels
     for (unsigned int j = 0; j < mux->channel_count; ++j)
@@ -680,11 +683,18 @@ void redundancy_mux_close(redundancy_mux *mux)
         rasta_red_cleanup(&mux->connected_channels[j]);
     }
     rfree(mux->connected_channels);
-
-    freeRastaByteArray(&mux->sr_hashing_context.key);
-
-    logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux close", "redundancy multiplexer closed");
 }
+#endif
+
+#ifdef USE_TCP
+void redundancy_mux_close_tcp(redundancy_mux *mux)
+{
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
+    // close the sockets of the transport channels
+    cleanup_rasta_states(&mux->rasta_tcp_socket_states,mux->port_count);
+}
+#endif
+
 
 rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsigned long id)
 {
