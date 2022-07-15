@@ -332,46 +332,61 @@ int receive_packet(redundancy_mux *mux, int channel_id, int fd)
     return 0;
 }
 
-int channel_accept_event(void *carry_data) {
-
-#ifdef USE_TCP
-    struct receive_event_data *data = carry_data;
-#ifdef ENABLE_TLS
-    struct RastaConnectionState connection;
-    tcp_accept_tls(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
-#endif
-    logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept(&data->h->mux.rasta_tcp_socket_states[data->channel_index]);
-
-    fd_event* evt = rmalloc(sizeof(fd_event));
+fd_event *prepare_receive_event(struct receive_event_data *data)
+{
+    fd_event *evt = rmalloc(sizeof(fd_event));
     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
 
-#ifdef ENABLE_TLS
-    data->ssl = connection.ssl;
-#endif
     *channel_event_data = *data;
     channel_event_data->event = evt;
     memset(evt, 0, sizeof(fd_event));
     evt->enabled = 1;
     evt->carry_data = channel_event_data;
-    evt->callback = channel_receive_event;
+
+    return evt;
+}
+
+#ifdef USE_TCP
 #ifdef ENABLE_TLS
+fd_event *prepare_tls_accept_event(fd_event *evt, struct RastaConnectionState *connection)
+{
+    evt->carry_data->ssl = connection.ssl;
+    evt->callback = channel_receive_event;
     evt->fd = connection.file_descriptor;
+}
+
+void channel_accept_event_tls(void *carry_data)
+{
+    struct RastaConnectionState connection;
+    struct receive_event_data *data = carry_data;
+
+    logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
+    tcp_accept_tls(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
+
+    fd_event *evt = prepare_receive_event(data);
+    prepare_tls_accept_event(evt);
+
+    add_fd_event(data->h->ev_sys, evt, EV_READABLE);
+}
 #endif
+
+void channel_accept_event(void *carry_data)
+{
+    struct receive_event_data *data = carry_data;
+
+    logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
+    tcp_accept(&data->h->mux.rasta_tcp_socket_states[data->channel_index]);
+
+    fd_event *evt = prepare_receive_event(data);
 
     // TODO: Leaked event
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
-#endif
-    return 0;
 }
+#endif
 
-int channel_receive_event(void *carry_data)
+void run_channel_diagnostics(struct rasta_handle *h, int channel_count)
 {
-    struct receive_event_data *data = carry_data;
-    struct rasta_handle *h = data->h;
-    unsigned int mux_channel_count = h->mux.channel_count;
-
-    for (unsigned int i = 0; i < mux_channel_count; ++i)
+    for (unsigned int i = 0; i < channel_count; ++i)
     {
         rasta_redundancy_channel current = h->mux.connected_channels[i];
         int n_diagnose = h->mux.config.redundancy.n_diagnose;
@@ -411,15 +426,41 @@ int channel_receive_event(void *carry_data)
         // channel count might have changed due to removal of channels
         mux_channel_count = h->mux.channel_count;
     }
+}
+
+#ifdef ENABLE_TLS
+int channel_receive_event_tls(void *carry_data)
+{
+    struct receive_event_data *data = carry_data;
+    struct rasta_handle *h = data->h;
+    unsigned int mux_channel_count = h->mux.channel_count;
+
+    run_channel_diagnostics(h, max_channel_count);
 
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
                data->channel_index);
-    int result = 0;
-#ifdef ENABLE_TLS
-    result = receive_packet(&h->mux, data->channel_index, data->event->fd, data->ssl);
-#else
-    receive_packet(&h->mux, data->channel_index, data->event->fd);
+
+    int result = receive_packet_tls(&h->mux, data->channel_index, data->event->fd, data->ssl);
+
+    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
+               data->channel_index);
+    return !!result;
+}
 #endif
+
+int channel_receive_event(void *carry_data)
+{
+    struct receive_event_data *data = carry_data;
+    struct rasta_handle *h = data->h;
+    unsigned int mux_channel_count = h->mux.channel_count;
+
+    run_channel_diagnostics(h, max_channel_count);
+
+    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
+               data->channel_index);
+
+    int result = receive_packet(&h->mux, data->channel_index, data->event->fd);
+
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
                data->channel_index);
     return !!result;
