@@ -159,8 +159,11 @@ void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 
     if (state->tls_config->tls_hostname[0])
     {
-        fprintf(stderr, "TLS Hostname is: '%s'. (Hostname checking is disabled.)\n", state->tls_config->tls_hostname);
-        // wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+        int ret = wolfSSL_check_domain_name(state->ssl, state->tls_config->tls_hostname);
+        if(ret != SSL_SUCCESS){
+            fprintf(stderr,"Could not add domain name check for domain %s: %d",state->tls_config->tls_hostname,ret);
+            exit(1);
+        }
     }
     else
     {
