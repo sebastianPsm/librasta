@@ -85,7 +85,7 @@ void tcp_listen(struct RastaState *state)
     handle_tls_mode_server(state);
 }
 
-void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectionState)
+int tcp_accept(struct RastaState *state)
 {
     struct sockaddr_in empty_sockaddr_in;
     socklen_t sender_len = sizeof(empty_sockaddr_in);
@@ -95,8 +95,13 @@ void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectio
         perror("tcp failed to accept connection");
         exit(1);
     }
+    return socket;
+}
 
 #ifdef ENABLE_TLS
+void tcp_accept_tls(struct RastaState *state, struct RastaConnectionState *connectionState, int socket){
+    int socket = tcp_accept(state, connectionState);
+    
     /* Create a WOLFSSL object */
     if ((connectionState->ssl = wolfSSL_new(state->ctx)) == NULL)
     {
@@ -118,10 +123,9 @@ void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectio
     }
 
     set_tls_async(socket, connectionState->ssl);
-#endif
-
     connectionState->file_descriptor = socket;
 }
+#endif
 
 void tcp_connect(struct RastaState *state, char *host, uint16_t port)
 {

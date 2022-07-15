@@ -54,7 +54,17 @@ size_t tcp_receive(struct RastaState *state, unsigned char* received_message,siz
  * When a connection arrives, open a new socket to communicate with it,
  * @param file_descriptor the file descriptor to accept connections from
  */
-void tcp_accept(struct RastaState *state, struct RastaConnectionState *connectionState);
+void tcp_accept(struct RastaState *state);
+
+#ifdef ENABLE_TLS
+/**
+ * Await a connection on a @p file_descriptor.
+ * When a connection arrives, open a new socket to communicate with it,
+ * @param file_descriptor the file descriptor to accept connections from
+ * @param connectionState the RastaConnectionState accept the ssl parameters
+ */
+void tcp_accept_tls(struct RastaState *state, struct RastaConnectionState *connectionState);
+#endif
 
 /**
  * Open a connection on a @p file_descriptor.

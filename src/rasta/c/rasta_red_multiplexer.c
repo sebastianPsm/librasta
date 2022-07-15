@@ -176,7 +176,7 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 #ifdef ENABLE_TLS
 int receive_packet(redundancy_mux *mux, int channel_id, int fd, WOLFSSL *ssl)
 #else
-void receive_packet(redundancy_mux *mux, int channel_id, int fd)
+int receive_packet(redundancy_mux *mux, int channel_id, int fd)
 #endif
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
@@ -336,10 +336,12 @@ int channel_accept_event(void *carry_data) {
 
 #ifdef USE_TCP
     struct receive_event_data *data = carry_data;
+#ifdef ENABLE_TLS
     struct RastaConnectionState connection;
-
+    tcp_accept_tls(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
+#endif
     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
+    tcp_accept(&data->h->mux.rasta_tcp_socket_states[data->channel_index]);
 
     fd_event* evt = rmalloc(sizeof(fd_event));
     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
@@ -353,7 +355,9 @@ int channel_accept_event(void *carry_data) {
     evt->enabled = 1;
     evt->carry_data = channel_event_data;
     evt->callback = channel_receive_event;
+#ifdef ENABLE_TLS
     evt->fd = connection.file_descriptor;
+#endif
 
     // TODO: Leaked event
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
