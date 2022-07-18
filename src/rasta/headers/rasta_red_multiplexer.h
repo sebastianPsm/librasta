@@ -28,6 +28,12 @@ extern "C"
 #endif
     };
 
+    typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
+
+    typedef int (*RastaReceiveFunction)(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
+
+    typedef void (*RastaSendFunction)(redundancy_mux *mux, struct RastaByteArray bytes_to_send, rasta_transport_channel channel, unsigned int channel_index);
+
     /**
      * pointer to a function that will be called in a separate thread when a new entity has sent data to this entity
      * first parameter is the redundancy multiplexer that fired the event
@@ -173,7 +179,7 @@ extern "C"
      */
     void redundancy_mux_close(redundancy_mux *mux);
 
-    int channel_accept_event(void *carry_data);
+    void channel_accept_event(void *carry_data);
     int channel_receive_event(void *carry_data);
 
     /**
@@ -192,13 +198,7 @@ extern "C"
      */
     void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-    /**
-     * sends data to a known redundancy channel. The channel where the data is sent is identified by the receiver id field
-     * in the @p data PDU
-     * @param mux the multiplexer which will try to send the @p data
-     * @param data the PDU which will be sent to data#receiver_id
-     */
-    void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data);
+    void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback);
 
     /**
      * retrieves a message from the queue of the redundancy channel to entity with RaSTA ID @p id.
@@ -249,6 +249,14 @@ extern "C"
      * @return a packet that was received in any of the connected redundancy channels
      */
     int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
+
+    int receive_packet(redundancy_mux *mux, struct receive_event_data *data);
+
+    ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in* sender, RastaReceiveFunction receive_callback);
+
+    struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux,unsigned char *buffer, ssize_t len);
+
+    void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback);
 
 #ifdef __cplusplus
 }
