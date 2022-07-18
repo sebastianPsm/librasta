@@ -415,7 +415,7 @@ void channel_accept_event_tls(void *carry_data)
 #endif
 
 #endif
-void channel_accept_event(void *carry_data)
+int channel_accept_event(void *carry_data)
 {
     struct receive_event_data *data = carry_data;
 
@@ -426,6 +426,7 @@ void channel_accept_event(void *carry_data)
 
     // TODO: Leaked event
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
+    return 0;
 }
 
 void run_channel_diagnostics(struct rasta_handle *h, unsigned int channel_count, unsigned int channel_index)
@@ -748,7 +749,7 @@ void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id)
     }
 }
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
+void redundancy_mux_send_(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "sending a data packet to id 0x%lX",
                (long unsigned int)data.receiver_id);
@@ -800,9 +801,9 @@ void udp_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, 
     udp_send(&mux->udp_socket_states[channel_index], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 }
 
-void redundancy_mux_send_udp(redundancy_mux *mux, struct RastaPacket data)
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 {
-    redundancy_mux_send(mux, data, udp_send_callback);
+    redundancy_mux_send_(mux, data, udp_send_callback);
 }
 #endif
 #ifdef USE_TCP
@@ -811,9 +812,9 @@ void tcp_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, 
     tcp_send(&mux->rasta_tcp_socket_states[channel_index], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 }
 
-void redundancy_mux_send_tcp(redundancy_mux *mux, struct RastaPacket data)
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 {
-    redundancy_mux_send(mux, data, tcp_send_callback);
+    redundancy_mux_send_(mux, data, tcp_send_callback);
 }
 #endif
 #ifdef ENABLE_TLS
@@ -822,9 +823,9 @@ void tls_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, 
     tcp_send(channel.ssl, data_to_send.bytes, data_to_send.length);
 }
 
-void redundancy_mux_send_tls(redundancy_mux *mux, struct RastaPacket data)
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 {
-    redundancy_mux_send(mux, data, tls_send_callback);
+    redundancy_mux_send_(mux, data, tls_send_callback);
 }
 #endif
 

@@ -49,12 +49,13 @@ ssize_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_bu
 #else
 size_t tcp_receive(struct RastaState *state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
+
 /**
  * Await a connection on a @p file_descriptor.
  * When a connection arrives, open a new socket to communicate with it,
  * @param file_descriptor the file descriptor to accept connections from
  */
-void tcp_accept(struct RastaState *state);
+int tcp_accept(struct RastaState *state);
 
 #ifdef ENABLE_TLS
 /**

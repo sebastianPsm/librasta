@@ -52,16 +52,16 @@ static void handle_tls_mode_server(struct RastaState *state)
 #endif
 }
 
+#ifdef ENABLE_TLS
 static void handle_tls_mode_client(struct RastaState *state)
 {
     apply_tls_mode(state);
-#ifdef ENABLE_TLS
     if (state->activeMode == TLS_MODE_TLS_1_3)
     {
         wolfssl_start_tls_client(state, state->tls_config);
     }
-#endif
 }
+#endif
 
 void tcp_bind(struct RastaState *state, uint16_t port)
 {

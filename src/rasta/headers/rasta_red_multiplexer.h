@@ -179,7 +179,7 @@ extern "C"
      */
     void redundancy_mux_close(redundancy_mux *mux);
 
-    void channel_accept_event(void *carry_data);
+    int channel_accept_event(void *carry_data);
     int channel_receive_event(void *carry_data);
 
     /**
@@ -198,7 +198,7 @@ extern "C"
      */
     void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-    void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback);
+    void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data);
 
     /**
      * retrieves a message from the queue of the redundancy channel to entity with RaSTA ID @p id.
