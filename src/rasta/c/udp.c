@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include "rmemory.h"
 #include "bsd_utils.h"
+#include "udp.h"
 
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
@@ -140,11 +141,14 @@ static void handle_tls_mode(struct RastaState *state)
     switch (tls_config->mode)
     {
     case TLS_MODE_DISABLED:
+    {
         state->activeMode = TLS_MODE_DISABLED;
         break;
-#ifdef ENABLE_TLS
+    }
     case TLS_MODE_DTLS_1_2:
+    {
         state->activeMode = TLS_MODE_DTLS_1_2;
+        #ifdef ENABLE_TLS
         if (is_dtls_server(tls_config))
         {
             wolfssl_start_dtls_server(state, tls_config);
@@ -153,11 +157,17 @@ static void handle_tls_mode(struct RastaState *state)
         {
             wolfssl_start_dtls_client(state, tls_config);
         }
+        #else
+        printf("TLS is not enabled but rasta config state is TLS_MODE_DTLS_1_2\n");
+        exit(1);
+        #endif
         break;
-#endif
+    }
     default:
+    {
         fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
         exit(1);
+    }
     }
 }
 
