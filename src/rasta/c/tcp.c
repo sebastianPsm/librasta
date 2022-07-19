@@ -78,7 +78,7 @@ void tcp_listen(struct RastaState *state)
     if (listen(state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0)
     {
         // listen failed
-        perror("error whe listening to file_descriptor " + state->file_descriptor);
+        fprintf(stderr, "error whe listening to file_descriptor %d", state->file_descriptor);
         exit(1);
     }
 

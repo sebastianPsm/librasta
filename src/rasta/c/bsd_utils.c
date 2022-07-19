@@ -65,7 +65,7 @@ void bsd_bind_port(int file_descriptor, uint16_t port)
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(local)) < 0)
     {
         // bind failed
-        perror("could not bind the socket to port " + port);
+        fprintf(stderr, "could not bind the socket to port %d", port);
         exit(1);
     }
 }

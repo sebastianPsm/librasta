@@ -30,6 +30,7 @@ set(RASTA_HDRS
     rasta/headers/rmemory.h
     rasta/headers/udp.h
     rasta/headers/tcp.h
+    rasta/headers/types.h
     rasta/headers/bsd_utils.h
     rasta/headers/ssl_utils.h
     rasta/headers/rastablake2.h

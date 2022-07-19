@@ -1,6 +1,6 @@
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
-#include "udp.h"
+#include "types.h"
 
 typedef void(WOLFSSL_ASYNC_METHOD)(WOLFSSL *, int);
 typedef int(WOLFSSL_SET_PEER_METHOD)(WOLFSSL *, void *, unsigned int);
