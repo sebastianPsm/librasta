@@ -54,7 +54,9 @@ static void create_certificate(bool is_ca, const char *cert_path, const char *ke
     initRng = 1;
     ret = wc_ecc_init(is_ca?caKey : &newKey);
     if (ret != 0) goto exit;
-    initNewKey = 1;
+    if(!is_ca) {
+        initNewKey = 1;
+    }
 
     ret = wc_ecc_make_key(&rng, 32, is_ca?caKey : &newKey);
     if (ret != 0) goto exit;

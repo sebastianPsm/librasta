@@ -9,6 +9,9 @@
 #include "logging.h"
 #include <syscall.h>
 #include <logging.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <ctype.h>
 
 /**
  * logs a string to the console
@@ -123,6 +126,22 @@ void logger_set_log_file(struct logger_t* logger, char * path){
     logger->log_file = path;
 }
 
+static void do_log_message(struct logger_t *logger, const char *msg) {
+    logger_type type = logger->type;
+    char *file = logger->log_file;
+    if (type == LOGGER_TYPE_CONSOLE) {
+    // log to console
+    log_to_console(msg);
+} else if (type == LOGGER_TYPE_FILE) {
+    // log to file
+    log_to_file(msg, file);
+} else if (type == LOGGER_TYPE_BOTH) {
+    // log to console and file
+    log_to_console(msg);
+    log_to_file(msg, file);
+}
+}
+
 void logger_log(struct logger_t * logger, log_level level, char* location, char* format, ...){
     if (logger == NULL || logger->max_log_level == LOG_LEVEL_NONE){
         return;
@@ -141,23 +160,48 @@ void logger_log(struct logger_t * logger, log_level level, char* location, char*
         // log level to low
         return;
     }
-    if (msg != NULL){
-        logger_type type = logger->type;
-        char * file = logger->log_file;
+    do_log_message(logger, msg);
+}
 
-        if (type == LOGGER_TYPE_CONSOLE){
-            // log to console
-            log_to_console(msg);
-        } else if (type == LOGGER_TYPE_FILE){
-            // log to file
-            log_to_file(msg, file);
-        } else if (type == LOGGER_TYPE_BOTH){
-            // log to console and file
-            log_to_console(msg);
-            log_to_file(msg, file);
+void logger_hexdump(struct logger_t *logger, log_level level, const void *data, size_t data_length, char *header_fmt, ...){
+    char message[LOGGER_MAX_MSG_SIZE / 2];
+    char *data_char = (char *) data;
+    va_list args;
+    va_start(args, header_fmt);
+
+    vsnprintf(&message[0],LOGGER_MAX_MSG_SIZE / 2, header_fmt, args);
+    va_end(args);
+    if(logger == NULL || logger->max_log_level == LOG_LEVEL_NONE){
+        return;
+    }
+    logger_log(logger,level,"","%s\n", message);
+    if(level <= logger->max_log_level) {
+        for (size_t line_start = 0; line_start < data_length; line_start += 16) {
+            char line_number[LOGGER_MAX_MSG_SIZE/2];
+            snprintf(line_number,LOGGER_MAX_MSG_SIZE / 2,"0x%04lx    ",line_start);
+            do_log_message(logger,line_number);
+            for (size_t line_cur = line_start; line_cur < data_length && line_cur < line_start + 16; line_cur++) {
+                char msg[3];
+                snprintf(msg,3,"%02"PRIx8,(uint8_t)data_char[line_cur]);
+                do_log_message(logger,msg);
+            }
+            do_log_message(logger,"    ");
+            for (size_t line_cur = line_start; line_cur < data_length && line_cur < line_start + 16; line_cur++) {
+                char msg[3];
+                char current = data_char[line_cur];
+                if(isprint(current)) {
+                    snprintf(msg, 3, "%c", current);
+                }
+                else{
+                    snprintf(msg,3,".");
+                }
+                do_log_message(logger,msg);
+            }
+            do_log_message(logger,"\n");
         }
     }
 }
+
 
 void logger_log_if(struct logger_t * logger, int cond, log_level level, char * location, char * format, ...){
     if (!cond){

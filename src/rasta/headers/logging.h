@@ -163,6 +163,17 @@ void logger_log_if(struct logger_t * logger, int cond, log_level level, char * l
  */
 void logger_destroy(struct logger_t * logger);
 
+/**
+ * Print a description, followed by a memory range in hex and ascii
+ * @param logger the logger which should be used
+ * @param level the log level of the message
+ * @param data pointer to data_length consecutive bytes
+ * @param data_length number of bytes to be printed
+ * @param header_fmt format for an extra header, can contain formatting information like %s, %d, ...
+ * @param ... format parameters
+ */
+void logger_hexdump(struct logger_t *logger, log_level level, const void *data, size_t data_length, char *header_fmt, ...);
+
 #ifdef __cplusplus
 }
 #endif

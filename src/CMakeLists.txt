@@ -77,7 +77,7 @@ add_library(${target} SHARED
     sci/c/scils_telegram_factory.c
     sci/c/scip.c
     sci/c/scip_telegram_factory.c
-)
+        rasta/c/key_exchange.c rasta/headers/key_exchange.h)
 
 # Link system libraries for librasta
 target_link_libraries(${target} rt pthread)
@@ -137,6 +137,33 @@ target_compile_options(${target}
 if(ENABLE_RASTA_TLS)
     target_compile_definitions(rasta PRIVATE ENABLE_TLS)
 endif(ENABLE_RASTA_TLS)
+
+if(ENABLE_RASTA_OPAQUE)
+    include(CheckLinkerFlag)
+    target_compile_definitions(rasta PUBLIC ENABLE_OPAQUE)
+    # libopaque headers
+    target_include_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/include)
+    target_link_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/lib)
+
+    check_linker_flag(C "-static" LINK_STATIC_SUPPORTED)
+    check_linker_flag(C "-dynamic" LINK_DYNAMIC_SUPPORTED)
+    if(${LINK_DYNAMIC_SUPPORTED} AND ${LINK_STATIC_SUPPORTED})
+        message("Linker supports -static")
+        # link only the libopaque library statically, and force all modules to be included
+        target_link_options(rasta PUBLIC "LINKER:-static")
+        if(APPLE)
+            target_link_options(rasta PUBLIC "LINKER:-force-load LINKER:-lopaque")
+            target_link_options(rasta PUBLIC "LINKER:-dynamic")
+        else()
+            target_link_options(rasta PUBLIC LINKER:--whole-archive LINKER:-lopaque LINKER:--no-whole-archive)
+            target_link_options(rasta PUBLIC "LINKER:-Bdynamic")
+        endif()
+        # consuming application also needs to link libsodium to resolve opaque's dependencies
+        target_link_options(rasta PUBLIC "LINKER:-lsodium")
+    else()
+        message(FATAL_ERROR "Linker does not support required linker flags!")
+    endif()
+endif()
 
 # Installation for library
 install(TARGETS ${target}

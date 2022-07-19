@@ -19,6 +19,9 @@ extern "C" {  // only need to export C interface if
 #include "config.h"
 #include "rasta_red_multiplexer.h"
 
+#ifdef ENABLE_OPAQUE
+#include <opaque.h>
+#endif
 
 typedef enum {
     RASTA_ROLE_CLIENT = 0,
@@ -42,6 +45,18 @@ typedef enum {
      * In case the role is server: a ConResp was sent, waiting for HB
      */
             RASTA_CONNECTION_START,
+    /**
+     * Waiting for Key Exchange Request
+     */
+        RASTA_CONNECTION_KEX_REQ,
+    /**
+     * Waiting for Key Exchange Response
+     */
+        RASTA_CONNECTION_KEX_RESP,
+    /**
+     * Waiting for Key Exchange Authentication
+     */
+        RASTA_CONNECTION_KEX_AUTH,
     /**
      * The connection was established, ready to send data
      */
@@ -138,6 +153,14 @@ struct rasta_connection {
     timed_event timeout_event;
     struct timed_event_data timeout_carry_data;
 
+#ifdef ENABLE_OPAQUE
+    /**
+     * triggers new key exchange
+     */
+    timed_event rekeying_event;
+    struct timed_event_data rekeying_carry_data;
+#endif
+
     /**
      * 1 if the process for sending heartbeats should be paused, otherwise 0
      */
@@ -185,6 +208,12 @@ struct rasta_connection {
      * receive sequence number (expected seq nr of the next received PDU)
      */
     uint32_t sn_r;
+
+    /**
+     * Initial sequence number
+     */
+    uint32_t sn_i;
+
     /**
      * sequence number that has to be checked in the next sent PDU
      */
@@ -244,6 +273,12 @@ struct rasta_connection {
     *   the error counters as specified in 5.5.5
     */
     struct rasta_error_counters errors;
+
+    /**
+     * Session data for and derived from key exchange
+     */
+    struct key_exchange_state kex_state;
+
 };
 
 /**

@@ -68,7 +68,22 @@ typedef enum {
     /**
      * Retransmitted Datamessage
      */
-    RASTA_TYPE_RETRDATA = 6241
+    RASTA_TYPE_RETRDATA = 6241,
+
+#ifdef ENABLE_OPAQUE
+    /**
+     * Contains key exchange request
+     */
+    RASTA_TYPE_KEX_REQUEST=6250,
+    /**
+     * Contains key exchange response
+     */
+    RASTA_TYPE_KEX_RESPONSE=6251,
+    /**
+     * Contains user authentication data
+     */
+    RASTA_TYPE_KEX_AUTHENTICATION=6252,
+#endif
 }rasta_conn_type;
 
 /**

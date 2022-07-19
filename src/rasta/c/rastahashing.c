@@ -1,5 +1,6 @@
 #include "rastahashing.h"
 #include <rmemory.h>
+#include <stdlib.h>
 
 void rasta_md4_set_key(rasta_hashing_context_t * context, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d){
     // MD4 IV has length 4*4 bytes
@@ -20,6 +21,15 @@ void rasta_md4_set_key(rasta_hashing_context_t * context, MD4_u32plus a, MD4_u32
     rmemcpy(&context->key.bytes[12], buffer, 4 * sizeof(unsigned char));
 }
 
+void rasta_set_hash_key_variable(rasta_hashing_context_t *context, const char *key, size_t key_length){
+    if(context->key.bytes){
+        freeRastaByteArray(&context->key);
+    }
+    allocateRastaByteArray(&context->key,key_length);
+    memcpy(context->key.bytes,key,key_length);
+    context->key.length = key_length;
+}
+
 MD4_CONTEXT rasta_get_md4_ctx_from_key(rasta_hashing_context_t * context){
     MD4_u32plus a, b, c, d;
 
@@ -37,6 +47,10 @@ MD4_CONTEXT rasta_get_md4_ctx_from_key(rasta_hashing_context_t * context){
 
 void rasta_calculate_hash(struct RastaByteArray data, rasta_hashing_context_t * context,  unsigned char * hash){
     MD4_CONTEXT md4_ctx;
+    if(!context->key.length){
+        // should never happen
+        abort();
+    }
     switch (context->algorithm){
         case RASTA_ALGO_MD4:
             md4_ctx = rasta_get_md4_ctx_from_key(context);

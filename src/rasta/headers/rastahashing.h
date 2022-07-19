@@ -75,5 +75,11 @@ void rasta_calculate_hash(struct RastaByteArray data, rasta_hashing_context_t * 
  * @param d D part of the initial MD4 value
  */
 void rasta_md4_set_key(rasta_hashing_context_t * context, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
-
+/**
+ * Sets a variable-length key for use with the different hash functions
+ * @param context context for the key
+ * @param key arbitrary, random bytes
+ * @param key_length number of bytes
+ */
+void rasta_set_hash_key_variable(rasta_hashing_context_t *context, const char *key, size_t key_length);
 #endif //RASTA_RASTAHASHING_H

@@ -10,7 +10,10 @@ extern "C" {  // only need to export C interface if
               // used by C++ source code
 #endif
 
+#include "key_exchange.h"
+#include <logging.h>
 #include "rastamodule.h"
+#include "rastahashing.h"
 #include <stdint.h>
 
 /**
@@ -86,7 +89,58 @@ struct RastaPacket createConnectionRequest(uint32_t receiver_id, uint32_t sender
 struct RastaPacket createConnectionResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t initial_sequence_number, uint32_t confirmed_sequence_number,
                                             uint32_t timestamp, uint32_t confirmed_timestamp, uint16_t send_max,
                                             const unsigned char version[4], rasta_hashing_context_t * hashing_context);
-
+/**
+ * Non-standard. Creates a Kex Exchange Request.
+ * @param receiver_id
+ * @param sender_id
+ * @param sequence_number
+ * @param confirmed_sequence_number
+ * @param timestamp
+ * @param confirmed_timestamp
+ * @param hashing_context
+ * @param psk
+ * @param kex_state
+ * @param logger
+ * @return
+ */
+struct RastaPacket createKexRequest(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, struct key_exchange_state *kex_state, struct logger_t *logger);
+/**
+ * Non-standard. Creates a Key Exchange Response.
+ * @param receiver_id
+ * @param sender_id
+ * @param sequence_number
+ * @param confirmed_sequence_number
+ * @param timestamp
+ * @param confirmed_timestamp
+ * @param hashing_context
+ * @param psk
+ * @param received_client_kex_request
+ * @param client_kex_request_length
+ * @param initial_sequence_number
+ * @param kex_state
+ * @param kex_config
+ * @param logger
+ * @return
+ */
+struct RastaPacket createKexResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                     uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, size_t client_kex_request_length, uint32_t initial_sequence_number, struct key_exchange_state *kex_state, const struct RastaConfigKex *kex_config, struct logger_t *logger);
+/**
+ * Non-standard. Creates a Key Exchange Authentication PDU.
+ * @param receiver_id
+ * @param sender_id
+ * @param sequence_number
+ * @param confirmed_sequence_number
+ * @param timestamp
+ * @param confirmed_timestamp
+ * @param hashing_context
+ * @param user_authentication
+ * @param user_authentication_length
+ * @param logger
+ * @return
+ */
+struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                           uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const uint8_t *user_authentication, size_t user_authentication_length, struct logger_t *logger);
 /**
  * Extracts the extra data for connectionrequests(6200) and connectionresponse(6201)
  * @param p

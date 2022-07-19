@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <stdbool.h>
 #include "config.h"
+#include <inttypes.h>
 
 struct LineParser {
     char buf[CONFIG_BUFFER_LENGTH];
@@ -73,7 +74,7 @@ void parser_skipBlanc(struct LineParser* p) {
 }
 
 /**
- * parses the identifier with maxlength 255 characters
+ * parses the identifier with maxlength MAX_DICTIONARY_STRING_LENGTH_BYTES characters
  * @param p
  * @param identifier pointer to the output
  */
@@ -81,7 +82,7 @@ void parser_parseIdentifier(struct LineParser *p, char* identifier) {
     parser_skipBlanc(p);
     int i = 0;
     while (isdigit(p->current) || isalpha(p->current) || (p->current == '_')) {
-        if (i >= 254) {
+        if (i >= MAX_DICTIONARY_STRING_LENGTH_BYTES - 1) {
             logger_log(&p->cfg->logger,LOG_LEVEL_ERROR, p->cfg->filename, "Error in line %d: Identifiers is too long", p->line);
             return;
         }
@@ -146,7 +147,7 @@ int parser_parseString(struct LineParser *p, char *string) {
     int i = 0;
 
     while (p->current != '"') {
-        if (i >= 254) {
+        if (i >= MAX_DICTIONARY_STRING_LENGTH_BYTES - 1) {
             logger_log(&p->cfg->logger,LOG_LEVEL_ERROR, p->cfg->filename, "Error in line %d: String is too long", p->line);
             return 0;
         }
@@ -222,7 +223,7 @@ int parser_parseArray(struct LineParser *p, struct DictionaryArray * array) {
             return 0;
         }
 
-        char string[256];
+        char string[MAX_DICTIONARY_STRING_LENGTH_BYTES];
         if (!parser_parseString(p,string)) {
             return 0;
         }
@@ -259,7 +260,7 @@ int parser_parseArray(struct LineParser *p, struct DictionaryArray * array) {
  * @param key
  * @return
  */
-void parser_parseValue(struct LineParser *p, const char key[256]) {
+void parser_parseValue(struct LineParser *p, const char key[MAX_DICTIONARY_STRING_LENGTH_BYTES]) {
     //skip empty start
     parser_skipBlanc(p);
 
@@ -461,6 +462,8 @@ struct RastaIPData extractIPData(char data[256], int arrayIndex) {
 }
 
 #define stringify(s) #s
+
+
 
 /**
  * sets the standard values in config
@@ -773,24 +776,86 @@ void config_setstd(struct RastaConfig * cfg) {
 
     entr = config_get(cfg, "RASTA_CA_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.ca_cert_path[PATH_MAX-1]=0;
+        memcpy(cfg->values.tls.ca_cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_CERT_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.cert_path[PATH_MAX-1] = 0;
+        memcpy(cfg->values.tls.cert_path,entr.value.string.c, PATH_MAX);
     }
 
     entr = config_get(cfg, "RASTA_KEY_PATH");
     if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
+        cfg->values.tls.key_path[PATH_MAX-1]=0;
+        memcpy(cfg->values.tls.key_path,entr.value.string.c, PATH_MAX);
     }
 
 #ifdef ENABLE_TLS
     entr = config_get(cfg, "RASTA_TLS_HOSTNAME");
-    if(entr.type == DICTIONARY_STRING){
-        strncpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
+    if(entr.type== DICTIONARY_STRING){
+        cfg->values.tls.tls_hostname[MAX_DOMAIN_LENGTH-1] = 0;
+        memcpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
     }
+#endif
+
+    cfg->values.kex.mode = KEY_EXCHANGE_MODE_NONE;
+
+#ifdef ENABLE_OPAQUE
+    entr = config_get(cfg, "RASTA_KEX_MODE");
+    if(entr.type == DICTIONARY_STRING) {
+        bool accepted = false;
+        if (!strncmp(entr.value.string.c, stringify(KEY_EXCHANGE_MODE_OPAQUE),
+                     strlen(stringify(KEY_EXCHANGE_MODE_OPAQUE)))) {
+            cfg->values.kex.mode = KEY_EXCHANGE_MODE_OPAQUE;
+            accepted = true;
+        }
+        if (!accepted) {
+            fprintf(stderr, "Unknown or unsupported KEX mode: %s\n", entr.value.string.c);
+            exit(1);
+        }
+    }
+    entr = config_get(cfg, "RASTA_KEX_PSK");
+
+    if(entr.type == DICTIONARY_STRING){
+        cfg->values.kex.psk[KEX_PSK_MAX-1]=0;
+        memcpy(cfg->values.kex.psk,entr.value.string.c,KEX_PSK_MAX);
+    }
+
+    entr = config_get(cfg, "RASTA_KEX_REKEYING_INTERVAL_MS");
+    // default = no rekeying
+    cfg->values.kex.rekeying_interval_ms = 0;
+    if(entr.type == DICTIONARY_NUMBER){
+        cfg->values.kex.rekeying_interval_ms = entr.value.number;
+    }
+    cfg->values.kex.has_psk_record = false;
+    entr = config_get(cfg,"RASTA_KEX_PSK_RECORD");
+    if(entr.type == DICTIONARY_STRING){
+        const size_t record_header_length = strlen(CONFIGURATION_FILE_USER_RECORD_HEADER) + 1;
+        const size_t given_record_length = strlen(entr.value.string.c);
+        // -1 for null byte, 2 * the target size since 0-padded hex format instead of binary (i.e. 2 chars per byte)
+        const size_t expected_record_length = record_header_length - 1 + 2 * sizeof(cfg->values.kex.psk_record);
+        char record_header[record_header_length];
+        size_t output_start = 0;
+        memcpy(record_header,entr.value.string.c,record_header_length - 1);
+        record_header[record_header_length - 1] = 0;
+
+        if(given_record_length != expected_record_length){
+            fprintf(stderr, "Invalid PSK record length %lu bytes - %lu bytes were expected!\n",given_record_length,expected_record_length);
+        }
+
+        if(strncmp(record_header,CONFIGURATION_FILE_USER_RECORD_HEADER,record_header_length - 1) != 0){
+            fprintf(stderr, "Unknown psk record header: %s\n",record_header);
+            exit(1);
+        }
+        cfg->values.kex.has_psk_record = true;
+
+        for(size_t i = record_header_length - 1; i < given_record_length; i+=2){
+            sscanf((char*)&entr.value.string.c[i],"%02"SCNx8,(unsigned char *)&cfg->values.kex.psk_record[output_start++]);
+        }
+    }
+
 #endif
 }
 

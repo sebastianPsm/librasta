@@ -43,6 +43,9 @@ extern "C" {  // only need to export C interface if
  */
 #define RASTA_CONFIG_KEY_INITIAL_SEQ_NUM "RASTA_INITIAL_SEQ"
 
+#define NS_PER_SEC 1000000000
+#define MS_PER_S 1000
+#define NS_PER_MS 1000000
 /**
  * Reasons for DiscReq as specified in 5.4.6
  */

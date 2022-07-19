@@ -13,7 +13,10 @@ extern "C" {  // only need to export C interface if
 #include "dictionary.h"
 #include "logging.h"
 #include "rastafactory.h"
+#include "key_exchange.h"
 #include <limits.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define CONFIG_BUFFER_LENGTH 10000
 
@@ -101,6 +104,8 @@ struct RastaConfigTLS {
      */
     char tls_hostname[MAX_DOMAIN_LENGTH];
 };
+
+
 /**
  * stores all presets after load
  */
@@ -123,6 +128,14 @@ struct RastaConfigInfo {
      * Must set mode, and for mode != TLS_MODE_DISABLED, paths to certificate and keys must be set as required
      */
     struct RastaConfigTLS tls;
+
+    /**
+     * Configuration for Key Exchange.
+     * Must set mode, and for mode != KEX_EXCHANGE_MODE_NONE also psk.
+     */
+    struct RastaConfigKex kex;
+
+
 };
 
 /**

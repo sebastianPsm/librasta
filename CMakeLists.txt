@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.18)
 project(rasta
     LANGUAGES C CXX
     DESCRIPTION "A C implementation of the RaSTA protocol stack")
@@ -13,6 +13,7 @@ option(BUILD_LOCAL_EXAMPLES "Build the RaSTA/SCI examples the run on localhost" 
 option(BUILD_REMOTE_EXAMPLES "Build the RaSTA/SCI examples that communicate in a network" ON)
 option(BUILD_RASTA_GRPC_BRIDGE "Build the RaSTA/gRPC bridge" OFF)
 option(ENABLE_RASTA_TLS "Enable RaSTA over TLS" OFF)
+option(ENABLE_RASTA_OPAQUE "Enable Password-Authenticated Session Key Exchange based on OPAQUE" OFF)
 option(EXAMPLE_IP_OVERRIDE "Use IPs from environment variables in RaSTA/SCI examples" OFF)
 option(ENABLE_CODE_COVERAGE "Provide command to generate code coverage report" OFF)
 option(ENABLE_STATIC_ANALYSIS "Run cppcheck along with the compiler" OFF)
@@ -45,6 +46,27 @@ if(ENABLE_CODE_COVERAGE)
     endif()
 endif(ENABLE_CODE_COVERAGE)
 
+if(ENABLE_RASTA_OPAQUE)
+
+    find_program(GNU_MAKE_PATH
+            NAMES gmake mingw32-make make
+            NAMES_PER_DIR
+            DOC "GNU Make" REQUIRED)
+
+    configure_file(cmake/IncludeLibOpaque.cmake libopaque-timeout/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -DGNU_MAKE_PATH=${GNU_MAKE_PATH} -G "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libopaque-timeout)
+    if (result)
+        message(FATAL_ERROR "CMake step for libopaque failed: ${result}")
+    endif ()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/libopaque-timeout)
+    if (result)
+        message(FATAL_ERROR "Build step for libopaque failed: ${result}")
+    endif ()
+endif()
 #
 # Compiler settings and options
 #

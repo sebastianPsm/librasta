@@ -2,9 +2,9 @@
 // Created by tobia on 29.11.2017.
 //
 
-#include <string.h>
 #include "rastafactory.h"
 #include "rmemory.h"
+#include <stdlib.h>
 
 
 /*
@@ -132,6 +132,133 @@ struct RastaPacket createConnectionResponse(uint32_t receiver_id, uint32_t sende
     return  p;
 
 }
+
+#ifdef ENABLE_OPAQUE
+struct RastaPacket createKexRequest(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, struct key_exchange_state *kex_state, struct logger_t *logger) {
+    struct RastaPacket p = initializePacket(RASTA_TYPE_KEX_REQUEST,receiver_id,sender_id,sequence_number,
+                                            confirmed_sequence_number,timestamp,confirmed_timestamp,sizeof(kex_state->client_public), hashing_context);
+    int ret = key_exchange_prepare_credential_request(kex_state,psk,logger);
+    if(ret) {
+        logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","kex_exchange_prepare_credential_request failed!");
+        abort();
+    }
+
+    memcpy(&p.data.bytes[0],kex_state->client_public,sizeof(kex_state->client_public));
+
+    return p;
+}
+#else
+struct RastaPacket createKexExchangeRequest(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                               uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, struct key_exchange_state kex_state, struct logger_t *logger) {
+    (void) receiver_id;
+    (void) sender_id;
+    (void) sequence_number;
+    (void) confirmed_sequence_number;
+    (void) timestamp;
+    (void) confirmed_timestamp;
+    (void) hashing_context;
+    (void) psk;
+    (void) kex_state;
+    (void) logger;
+
+    logger_log(logger,LOG_LEVEL_ERROR,"createKexExchangeRequest","createKexExchangeRequest not implemented!");
+    // should never be called
+    abort();
+}
+#endif
+
+#ifdef ENABLE_OPAQUE
+struct RastaPacket createKexResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                     uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, size_t client_kex_request_length, uint32_t initial_sequence_number, struct key_exchange_state *kex_state, const struct RastaConfigKex *kex_config, struct logger_t *logger) {
+    struct RastaPacket p = initializePacket(RASTA_TYPE_KEX_RESPONSE,receiver_id,sender_id,sequence_number,
+                                            confirmed_sequence_number,timestamp,confirmed_timestamp,sizeof(kex_state->certificate_response), hashing_context);
+
+    int ret;
+
+    if(kex_config->has_psk_record){
+        rmemcpy(kex_state->user_record,kex_config->psk_record,sizeof(kex_state->user_record));
+    }
+    else{
+        ret = key_exchange_prepare_from_psk(kex_state,psk,sender_id,receiver_id,logger);
+
+        if(ret) {
+            logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","key_exchange_prepare_from_psk failed!");
+            abort();
+        }
+    }
+
+
+    if(client_kex_request_length != sizeof(kex_state->client_public)) {
+        logger_log(logger, LOG_LEVEL_ERROR, "createKexRequest",
+                   "Client sent Key Exchange Request of invalid length: %lu", client_kex_request_length);
+        abort();
+    }
+
+    ret = kex_prepare_credential_response(kex_state,received_client_kex_request,client_kex_request_length,sender_id,receiver_id,initial_sequence_number,logger);
+
+    if(ret) {
+        logger_log(logger,LOG_LEVEL_ERROR,"createKexRequest","kex_prepare_credential_response failed!");
+        abort();
+    }
+
+    memcpy(&p.data.bytes[0],kex_state->certificate_response,sizeof(kex_state->certificate_response));
+
+    return p;
+}
+#else
+struct RastaPacket createKexExchangeResponse(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                            uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const char *psk, const uint8_t *received_client_kex_request, const size_t client_kex_request_length, const uint32_t initial_sequence_number, struct key_exchange_state *kex_state, const struct RastaConfigKex *kex_config, struct logger_t *logger) {
+    (void) receiver_id;
+    (void) sender_id;
+    (void) sequence_number;
+    (void) confirmed_sequence_number;
+    (void) timestamp;
+    (void) confirmed_timestamp;
+    (void) hashing_context;
+    (void) psk;
+    (void) received_client_kex_request;
+    (void) client_kex_request_length;
+    (void) initial_sequence_number;
+    (void) kex_state;
+    (void) kex_config;
+    (void) logger;
+
+    logger_log(logger,LOG_LEVEL_ERROR,"createKexExchangeResponse","createKexExchangeResponse not implemented!");
+    // should never be called
+    abort();
+}
+#endif
+
+#ifdef ENABLE_OPAQUE
+struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                             uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const uint8_t *user_authentication, const size_t user_authentication_length, struct logger_t *logger) {
+    struct RastaPacket p = initializePacket(RASTA_TYPE_KEX_AUTHENTICATION,receiver_id,sender_id,sequence_number,
+                                            confirmed_sequence_number,timestamp,confirmed_timestamp,user_authentication_length, hashing_context);
+    (void) logger;
+    memcpy(&p.data.bytes[0],user_authentication,user_authentication_length);
+
+    return p;
+}
+#else
+struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender_id, uint32_t sequence_number, uint32_t confirmed_sequence_number,
+                                             uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t * hashing_context, const uint8_t *user_authentication, const size_t user_authentication_length, struct logger_t *logger) {
+    (void) receiver_id;
+    (void) sender_id;
+    (void) sequence_number;
+    (void) confirmed_sequence_number;
+    (void) timestamp;
+    (void) confirmed_timestamp;
+    (void) hashing_context;
+    (void) user_authentication;
+    (void) user_authentication_length;
+    (void) logger;
+
+    logger_log(logger,LOG_LEVEL_ERROR,"createKexAuthentication","createKexAuthentication not implemented!");
+    // should never be called
+    abort();
+}
+#endif
 
 struct RastaConnectionData extractRastaConnectionData(struct RastaPacket p) {
     struct RastaConnectionData result;
