@@ -15,7 +15,7 @@
 #include <rastahandle.h>
 #include <rasta_lib.h>
 #include <tcp.h>
-
+#include <stdbool.h>
 
 /**
  * this will generate a 4 byte timestamp of the current system time
@@ -535,6 +535,11 @@ void sr_init_connection(struct rasta_connection* connection, unsigned long id, s
 
     // create send queue
     connection->fifo_send = fifo_init(2* cfg.max_packet);
+
+    // reset last rekeying time
+#ifdef ENABLE_OPAQUE
+    connection->kex_state.last_key_exchanged_millis = 0;
+#endif
 }
 
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection * connection){
@@ -633,11 +638,30 @@ void init_send_heartbeat_event(timed_event* ev, struct timed_event_data* carry_d
     enable_timed_event(ev);
 }
 
+int send_timed_key_exchange(void *arg);
+void init_send_key_exchange_event(timed_event* ev, struct timed_event_data* carry_data,
+                                  struct rasta_connection* connection, struct rasta_handle* h) {
+    ev->callback = send_timed_key_exchange;
+    ev->carry_data = carry_data;
+    ev->interval = h->config.values.kex.rekeying_interval_ms  * NS_PER_MS;
+    // add some headroom for computation and communication
+    ev->interval /= 2;
+    carry_data->handle = h->receive_handle;
+    carry_data->connection = connection;
+    enable_timed_event(ev);
+}
+
 void init_connection_events(struct rasta_handle* h, struct rasta_connection* connection) {
     init_connection_timeout_event(&connection->timeout_event, &connection->timeout_carry_data, connection, h);
     init_send_heartbeat_event(&connection->send_heartbeat_event, &connection->timeout_carry_data, connection, h);
     add_timed_event(h->ev_sys, &connection->timeout_event);
     add_timed_event(h->ev_sys, &connection->send_heartbeat_event);
+#ifdef ENABLE_OPAQUE
+    if(connection->role == RASTA_ROLE_CLIENT && h->config.values.kex.rekeying_interval_ms) {
+        init_send_key_exchange_event(&connection->rekeying_event, &connection->rekeying_carry_data, connection, h);
+        add_timed_event(h->ev_sys, &connection->rekeying_event);
+    }
+#endif
 }
 
 void add_connection_to_list(struct rasta_handle* h, struct rasta_connection* con) {
@@ -669,6 +693,64 @@ void remove_connection_from_list(struct rasta_handle* h, struct rasta_connection
  * Handle packet functions
  */
 
+static uint64_t get_current_time_ms() {
+    uint64_t current_time;
+    struct timespec current_time_tv;
+    clock_gettime(CLOCK_MONOTONIC, &current_time_tv);
+
+    current_time = current_time_tv.tv_nsec/NS_PER_MS + current_time_tv.tv_sec * MS_PER_S;
+    return current_time;
+}
+
+/**
+ * send a Key Exchange Request to the specified host
+ * @param connection the connection which should be used
+ * @param host the host where the HB will be sent to
+ * @param port the port where the HB will be sent to
+ */
+void send_KexRequest(redundancy_mux *mux, struct rasta_connection * connection, struct rasta_receive_handle *h){
+#ifdef ENABLE_OPAQUE
+    struct RastaPacket hb = createKexRequest(connection->remote_id, connection->my_id, connection->sn_t,
+                                             connection->cs_t, cur_timestamp(), connection->ts_r,
+                                             &mux->sr_hashing_context, h->handle->config.values.kex.psk, &connection->kex_state, h->logger);
+
+    if(!connection->kex_state.last_key_exchanged_millis && h->handle->config.values.kex.rekeying_interval_ms){
+        // first key exchanged - need to enable periodic rekeying
+        init_send_key_exchange_event(&connection->rekeying_event,&connection->rekeying_carry_data,connection,h->handle);
+        add_timed_event(h->handle->ev_sys, &connection->rekeying_event);
+    }
+    else{
+        logger_log(h->logger,LOG_LEVEL_INFO,"RaSTA KEX", "Rekeying at %"PRIu64,get_current_time_ms());
+    }
+
+    redundancy_mux_send(mux, hb);
+
+    connection->sn_t = connection->sn_t +1;
+
+    connection->kex_state.last_key_exchanged_millis = get_current_time_ms();
+    connection->current_state = RASTA_CONNECTION_KEX_RESP;
+#else
+    // should never be called
+    (void) mux;
+    (void) connection;
+    (void) h;
+    abort();
+#endif
+}
+
+int send_timed_key_exchange(void *arg){
+#ifdef ENABLE_OPAQUE
+    struct timed_event_data *event_data = (struct timed_event_data *) arg;
+    struct rasta_receive_handle *handle = (struct rasta_receive_handle *) event_data->handle;
+    send_KexRequest(handle->mux,event_data->connection,handle);
+    // call periodically
+    reschedule_event(&event_data->connection->rekeying_event);
+#else
+    // should never be called
+    (void) arg;
+#endif
+    return 0;
+}
 
 struct rasta_connection* handle_conreq(struct rasta_receive_handle *h, struct rasta_connection* connection, struct RastaPacket receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Received ConnectionRequest from %d", receivedPacket.sender_id);
@@ -686,7 +768,7 @@ struct rasta_connection* handle_conreq(struct rasta_receive_handle *h, struct ra
         sr_init_connection(&new_con,receivedPacket.sender_id,h->info,h->config,h->logger, RASTA_ROLE_SERVER);
 
         // initialize seq num
-        new_con.sn_t = get_initial_seq_num(&h->handle->config);
+        new_con.sn_t = new_con.sn_i = receivedPacket.sequence_number;
         //new_con.sn_t = 55;
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Using %lu as initial sequence number",
             (long unsigned int) new_con.sn_t);
@@ -814,12 +896,18 @@ struct rasta_connection* handle_conresp(struct rasta_receive_handle *h, struct r
 
                 //printf("RECEIVED CS_PDU=%lu (Type=%d)\n", receivedPacket.sequence_number, receivedPacket.type);
 
+                // update tls_state, ready to send data
+                con->current_state = RASTA_CONNECTION_UP;
+
                 // send hb
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Sending heartbeat..");
                 send_Heartbeat(h->mux, con, 1);
 
-                // update tls_state, ready to send data
-                con->current_state = RASTA_CONNECTION_UP;
+#ifdef ENABLE_OPAQUE
+                if(h->handle->config.values.kex.mode == KEY_EXCHANGE_MODE_OPAQUE) {
+                    send_KexRequest(h->mux, con, h);
+                }
+#endif
 
                 // fire connection tls_state changed event
                 fire_on_connection_state_change(sr_create_notification_result(h->handle, con));
@@ -860,6 +948,243 @@ struct rasta_connection* handle_conresp(struct rasta_receive_handle *h, struct r
         return con;
     }
     return con;
+}
+
+/**
+ * processes a received Key Exchange Request packet
+ * @param con the used connection
+ * @param packet the received Key Exchange Request packet
+ */
+void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket){
+    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Request", "received Data");
+
+    if (sr_sn_in_seq(connection, receivedPacket)){
+        if (connection->current_state != RASTA_CONNECTION_KEX_REQ && (!h->handle->config.values.kex.rekeying_interval_ms || connection->current_state != RASTA_CONNECTION_UP)){
+            // received Key Exchange Request in the wrong phase -> disconnect and close
+            sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+        } else{
+            // sn_in_seq == true -> check cts_in_seq
+
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req", "SN in SEQ");
+
+            if (sr_cts_in_seq(connection,h->config, receivedPacket)){
+                if(h->handle->config.values.kex.mode == KEY_EXCHANGE_MODE_NONE){
+                    logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Req","Key exchange request received when not activated!");
+                    sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+                    return;
+                }
+#ifdef ENABLE_OPAQUE
+
+                struct RastaPacket response;
+                connection->kex_state.last_key_exchanged_millis = get_current_time_ms();
+
+                if(connection->kex_state.last_key_exchanged_millis){
+                    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "Accepted rekeying at %"PRIu64,connection->kex_state.last_key_exchanged_millis);
+                }
+
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req", "CTS in SEQ");
+
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Req","Key exchange request received at %"PRIu64,connection->kex_state.last_key_exchanged_millis);
+                // valid Key Exchange request packet received
+
+                response = createKexResponse(connection->remote_id, connection->my_id, connection->sn_t,
+                                             receivedPacket.sequence_number, current_ts(),
+                                             receivedPacket.timestamp, h->hashing_context, h->handle->config.values.kex.psk,
+                                             (uint8_t *) receivedPacket.data.bytes, receivedPacket.data.length, connection->sn_i,
+                                             &connection->kex_state,
+                                             &h->handle->config.values.kex, h->logger);
+
+                redundancy_mux_send(h->mux, response);
+
+                // set values according to 5.6.2 [3]
+                connection->sn_r = receivedPacket.sequence_number +1;
+                connection->sn_t += 1;
+                connection->cs_t = receivedPacket.sequence_number;
+                connection->cs_r = receivedPacket.confirmed_sequence_number;
+                connection->ts_r = receivedPacket.timestamp;
+                connection->cts_r = receivedPacket.confirmed_timestamp;
+                // con->cts_r = current_timestamp();
+
+                // cs_r updated, remove confirmed messages
+                sr_remove_confirmed_messages(h,connection);
+
+                // wait for client to send auth packet, indicating that on the client's side, the exchange worked
+                connection->current_state = RASTA_CONNECTION_KEX_AUTH;
+
+                logger_hexdump(h->logger,LOG_LEVEL_INFO,connection->kex_state.session_key,sizeof(connection->kex_state.session_key),"Setting hash key to:");
+
+                rasta_set_hash_key_variable(h->hashing_context, (char *) connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
+
+#else
+                logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Req", "Not implemented!");
+
+                abort();
+#endif
+
+
+            } else{
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Kex", "CTS not in SEQ");
+
+                // increase cs error counter
+                connection->errors.cs++;
+
+                // send DiscReq and close connection
+                sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_PROTOCOLERROR ,0);
+            }
+        }
+    } else{
+        // received key exchange request in phase during which I should not have received one -> disconnect and close
+        sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+    }
+}
+
+/**
+ * processes a received Key Exchange Response packet
+ * @param con the used connection
+ * @param packet the received Key Exchange Response packet
+ */
+void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket){
+    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Response", "received Data");
+
+    if (sr_sn_in_seq(connection, receivedPacket)){
+        if (connection->current_state != RASTA_CONNECTION_KEX_RESP){
+            // received Key Exchange Response in the wrong phase -> disconnect and close
+            sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+        } else{
+            // sn_in_seq == true -> check cts_in_seq
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "SN in SEQ");
+
+            if (sr_cts_in_seq(connection,h->config, receivedPacket)){
+                if(h->handle->config.values.kex.mode == KEY_EXCHANGE_MODE_NONE){
+                    logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp","Key exchange response received when not activated!");
+                    sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+                    return;
+                }
+#ifdef ENABLE_OPAQUE
+
+                struct RastaPacket response;
+                int ret;
+
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "CTS in SEQ");
+                // valid Key Exchange response packet received
+                ret = kex_recover_credential(&connection->kex_state,(const uint8_t *) receivedPacket.data.bytes,receivedPacket.data.length,connection->my_id,connection->remote_id,connection->sn_i,h->logger);
+
+                if(ret){
+                    logger_log(h->logger,LOG_LEVEL_ERROR,"RaSTA HANDLE: KEX Resp", "Could not recover credentials!");
+                    sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+                    return;
+                }
+                response = createKexAuthentication(connection->remote_id,connection->my_id,connection->sn_t,receivedPacket.sequence_number,current_ts(),receivedPacket.timestamp,h->hashing_context,connection->kex_state.user_auth_server,sizeof(connection->kex_state.user_auth_server),h->logger);
+
+                redundancy_mux_send(h->mux, response);
+
+                // set values according to 5.6.2 [3]
+                connection->sn_r = receivedPacket.sequence_number +1;
+                connection->sn_t += 1;
+                connection->cs_t = receivedPacket.sequence_number;
+                connection->cs_r = receivedPacket.confirmed_sequence_number;
+                connection->ts_r = receivedPacket.timestamp;
+                connection->cts_r = receivedPacket.confirmed_timestamp;
+                // con->cts_r = current_timestamp();
+
+                // cs_r updated, remove confirmed messages
+                sr_remove_confirmed_messages(h,connection);
+
+                // kex is done from our PoV, can expect data from now
+                connection->current_state = RASTA_CONNECTION_UP;
+
+                logger_hexdump(h->logger,LOG_LEVEL_INFO,connection->kex_state.session_key,sizeof(connection->kex_state.session_key),"Setting hash key to:");
+
+                rasta_set_hash_key_variable(h->hashing_context, (char *) connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
+#else
+                logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Not implemented!");
+                abort();
+#endif
+
+            } else{
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Kex", "CTS not in SEQ");
+
+                // increase cs error counter
+                connection->errors.cs++;
+
+                // send DiscReq and close connection
+                sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_PROTOCOLERROR ,0);
+            }
+        }
+    } else{
+        // received key exchange response in phase during which I should not have received one -> disconnect and close
+        sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+    }
+}
+
+/**
+ * processes a received Key Exchange Authentication packet
+ * @param con the used connection
+ * @param packet the received Key Exchange Authentication packet
+ */
+void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket){
+    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Authentication", "received Data");
+
+    if (sr_sn_in_seq(connection, receivedPacket)){
+        if (connection->current_state != RASTA_CONNECTION_KEX_AUTH){
+            // received Key Exchange Authentication in the wrong phase -> disconnect and close
+            sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+        } else{
+            // sn_in_seq == true -> check cts_in_seq
+
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Auth", "SN in SEQ");
+
+            if (sr_cts_in_seq(connection,h->config, receivedPacket)){
+
+                if(h->handle->config.values.kex.mode == KEY_EXCHANGE_MODE_NONE){
+                    logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Auth","Key exchange Authentication received when not activated!");
+                    sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+                    return;
+                }
+#ifdef ENABLE_OPAQUE
+                int ret;
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Auth", "CTS in SEQ");
+                // valid Key Exchange Authentication packet received
+                ret = kex_authenticate_user(&connection->kex_state,(const uint8_t *) receivedPacket.data.bytes,receivedPacket.data.length,h->logger);
+
+                if(ret){
+                    logger_log(h->logger,LOG_LEVEL_ERROR,"RaSTA HANDLE: KEX Auth", "Could not authenticate user");
+                    sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+                    return;
+                }
+
+                // set values according to 5.6.2 [3]
+                connection->sn_r = receivedPacket.sequence_number +1;
+                connection->cs_t = receivedPacket.sequence_number;
+                connection->cs_r = receivedPacket.confirmed_sequence_number;
+                connection->ts_r = receivedPacket.timestamp;
+                connection->cts_r = receivedPacket.confirmed_timestamp;
+                // con->cts_r = current_timestamp();
+
+                // cs_r updated, remove confirmed messages
+                sr_remove_confirmed_messages(h,connection);
+
+                // kex is done from our PoV, can expect data from now
+                connection->current_state = RASTA_CONNECTION_UP;
+#else
+                logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Auth", "Not implemented!");
+                abort();
+#endif
+
+            } else{
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Kex", "CTS not in SEQ");
+
+                // increase cs error counter
+                connection->errors.cs++;
+
+                // send DiscReq and close connection
+                sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_PROTOCOLERROR ,0);
+            }
+        }
+    } else{
+        // received key exchange response in phase during which I should not have received one -> disconnect and close
+        sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
+    }
 }
 
 void handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket){
@@ -913,8 +1238,14 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
             connection->cs_r = receivedPacket.confirmed_sequence_number;
             connection->ts_r = receivedPacket.timestamp;
 
-            // sequence number correct, ready to receive data
-            connection->current_state = RASTA_CONNECTION_UP;
+            if(h->handle->config.values.kex.mode == KEY_EXCHANGE_MODE_NONE) {
+                // sequence number correct, ready to receive data
+                connection->current_state = RASTA_CONNECTION_UP;
+            }
+            else{
+                // need to negotiate session key first
+                connection->current_state = RASTA_CONNECTION_KEX_REQ;
+            }
 
             connection->hb_locked = 0;
 
@@ -940,8 +1271,8 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
 
     if (sr_sn_in_seq(connection, receivedPacket)){
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "SN in SEQ");
-
-        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN){
+        // heartbeats also permissible during key exchange phase, since computation could exceed heartbeat interval
+        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN || connection->current_state == RASTA_CONNECTION_KEX_REQ || connection->current_state == RASTA_CONNECTION_KEX_RESP || connection->current_state == RASTA_CONNECTION_KEX_AUTH){
             // check cts_in_seq
             if (sr_cts_in_seq(connection,h->config, receivedPacket)){
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "CTS in SEQ");
@@ -992,8 +1323,8 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)){
-        if (connection->current_state == RASTA_CONNECTION_START){
-            // received data in START -> disconnect and close
+        if (connection->current_state == RASTA_CONNECTION_START || connection->current_state == RASTA_CONNECTION_KEX_REQ ||connection->current_state == RASTA_CONNECTION_KEX_RESP || connection->current_state == RASTA_CONNECTION_KEX_AUTH){
+            // received data in START or when key exchange still in progress-> disconnect and close
             sr_close_connection(connection,h->handle,h->mux,h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE ,0);
         } else if (connection->current_state == RASTA_CONNECTION_UP){
             // sn_in_seq == true -> check cts_in_seq
@@ -1202,6 +1533,38 @@ void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *co
         }
     }
 }
+
+#ifdef ENABLE_OPAQUE
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig) {
+    uint64_t current_time;
+    if(connection->current_state == RASTA_CONNECTION_KEX_REQ){
+        // already waiting for key exchange
+        return false;
+    }
+
+    if(connection->role != RASTA_ROLE_SERVER){
+        // client cannot expect to receive key requests from server
+        return false;
+    }
+
+    if(!kexConfig->rekeying_interval_ms || !connection->kex_state.last_key_exchanged_millis){
+        // no rekeying or no initial time yet
+        return false;
+    }
+
+    current_time = get_current_time_ms();
+
+    return current_time - connection->kex_state.last_key_exchanged_millis > REKEYING_ALLOWED_DELAY_MS + kexConfig->rekeying_interval_ms;
+}
+#else
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig){
+    // no rekeying possible without key exchange
+    (void) connection;
+    (void) kexConfig;
+    return false;
+}
+#endif
+
 /*
  * threads
  */
@@ -1291,6 +1654,13 @@ int on_readable_event(void* handle) {
         return 0;
     }
 
+    if(sr_rekeying_skipped(con,&h->handle->config.values.kex)){
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %"PRIu64" - disconnecting!",get_current_time_ms());
+        sr_close_connection(con,h->handle,h->mux,h->info,RASTA_DISC_REASON_TIMEOUT,0);
+        freeRastaByteArray(&receivedPacket.data);
+        return 0;
+    }
+
     switch (receivedPacket.type){
         case RASTA_TYPE_RETRDATA:
             handle_retrdata(h,con, receivedPacket);
@@ -1310,6 +1680,17 @@ int on_readable_event(void* handle) {
         case RASTA_TYPE_HB:
             handle_hb(h,con, receivedPacket);
             break;
+#ifdef ENABLE_OPAQUE
+        case RASTA_TYPE_KEX_REQUEST:
+            handle_kex_request(h,con,receivedPacket);
+            break;
+        case RASTA_TYPE_KEX_RESPONSE:
+            handle_kex_response(h,con,receivedPacket);
+            break;
+        case RASTA_TYPE_KEX_AUTHENTICATION:
+            handle_kex_auth(h,con,receivedPacket);
+            break;
+#endif
         default:
             logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received unexpected packet type %d", receivedPacket.type);
             // increase type error counter
@@ -1587,6 +1968,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
                                                         new_con.sn_t, cur_timestamp(),
                                                         h->config.values.sending.send_max,
                                                         version, &h->hashing_context);
+    new_con.sn_i = new_con.sn_t;
 
     redundancy_mux_send(&h->mux, conreq);
 
@@ -1695,9 +2077,15 @@ void sr_disconnect(struct rasta_handle* h, struct rasta_connection* con) {
 
     sr_close_connection(con, h, &h->mux, h->config.values.general, RASTA_DISC_REASON_USERREQUEST, 0);
 
-    remove_timed_event(h->ev_sys, &con->timeout_event);
-    remove_timed_event(h->ev_sys, &con->send_heartbeat_event);
-    remove_connection_from_list(h, con);
+    remove_timed_event(h->ev_sys,&con->timeout_event);
+    remove_timed_event(h->ev_sys,&con->send_heartbeat_event);
+    remove_connection_from_list(h,con);
+#ifdef ENABLE_OPAQUE
+    if(h->config.values.kex.rekeying_interval_ms) {
+        remove_timed_event(h->ev_sys,&con->rekeying_event);
+    }
+#endif
+
     h->user_handles->on_disconnect(con, con);
 }
 

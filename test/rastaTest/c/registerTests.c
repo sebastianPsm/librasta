@@ -12,6 +12,7 @@
 #include "rastalisttest.h"
 #include "fifotest.h"
 #include "blake2test.h"
+#include "opaquetest.h"
 
 int suite_init(void) {
     return 0;
@@ -83,6 +84,11 @@ void cunit_register() {
 
     // Tests for BLAKE2 hashes
     CU_add_test(pSuiteMath, "testBlake2Hash", testBlake2Hash);
+
+    // Tests for OPAQUE
+#ifdef ENABLE_OPAQUE
+    CU_add_test(pSuiteMath, "opaque_wrapper_test", opaque_wrapper_test);
+#endif
 }
 
 int main () {

@@ -46,6 +46,18 @@ target_link_libraries(tls_example_local rasta wolfssl)
 endif()
 endif()
 
+if(ENABLE_RASTA_OPAQUE)
+        add_executable(kex_example_local examples_localhost/c/kex.c)
+        set_target_properties(kex_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+        target_compile_options(kex_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+        target_link_libraries(kex_example_local rasta sodium)
+
+        add_executable(record_generator examples_localhost/c/record_generator.c)
+        set_target_properties(record_generator PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+        target_compile_options(record_generator PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+        target_link_libraries(record_generator rasta sodium)
+endif()
+
 # Copy RaSTA configs to build directory
 configure_file(config/rasta_server_local.cfg rasta_server_local.cfg COPYONLY)
 configure_file(config/rasta_client1_local.cfg rasta_client1_local.cfg COPYONLY)
@@ -58,6 +70,10 @@ configure_file(config/rasta_client2_local_dtls.cfg rasta_client2_local_dtls.cfg 
 configure_file(config/rasta_server_local_tls.cfg rasta_server_local_tls.cfg COPYONLY)
 configure_file(config/rasta_client1_local_tls.cfg rasta_client1_local_tls.cfg COPYONLY)
 configure_file(config/rasta_client2_local_tls.cfg rasta_client2_local_tls.cfg COPYONLY)
+
+configure_file(config/rasta_server_local_kex.cfg rasta_server_local_kex.cfg COPYONLY)
+configure_file(config/rasta_client1_local_kex.cfg rasta_client1_local_kex.cfg COPYONLY)
+configure_file(config/rasta_client2_local_kex.cfg rasta_client2_local_kex.cfg COPYONLY)
 endif(BUILD_LOCAL_EXAMPLES)
 
 

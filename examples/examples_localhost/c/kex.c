@@ -12,16 +12,16 @@
 #include <fifo.h>
 #include "wolfssl_certificate_helper.h"
 
-#define CONFIG_PATH_S "rasta_server_local_dtls.cfg"
-#define CONFIG_PATH_C1 "rasta_client1_local_dtls.cfg"
-#define CONFIG_PATH_C2 "rasta_client2_local_dtls.cfg"
+#define CONFIG_PATH_S "rasta_server_local_kex.cfg"
+#define CONFIG_PATH_C1 "rasta_client1_local_kex.cfg"
+#define CONFIG_PATH_C2 "rasta_client2_local_kex.cfg"
 
 #define ID_R 0x61
 #define ID_S1 0x62
 #define ID_S2 0x63
 
 void printHelpAndExit(void){
-    printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
+    printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode. Optionally, add a second parameter to disable rekeying.\n");
     exit(1);
 }
 
@@ -227,21 +227,14 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
     free(memory);
 }
 
-void prepare_certs(const char *config_path) {
-    struct RastaConfig config = config_load(config_path);
-    // do not overwrite existing certificates, might lead to failure in clients
-    if(access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
-        create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
-
-        printf("Generated Certificates");
-    }
-    }
-
-
 int main(int argc, char *argv[]){
+    bool force_disable_rekeying = false;
+    if (argc < 2) printHelpAndExit();
 
-    if (argc != 2) printHelpAndExit();
-
+    if(argc > 2){
+        force_disable_rekeying = true;
+        printf("Disabling rekeying!");
+    }
     rasta_lib_configuration_t rc;
 
     struct RastaIPData toServer[2];
@@ -251,29 +244,32 @@ int main(int argc, char *argv[]){
     toServer[0].port = 8888;
     toServer[1].port = 8889;
 
-    timed_event termination_event, connect_on_timeout_event;
+    timed_event termination_event, connect_on_stdin_event;
     struct connect_event_data connect_on_stdin_event_data = {
-            .h = &rc->h,
-            .ip_data_arr = toServer,
-            .schwarzenegger = &termination_event,
-            .connect_event = &connect_on_timeout_event
+        .h = &rc->h,
+        .ip_data_arr = toServer,
+        .schwarzenegger = &termination_event,
+        .connect_event = &connect_on_stdin_event
     };
 
     termination_event.callback = terminator;
     termination_event.carry_data = &rc->h;
     termination_event.interval = 30000000000ul;
 
-    connect_on_timeout_event.callback = connect_timed;
-    connect_on_timeout_event.carry_data = &connect_on_stdin_event_data;
-    connect_on_timeout_event.interval = 3000000000ul;
+    connect_on_stdin_event.callback = connect_timed;
+    connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
+    connect_on_stdin_event.interval = 3000000000ul;
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
-        prepare_certs(CONFIG_PATH_S);
 
         rasta_lib_init_configuration(rc, CONFIG_PATH_S);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
+
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
 
         server_fifo = fifo_init(128);
 
@@ -282,43 +278,53 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
         rc->h.notifications.on_heartbeat_timeout = onTimeout;
         enable_timed_event(&termination_event);
-        disable_timed_event(&connect_on_timeout_event);
+        disable_timed_event(&connect_on_stdin_event);
         add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        rasta_lib_start(rc, 0, true);
+        rasta_lib_start(rc, 0);
 
         fifo_destroy(server_fifo);
     }
     else if (strcmp(argv[1], "s1") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_S1);
+
         rasta_lib_init_configuration(rc, CONFIG_PATH_C1);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
+
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
 
         enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
+        enable_timed_event(&connect_on_stdin_event);
         add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
-        rasta_lib_start(rc, 0, false);
+        add_timed_event(&rc->rasta_lib_event_system, &connect_on_stdin_event);
+        rasta_lib_start(rc, 0);
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
+
         rasta_lib_init_configuration(rc, CONFIG_PATH_C2);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        if(force_disable_rekeying){
+            rc->h.config.values.kex.rekeying_interval_ms = 0;
+        }
+
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
 
         enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
+        enable_timed_event(&connect_on_stdin_event);
         add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
-        rasta_lib_start(rc, 0, false);
+        add_timed_event(&rc->rasta_lib_event_system, &connect_on_stdin_event);
+        rasta_lib_start(rc, 0);
     }
     return test_success != true;
 }
