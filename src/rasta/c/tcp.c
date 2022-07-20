@@ -4,7 +4,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <unistd.h>
-// TODO: move RastaState/RastaConnectionState
 #include "tcp.h"
 #include "rmemory.h"
 #include "bsd_utils.h"
@@ -219,8 +218,10 @@ size_t tcp_receive(struct RastaState *state, unsigned char *received_message, si
     return 0;
 }
 #endif
+
+#ifdef USE_TCP
 #ifdef ENABLE_TLS
-void tcp_send(WOLFSSL *ssl, unsigned char *message, size_t message_len)
+void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len)
 {
     wolfssl_send_tls(ssl, message, message_len);
 }
@@ -229,6 +230,7 @@ void tcp_send(struct RastaState *state, unsigned char *message, size_t message_l
 {
     bsd_send(state->file_descriptor, message, message_len, host, port);
 }
+#endif
 #endif
 
 void tcp_close(struct RastaState *state)

@@ -4,8 +4,6 @@
 
 #define MAX_PENDING_CONNECTIONS 5
 
-#ifdef USE_TCP
-
 /**
  * This function will initialise a tcp socket and return its file descriptor, which is used to reference it in later
  * function calls
@@ -45,7 +43,7 @@ void tcp_bind_device(struct RastaState *state, uint16_t port, char * ip);
  * @return the amount of received bytes
  */
 #ifdef ENABLE_TLS
-ssize_t tcp_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
+size_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 #else
 size_t tcp_receive(struct RastaState *state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
@@ -98,8 +96,4 @@ void tcp_close(struct RastaState *state);
 
 void sockaddr_to_host(struct sockaddr_in sockaddr, char* host);
 
-void tcp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config);
-
 void get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *client_addr, socklen_t *addr_len);
-
-#endif
