@@ -39,19 +39,7 @@ set(RASTA_HDRS
     rasta/headers/rastahashing.h
 )
 
-# SCI headers
-set(SCI_HDRS
-    sci/headers/hashmap.h
-    sci/headers/sci.h
-    sci/headers/sci_telegram_factory.h
-    sci/headers/scils.h
-    sci/headers/scils_telegram_factory.h
-    sci/headers/scip.h
-    sci/headers/scip_telegram_factory.h
-)
-
-# Shared object for RaSTA and SCI protocols
-add_library(${target} SHARED
+set(RASTA_SRCS
     # RaSTA sources
     rasta/c/config.c
     rasta/c/dictionary.c
@@ -87,25 +75,69 @@ add_library(${target} SHARED
     sci/c/scip_telegram_factory.c
 )
 
-# Link system libraries for librasta
-target_link_libraries(${target} rt pthread)
+# SCI headers
+set(SCI_HDRS
+    sci/headers/hashmap.h
+    sci/headers/sci.h
+    sci/headers/sci_telegram_factory.h
+    sci/headers/scils.h
+    sci/headers/scils_telegram_factory.h
+    sci/headers/scip.h
+    sci/headers/scip_telegram_factory.h
+)
+
+# Shared object for RaSTA and SCI protocols
+add_library(${target}_udp SHARED ${RASTA_SRCS})
+add_library(${target}_tcp SHARED ${RASTA_SRCS})
 if(ENABLE_RASTA_TLS)
-target_link_libraries(${target} wolfssl)
+    add_library(${target}_dtls SHARED ${RASTA_SRCS})
+    add_library(${target}_tls SHARED ${RASTA_SRCS})
 endif(ENABLE_RASTA_TLS)
 
-set_property(TARGET ${target}
+# Link system libraries for librasta
+target_link_libraries(${target}_udp rt pthread)
+if(ENABLE_RASTA_TLS)
+    target_link_libraries(${target}_dtls wolfssl)
+    target_link_libraries(${target}_tls wolfssl)
+endif(ENABLE_RASTA_TLS)
+
+set_property(TARGET ${target}_udp
     PROPERTY PUBLIC_HEADER
     ${RASTA_HDRS}
     ${SCI_HDRS})
+set_property(TARGET ${target}_tcp
+    PROPERTY PUBLIC_HEADER
+    ${RASTA_HDRS}
+    ${SCI_HDRS})
+if(ENABLE_RASTA_TLS)
+    set_property(TARGET ${target}_dtls
+        PROPERTY PUBLIC_HEADER
+        ${RASTA_HDRS}
+        ${SCI_HDRS})
+    set_property(TARGET ${target}_tls
+        PROPERTY PUBLIC_HEADER
+        ${RASTA_HDRS}
+        ${SCI_HDRS})
+endif(ENABLE_RASTA_TLS)
 
 # if USE_OPENSSL parameter is passed to cmake or if architecture is ARM -> use openssl md4 implementation
 if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${USE_OPENSSL})
     message("Using OpenSSL MD4 implementation (only standard IV)")
 
     # define flag to use openssl in rastamd4
-    target_compile_definitions(rasta PUBLIC USE_OPENSSL)
+    target_compile_definitions(${target}_udp PUBLIC USE_OPENSSL)
+    target_compile_definitions(${target}_tcp PUBLIC USE_OPENSSL)
+    if(ENABLE_RASTA_TLS)
+        target_compile_definitions(${target}_dtls PUBLIC USE_OPENSSL)
+        target_compile_definitions(${target}_tls PUBLIC USE_OPENSSL)
+    endif(ENABLE_RASTA_TLS)
     # link libcrypto
-    target_link_libraries(rasta crypto)
+    target_link_libraries(${target}_udp crypto)
+    target_link_libraries(${target}_tcp crypto)
+    if(ENABLE_RASTA_TLS)
+        target_link_libraries(${target}_dtls crypto)
+        target_link_libraries(${target}_tls crypto)
+    endif(ENABLE_RASTA_TLS)
 else()
     message("Using rasta-c MD4 implementation")
 endif()
@@ -114,16 +146,30 @@ endif()
 # Project options
 #
 
-set_target_properties(${target}
+set_target_properties(${target}_udp
     PROPERTIES
     ${DEFAULT_PROJECT_OPTIONS}
 )
+set_target_properties(${target}_tcp
+    PROPERTIES
+    ${DEFAULT_PROJECT_OPTIONS}
+)
+if(ENABLE_RASTA_TLS)
+    set_target_properties(${target}_dtls
+        PROPERTIES
+        ${DEFAULT_PROJECT_OPTIONS}
+    )
+    set_target_properties(${target}_tls
+        PROPERTIES
+        ${DEFAULT_PROJECT_OPTIONS}
+    )
+endif(ENABLE_RASTA_TLS)
 
 #
 # Include directories
 #
 
-target_include_directories(${target}
+target_include_directories(${target}_udp
     PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
     ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
@@ -132,50 +178,81 @@ target_include_directories(${target}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
 )
+target_include_directories(${target}_tcp
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+
+    INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
+)
+if(ENABLE_RASTA_TLS)
+    target_include_directories(${target}_dtls
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
+        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
+    )
+    target_include_directories(${target}_tls
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
+        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
+    )
+endif(ENABLE_RASTA_TLS)
 
 #
 # Compile options
 #
 
-target_compile_options(${target}
+target_compile_options(${target}_udp
     PRIVATE
     ${DEFAULT_COMPILE_OPTIONS}
 )
-
+target_compile_options(${target}_tcp
+    PRIVATE
+    ${DEFAULT_COMPILE_OPTIONS}
+)
 if(ENABLE_RASTA_TLS)
-    message("TLS is enabled")
-    target_compile_definitions(rasta PUBLIC ENABLE_TLS)
+    target_compile_options(${target}_dtls
+        PRIVATE
+        ${DEFAULT_COMPILE_OPTIONS}
+    )
+    target_compile_options(${target}_tls
+        PRIVATE
+        ${DEFAULT_COMPILE_OPTIONS}
+    )
 endif(ENABLE_RASTA_TLS)
 
 # Installation for library
-install(TARGETS ${target}
+install(TARGETS ${target}_udp
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS ${target}_tcp
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-if(USE_UDP)
-    message("UDP is enabled")
-    target_compile_definitions(${target}
-        PUBLIC
-        USE_UDP
-    )
-endif(USE_UDP)
+if(ENABLE_RASTA_TLS)
+    install(TARGETS ${target}_dtls
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(TARGETS ${target}_tls
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+endif(ENABLE_RASTA_TLS)
 
-if(USE_TCP)
-    message("TCP is enabled")
-    target_compile_definitions(${target}
-        PUBLIC
-        USE_TCP
-    )
-endif(USE_TCP)
 
-if(NOT USE_UDP)
-if(NOT USE_TCP)
-    message( FATAL_ERROR "Neither TCP nor UDP is enabled!")
-endif()
-endif()
+target_compile_definitions(${target}_udp PUBLIC USE_UDP)
+target_compile_definitions(${target}_tcp PUBLIC USE_TCP)
 
-if(USE_UDP)
-if(USE_TCP)
-    message( FATAL_ERROR "You cannot enable both TCP and UDP at the same time!")
-endif(USE_TCP)
-endif(USE_UDP)
+if(ENABLE_RASTA_TLS)
+    target_compile_definitions(${target}_dtls PUBLIC USE_UDP ENABLE_TLS)
+    target_compile_definitions(${target}_tls PUBLIC USE_TCP ENABLE_TLS)
+endif(ENABLE_RASTA_TLS)

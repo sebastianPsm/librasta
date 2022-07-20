@@ -16,8 +16,6 @@ option(ENABLE_RASTA_TLS "Enable RaSTA over TLS" OFF)
 option(EXAMPLE_IP_OVERRIDE "Use IPs from environment variables in RaSTA/SCI examples" OFF)
 option(ENABLE_CODE_COVERAGE "Provide command to generate code coverage report" OFF)
 option(ENABLE_STATIC_ANALYSIS "Run cppcheck along with the compiler" OFF)
-option(USE_TCP "Use tcp for communication" ON)
-option(USE_UDP "Use tcp for communication" OFF)
 
 if(ENABLE_STATIC_ANALYSIS)
     set(CMAKE_C_CPPCHECK "cppcheck" "--enable=performance,information")
