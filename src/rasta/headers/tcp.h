@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <netinet/in.h>
+// TODO: remove udp.h
 #include "udp.h"
 
 #define MAX_PENDING_CONNECTIONS 5
@@ -83,7 +84,7 @@ void tcp_connect(struct RastaState *state,  char *host, uint16_t port);
  * @param port the target port on the host
  */
 #ifdef ENABLE_TLS
-void tcp_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
+void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
 #else
 void tcp_send(struct RastaState *state, unsigned char* message, size_t message_len, char* host, uint16_t port);
 #endif

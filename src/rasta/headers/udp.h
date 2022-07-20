@@ -12,9 +12,10 @@ extern "C" {  // only need to export C interface if
 
 #include <stdint.h>
 #include <netinet/in.h>
-
-#include <types.h>
-
+#ifndef TYPES_H
+#define TYPES_H
+#include "types.h"
+#endif
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>

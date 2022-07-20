@@ -1,3 +1,5 @@
+#include <wolfssl/options.h>
+#include <wolfssl/ssl.h>
 #include <config.h>
 
 #ifdef ENABLE_TLS

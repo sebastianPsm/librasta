@@ -11,8 +11,6 @@
 #include "udp.h"
 
 #ifdef ENABLE_TLS
-#include <wolfssl/options.h>
-#include <wolfssl/ssl.h>
 #include "ssl_utils.h"
 #endif
 
