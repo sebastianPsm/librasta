@@ -331,9 +331,12 @@ fd_event *prepare_receive_event(struct receive_event_data *data)
 #ifdef ENABLE_TLS
 fd_event *prepare_tls_accept_event(fd_event *evt, struct RastaConnectionState *connection)
 {
-    evt->carry_data->ssl = connection.ssl;
+    struct receive_event_data *channel_event_data = evt->carry_data;
+    channel_event_data->ssl = connection->ssl;
     evt->callback = channel_receive_event;
-    evt->fd = connection.file_descriptor;
+    evt->fd = connection->file_descriptor;
+
+    return evt;
 }
 
 void channel_accept_event_tls(void *carry_data)
@@ -345,7 +348,7 @@ void channel_accept_event_tls(void *carry_data)
     tcp_accept_tls(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
 
     fd_event *evt = prepare_receive_event(data);
-    prepare_tls_accept_event(evt);
+    prepare_tls_accept_event(evt, &connection);
 
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
 }
