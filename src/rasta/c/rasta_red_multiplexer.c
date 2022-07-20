@@ -543,7 +543,7 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, str
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
 }
 
-redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
+redundancy_mux redundancy_mux_init_(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
 {
     redundancy_mux mux;
 
@@ -560,9 +560,9 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
 }
 
 #ifdef USE_TCP
-redundancy_mux redundancy_mux_init_tcp(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
+redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
 {
-    redundancy_mux mux = redundancy_mux_init(logger, listen_ports, port_count, config);
+    redundancy_mux mux = redundancy_mux_init_(logger, listen_ports, port_count, config);
     mux.tcp_transport_states = rmalloc(port_count * sizeof(int));
 
     // logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
@@ -570,13 +570,12 @@ redundancy_mux redundancy_mux_init_tcp(struct logger_t logger, uint16_t *listen_
     // tcp_bind_device(&mux.rasta_tcp_socket_states[i], mux.listen_ports[i], mux.config.redundancy.connections.data[i].ip);
     return mux;
 }
-#endif
-
+#else
 #ifdef USE_UDP
-redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
+redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
 {
 
-    redundancy_mux_init(logger, listen_ports, port_count, config);
+    redundancy_mux_init_(logger, listen_ports, port_count, config);
 
     mux.udp_socket_states = rmalloc(port_count * sizeof(int));
 
@@ -620,6 +619,7 @@ redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
     return mux;
 }
+#endif
 #endif
 
 void cleanup_rasta_states(redundancy_mux *mux, struct rasta_transport_state *rasta_transport_states, unsigned int count)
