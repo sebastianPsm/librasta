@@ -689,7 +689,7 @@ void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id)
     }
 }
 
-void redundancy_mux_send_(redundancy_mux *mux, struct RastaPacket data, RastaSendFunction send_callback)
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "sending a data packet to id 0x%lX",
                (long unsigned int)data.receiver_id);
@@ -735,10 +735,10 @@ void redundancy_mux_send_(redundancy_mux *mux, struct RastaPacket data, RastaSen
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA Red send", "Data sent over all transport channels");
 }
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
-{
-    redundancy_mux_send_(mux, data, send_callback);
-}
+// void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
+// {
+//     redundancy_mux_send_(mux, data, send_callback);
+// }
 
 // #ifdef USE_UDP
 

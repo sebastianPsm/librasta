@@ -98,8 +98,8 @@ int tcp_accept(struct RastaState *state)
 }
 
 #ifdef ENABLE_TLS
-void tcp_accept_tls(struct RastaState *state, struct RastaConnectionState *connectionState, int socket){
-    int socket = tcp_accept(state, connectionState);
+void tcp_accept_tls(struct RastaState *state, struct RastaConnectionState *connectionState){
+    int socket = tcp_accept(state);
     
     /* Create a WOLFSSL object */
     if ((connectionState->ssl = wolfSSL_new(state->ctx)) == NULL)

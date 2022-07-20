@@ -44,7 +44,7 @@ void tcp_bind_device(struct RastaState *state, uint16_t port, char * ip);
  * @return the amount of received bytes
  */
 #ifdef ENABLE_TLS
-size_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
+ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 #else
 size_t tcp_receive(struct RastaState *state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
