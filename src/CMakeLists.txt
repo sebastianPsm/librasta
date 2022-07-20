@@ -30,6 +30,7 @@ set(RASTA_HDRS
     rasta/headers/rmemory.h
     rasta/headers/udp.h
     rasta/headers/tcp.h
+    rasta/headers/rasta_transport_callbacks.h
     rasta/headers/types.h
     rasta/headers/bsd_utils.h
     rasta/headers/ssl_utils.h
@@ -142,6 +143,7 @@ target_compile_options(${target}
 )
 
 if(ENABLE_RASTA_TLS)
+    message("TLS is enabled")
     target_compile_definitions(rasta PUBLIC ENABLE_TLS)
 endif(ENABLE_RASTA_TLS)
 
