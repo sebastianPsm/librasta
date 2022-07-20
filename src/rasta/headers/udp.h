@@ -84,8 +84,6 @@ extern "C" {  // only need to export C interface if
      */
     void udp_close(struct rasta_transport_state *transport_state);
 
-    void sockaddr_to_host(struct sockaddr_in sockaddr, char *host);
-
 #ifdef __cplusplus
 }
 #endif

@@ -34,8 +34,9 @@ void tcp_listen(struct rasta_transport_state *transport_state);
  */
 void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char * ip);
 
+#ifdef ENABLE_TLS
 /**
- * Receive data on the given @p file descriptor and store it in the given buffer.
+ * Receive data on an ssl connection
  * This function will block until data is received!
  * @param file_descriptor the file descriptor which should be used to receive data
  * @param received_message a buffer where the received data will be written too. Has to be at least \p max_buffer_len long
@@ -43,9 +44,17 @@ void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t por
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-#ifdef ENABLE_TLS
 ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 #else
+/**
+ * Receive data on the given @p file descriptor and store it in the given buffer.
+ * This function will block until data is received!
+ * @param ssl the wolfssl session object
+ * @param received_message a buffer where the received data will be written too. Has to be at least \p max_buffer_len long
+ * @param max_buffer_len the amount of data which will be received in bytes
+ * @param sender information about the sender of the data will be stored here
+ * @return the amount of received bytes
+ */
 size_t tcp_receive(struct RastaState *transport_state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
 
@@ -75,26 +84,30 @@ void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_
  */
 void tcp_connect(struct rasta_transport_state *transport_state,  char *host, uint16_t port);
 
+#ifdef ENABLE_TLS
+/**
+ * Sends a message via tls
+ * @param ssl the wolfssl session object
+ * @param message the message that which will be send
+ * @param message_len the length of the @p message
+*/
+void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
+#else
 /**
  * Sends a message via the given file descriptor to a @p host and @p port
  * @param file_descriptor the file descriptor which is used to send the message
- * @param message the message which will be send
+ * @param message the message that which will be send
  * @param message_len the length of the @p message
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-#ifdef ENABLE_TLS
-void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
-#else
 void tcp_send(struct RastaState *transport_state, unsigned char* message, size_t message_len, char* host, uint16_t port);
 #endif
 
 /**
  * Closes the tcp socket
- * @param file_descriptor the file descriptor which identifies the socket
+ * @param transport_state the transport state either the filedescriptor (tcp) or the ssl session (tls)
  */
 void tcp_close(struct rasta_transport_state *transport_state);
-
-void sockaddr_to_host(struct sockaddr_in sockaddr, char* host);
 
 void get_client_addr_from_socket(const struct rasta_transport_state *transport_state, struct sockaddr_in *client_addr, socklen_t *addr_len);
