@@ -113,7 +113,7 @@ extern "C"
         /**
          * the file descriptors of the used tcp sockets. array has length port_count
          */
-        struct RastaState *rasta_tcp_socket_states;
+        struct rasta_transport_state *tcp_transport_states;
 
 #endif
 

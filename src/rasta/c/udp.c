@@ -31,12 +31,12 @@ static void handle_port_unavailable(const uint16_t port)
 
 #ifdef ENABLE_UDP
 static void
-get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *client_addr, socklen_t *addr_len)
+get_client_addr_from_socket(const struct RastaState *transport_state, struct sockaddr_in *client_addr, socklen_t *addr_len)
 {
     ssize_t received_bytes;
     char buffer;
     // wait for the first byte of the DTLS Client hello to identify the prospective client
-    received_bytes = recvfrom(state->file_descriptor, &buffer, sizeof(buffer), MSG_PEEK,
+    received_bytes = recvfrom(transport_state->file_descriptor, &buffer, sizeof(buffer), MSG_PEEK,
                               (struct sockaddr *)client_addr, addr_len);
 
     if (received_bytes < 0)
@@ -48,54 +48,54 @@ get_client_addr_from_socket(const struct RastaState *state, struct sockaddr_in *
 #endif
 
 #ifdef ENABLE_UDP
-static void wolfssl_accept(struct RastaState *state)
+static void wolfssl_accept(struct RastaState *transport_state)
 {
     struct sockaddr_in client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
     // need to open UDP "connection" and accept client before the remaining methods (send / receive) work as expected by RaSTA
 
-    get_client_addr_from_socket(state, &client_addr, &addr_len);
+    get_client_addr_from_socket(transport_state, &client_addr, &addr_len);
     // we have received a client hello and can now accept the connection
 
-    if (connect(state->file_descriptor, (struct sockaddr *)&client_addr, sizeof(client_addr)) != 0)
+    if (connect(transport_state->file_descriptor, (struct sockaddr *)&client_addr, sizeof(client_addr)) != 0)
     {
         perror("Could not connect to client");
         exit(1);
     }
 
-    if (wolfSSL_accept(state->ssl) != SSL_SUCCESS)
+    if (wolfSSL_accept(transport_state->ssl) != SSL_SUCCESS)
     {
 
-        int e = wolfSSL_get_error(state->ssl, 0);
+        int e = wolfSSL_get_error(transport_state->ssl, 0);
 
         fprintf(stderr, "WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
         exit(1);
     }
-    set_dtls_async(state);
+    set_dtls_async(transport_state);
 }
 #endif
 
-static size_t wolfssl_receive_dtls(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+static size_t wolfssl_receive_dtls(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
     int receive_len, received_total = 0;
 #ifdef ENABLE_UDP
     socklen_t sender_size = sizeof(*sender);
 
-    get_client_addr_from_socket(state, sender, &sender_size);
+    get_client_addr_from_socket(transport_state, sender, &sender_size);
 
-    if (state->tls_state == RASTA_TLS_CONNECTION_READY)
+    if (transport_state->tls_state == RASTA_TLS_CONNECTION_READY)
     {
-        wolfssl_accept(state);
-        state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
+        wolfssl_accept(transport_state);
+        transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
         return 0;
     }
-    if (state->tls_state == RASTA_TLS_CONNECTION_ESTABLISHED)
+    if (transport_state->tls_state == RASTA_TLS_CONNECTION_ESTABLISHED)
     {
         // read as many bytes as available at this time
         do
         {
-            receive_len = wolfSSL_read(state->ssl, received_message, (int)max_buffer_len);
+            receive_len = wolfSSL_read(transport_state->ssl, received_message, (int)max_buffer_len);
             if (receive_len < 0)
             {
                 break;
@@ -107,7 +107,7 @@ static size_t wolfssl_receive_dtls(struct RastaState *state, unsigned char *rece
 
         if (receive_len < 0)
         {
-            int readErr = wolfSSL_get_error(state->ssl, 0);
+            int readErr = wolfSSL_get_error(transport_state->ssl, 0);
             if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE)
             {
                 fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
@@ -117,7 +117,7 @@ static size_t wolfssl_receive_dtls(struct RastaState *state, unsigned char *rece
     }
 #else
     (void)(receive_len);
-    (void)(state);
+    (void)(transport_state);
     (void)(received_message);
     (void)(max_buffer_len);
     (void)(sender);
@@ -133,30 +133,30 @@ static bool is_dtls_server(const struct RastaConfigTLS *tls_config)
 
 #endif
 
-static void handle_tls_mode(struct RastaState *state)
+static void handle_tls_mode(struct rasta_transport_state *transport_state)
 {
-    const struct RastaConfigTLS *tls_config = state->tls_config;
+    const struct RastaConfigTLS *tls_config = transport_state->tls_config;
     switch (tls_config->mode)
     {
     case TLS_MODE_DISABLED:
     {
-        state->activeMode = TLS_MODE_DISABLED;
+        transport_state->activeMode = TLS_MODE_DISABLED;
         break;
     }
     case TLS_MODE_DTLS_1_2:
     {
-        state->activeMode = TLS_MODE_DTLS_1_2;
+        transport_state->activeMode = TLS_MODE_DTLS_1_2;
         #ifdef ENABLE_TLS
         if (is_dtls_server(tls_config))
         {
-            wolfssl_start_dtls_server(state, tls_config);
+            wolfssl_start_dtls_server(transport_state, tls_config);
         }
         else
         {
-            wolfssl_start_dtls_client(state, tls_config);
+            wolfssl_start_dtls_client(transport_state, tls_config);
         }
         #else
-        printf("TLS is not enabled but rasta config state is TLS_MODE_DTLS_1_2\n");
+        printf("TLS is not enabled but rasta config transport_state is TLS_MODE_DTLS_1_2\n");
         exit(1);
         #endif
         break;
@@ -169,7 +169,7 @@ static void handle_tls_mode(struct RastaState *state)
     }
 }
 
-void udp_bind(struct RastaState *state, uint16_t port)
+void udp_bind(struct rasta_transport_state *transport_state, uint16_t port)
 {
     struct sockaddr_in local;
 
@@ -180,14 +180,14 @@ void udp_bind(struct RastaState *state, uint16_t port)
     local.sin_port = htons(port);
     local.sin_addr.s_addr = htonl(INADDR_ANY);
     // bind socket to port
-    if (bind(state->file_descriptor, (struct sockaddr *)&local, sizeof(local)) == -1)
+    if (bind(transport_state->file_descriptor, (struct sockaddr *)&local, sizeof(local)) == -1)
     {
         handle_port_unavailable(port);
     }
-    handle_tls_mode(state);
+    handle_tls_mode(transport_state);
 }
 
-void udp_bind_device(struct RastaState *state, uint16_t port, char *ip)
+void udp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char *ip)
 {
     struct sockaddr_in local;
 
@@ -199,25 +199,25 @@ void udp_bind_device(struct RastaState *state, uint16_t port, char *ip)
     local.sin_addr.s_addr = inet_addr(ip);
 
     // bind socket to port
-    if (bind(state->file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) == -1)
+    if (bind(transport_state->file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) == -1)
     {
         // bind failed
         handle_port_unavailable(port);
         exit(1);
     }
-    handle_tls_mode(state);
+    handle_tls_mode(transport_state);
 }
 
-void udp_close(struct RastaState *state)
+void udp_close(struct rasta_transport_state *transport_state)
 {
-    int file_descriptor = state->file_descriptor;
+    int file_descriptor = transport_state->file_descriptor;
     if (file_descriptor >= 0)
     {
 
 #ifdef ENABLE_TLS
-        if (state->activeMode != TLS_MODE_DISABLED)
+        if (transport_state->activeMode != TLS_MODE_DISABLED)
         {
-            wolfssl_cleanup(state);
+            wolfssl_cleanup(transport_state);
         }
 #endif
 
@@ -236,16 +236,16 @@ void udp_close(struct RastaState *state)
     }
 }
 
-size_t udp_receive(struct RastaState *state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+size_t udp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
-    if (state->activeMode == TLS_MODE_DISABLED)
+    if (transport_state->activeMode == TLS_MODE_DISABLED)
     {
         ssize_t recv_len;
         struct sockaddr_in empty_sockaddr_in;
         socklen_t sender_len = sizeof(empty_sockaddr_in);
 
         // wait for incoming data
-        if ((recv_len = recvfrom(state->file_descriptor, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) == -1)
+        if ((recv_len = recvfrom(transport_state->file_descriptor, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) == -1)
         {
             perror("an error occured while trying to receive data");
             exit(1);
@@ -256,34 +256,34 @@ size_t udp_receive(struct RastaState *state, unsigned char *received_message, si
 #ifdef ENABLE_TLS
     else
     {
-        return wolfssl_receive_dtls(state, received_message, max_buffer_len, sender);
+        return wolfssl_receive_dtls(transport_state, received_message, max_buffer_len, sender);
     }
 #endif
     return 0;
 }
 
-void udp_send(struct RastaState *state, unsigned char *message, size_t message_len, char *host, uint16_t port)
+void udp_send(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port)
 {
     struct sockaddr_in receiver = host_port_to_sockaddr(host, port);
-    if (state->activeMode == TLS_MODE_DISABLED)
+    if (transport_state->activeMode == TLS_MODE_DISABLED)
     {
 
         // send the message using the other send function
-        udp_send_sockaddr(state, message, message_len, receiver);
+        udp_send_sockaddr(transport_state, message, message_len, receiver);
     }
 #ifdef ENABLE_TLS
     else
     {
-        wolfssl_send_dtls(state, message, message_len, &receiver);
+        wolfssl_send_dtls(transport_state, message, message_len, &receiver);
     }
 #endif
 }
 
-void udp_send_sockaddr(struct RastaState *state, unsigned char *message, size_t message_len, struct sockaddr_in receiver)
+void udp_send_sockaddr(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in receiver)
 {
-    if (state->activeMode == TLS_MODE_DISABLED)
+    if (transport_state->activeMode == TLS_MODE_DISABLED)
     {
-        if (sendto(state->file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) ==
+        if (sendto(transport_state->file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) ==
             -1)
         {
             perror("failed to send data");
@@ -293,19 +293,19 @@ void udp_send_sockaddr(struct RastaState *state, unsigned char *message, size_t 
 #ifdef ENABLE_TLS
     else
     {
-        const struct RastaConfigTLS *tls_config = state->tls_config;
-        state->tls_config = tls_config;
-        wolfssl_send_dtls(state, message, message_len, &receiver);
+        const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+        transport_state->tls_config = tls_config;
+        wolfssl_send_dtls(transport_state, message, message_len, &receiver);
     }
 #endif
 }
 
-void udp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
+void udp_init(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config)
 {
     // the file descriptor of the socket
     int file_desc;
 
-    state->tls_config = tls_config;
+    transport_state->tls_config = tls_config;
 
     // create a udp socket
     if ((file_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -314,5 +314,5 @@ void udp_init(struct RastaState *state, const struct RastaConfigTLS *tls_config)
         perror("The udp socket could not be initialized");
         exit(1);
     }
-    state->file_descriptor = file_desc;
+    transport_state->file_descriptor = file_desc;
 }

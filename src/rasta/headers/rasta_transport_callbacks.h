@@ -52,8 +52,8 @@ int receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsig
     return udp_receive(&mux->udp_socket_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
 }
 
-// UDP doesn't need the extension function, as it es the default behavior.
-// This callback just fits the signatur of update_redundancy_cdhannels.
+// UDP doesn't need the extension function, as it is the default behavior.
+// This callback just fits the signatur of update_redundancy_channels.
 void redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data)
 {
     (void)channel;

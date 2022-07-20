@@ -215,7 +215,7 @@ void rasta_red_wait_for_close(rasta_redundancy_channel * channel);
  */
 void rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
 #ifdef USE_TCP
-                                     struct RastaState state,
+                                     struct rasta_transport_state transport_state,
 #endif
                                      char *ip, uint16_t port);
 

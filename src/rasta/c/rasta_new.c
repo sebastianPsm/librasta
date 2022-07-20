@@ -1516,7 +1516,7 @@ void sr_listen(struct rasta_handle *h) {
             channel_events[i].carry_data = channel_event_data + i;
 
             channel_events[i].callback = channel_accept_event;
-            channel_events[i].fd = h->mux.rasta_tcp_socket_states[i].file_descriptor;
+            channel_events[i].fd = h->mux.tcp_transport_states[i].file_descriptor;
             channel_events[i].enabled = 1;
 
             channel_event_data[i].channel_index = i;
@@ -1549,13 +1549,13 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
         channel_event_data->h = h;
         channel_event_data->event = evt;
     #ifdef ENABLE_TLS
-        channel_event_data->ssl = h->mux.rasta_tcp_socket_states[i].ssl;
+        channel_event_data->ssl = h->mux.tcp_transport_states[i].ssl;
     #endif
         memset(evt, 0, sizeof(fd_event));
         evt->enabled = 1;
         evt->carry_data = channel_event_data;
         evt->callback = channel_receive_event;
-        evt->fd = h->mux.rasta_tcp_socket_states[i].file_descriptor;
+        evt->fd = h->mux.tcp_transport_states[i].file_descriptor;
 
         add_fd_event(h->ev_sys, evt, EV_READABLE);
     }

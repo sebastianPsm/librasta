@@ -227,16 +227,16 @@ void rasta_red_f_deferTmo(rasta_redundancy_channel * channel){
 void rasta_red_add_transport_channel(
     rasta_redundancy_channel *channel,
 #ifdef USE_TCP
-    struct RastaState state,
+    struct rasta_transport_state transport_state,
 #endif
     char *ip, uint16_t port)
 {
     rasta_transport_channel transport_channel;
 
 #ifdef USE_TCP
-    transport_channel.fd = state.file_descriptor;
+    transport_channel.fd = transport_state.file_descriptor;
 #ifdef ENABLE_TLS
-    transport_channel.ssl = state.ssl;
+    transport_channel.ssl = transport_state.ssl;
 #endif
 #endif
 

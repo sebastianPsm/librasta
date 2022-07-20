@@ -3,36 +3,34 @@
 #include <config.h>
 
 #ifdef ENABLE_TLS
-enum RastaTLSConnectionState {
+enum rasta_tls_connection_state {
     RASTA_TLS_CONNECTION_READY,
     RASTA_TLS_CONNECTION_ESTABLISHED,
     RASTA_TLS_CONNECTION_CLOSED
 };
 #endif
 
-struct RastaState
+struct rasta_transport_state
 {
     int file_descriptor;
     enum RastaTLSMode activeMode;
     const struct RastaConfigTLS *tls_config;
 #ifdef ENABLE_TLS
     WOLFSSL_CTX* ctx;
-
     WOLFSSL* ssl;
-    enum RastaTLSConnectionState tls_state;
-
+    enum rasta_tls_connection_state tls_state;
 #endif
 };
 
 // #if defined(ENABLE_TLS) && defined(ENABLE_TCP)
 #ifdef ENABLE_TLS
-    struct RastaConnectionState
+    struct rasta_connected_transport_channel_state
     {
         const struct RastaConfigTLS *tls_config;
         enum RastaTLSMode activeMode;
         WOLFSSL_CTX *ctx;
         int file_descriptor;
         WOLFSSL *ssl;
-        enum RastaTLSConnectionState tls_state;
+        enum rasta_tls_connection_state tls_state;
     };
 #endif

@@ -330,7 +330,7 @@ fd_event *prepare_receive_event(struct receive_event_data *data)
 
 #ifdef USE_TCP
 #ifdef ENABLE_TLS
-fd_event *prepare_tls_accept_event(fd_event *evt, struct RastaConnectionState *connection)
+fd_event *prepare_tls_accept_event(fd_event *evt, struct rasta_connected_transport_channel_state *connection)
 {
     struct receive_event_data *channel_event_data = evt->carry_data;
     channel_event_data->ssl = connection->ssl;
@@ -342,11 +342,11 @@ fd_event *prepare_tls_accept_event(fd_event *evt, struct RastaConnectionState *c
 
 void channel_accept_event_tls(void *carry_data)
 {
-    struct RastaConnectionState connection;
+    struct rasta_connected_transport_channel_state connection;
     struct receive_event_data *data = carry_data;
 
     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept_tls(&data->h->mux.rasta_tcp_socket_states[data->channel_index], &connection);
+    tcp_accept_tls(&data->h->mux.tcp_transport_states[data->channel_index], &connection);
 
     fd_event *evt = prepare_receive_event(data);
     prepare_tls_accept_event(evt, &connection);
@@ -361,7 +361,7 @@ int channel_accept_event(void *carry_data)
     struct receive_event_data *data = carry_data;
 
     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept(&data->h->mux.rasta_tcp_socket_states[data->channel_index]);
+    tcp_accept(&data->h->mux.tcp_transport_states[data->channel_index]);
 
     fd_event *evt = prepare_receive_event(data);
 
@@ -477,8 +477,8 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, str
     memset(mux->udp_socket_states, 0, mux->port_count * sizeof(struct RastaState));
 #endif
 #ifdef USE_TCP
-    mux->rasta_tcp_socket_states = rmalloc(mux->port_count * sizeof(struct RastaState));
-    memset(mux->rasta_tcp_socket_states, 0, mux->port_count * sizeof(struct RastaState));
+    mux->tcp_transport_states = rmalloc(mux->port_count * sizeof(struct rasta_transport_state));
+    memset(mux->tcp_transport_states, 0, mux->port_count * sizeof(struct rasta_transport_state));
 #endif
 
     // allocate memory for connected channels
@@ -563,7 +563,7 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
 redundancy_mux redundancy_mux_init_tcp(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config)
 {
     redundancy_mux mux = redundancy_mux_init(logger, listen_ports, port_count, config);
-    mux.rasta_tcp_socket_states = rmalloc(port_count * sizeof(int));
+    mux.tcp_transport_states = rmalloc(port_count * sizeof(int));
 
     // logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up tcp socket %d/%d", i + 1, port_count);
     // tcp_init(&mux.rasta_tcp_socket_states[i], &config.tls);
@@ -622,17 +622,17 @@ redundancy_mux redundancy_mux_init_udp(struct logger_t logger, uint16_t *listen_
 }
 #endif
 
-void cleanup_rasta_states(redundancy_mux *mux, struct RastaState *rasta_states, unsigned int count)
+void cleanup_rasta_states(redundancy_mux *mux, struct rasta_transport_state *rasta_transport_states, unsigned int count)
 {
     for (unsigned int i = 0; i < count; ++i)
     {
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
-        bsd_close(rasta_states[i].file_descriptor);
+        bsd_close(rasta_transport_states[i].file_descriptor);
     }
 
     // free arrays
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "freeing thread data");
-    rfree(rasta_states);
+    rfree(rasta_transport_states);
 
     mux->port_count = 0;
     freeRastaByteArray(&mux->sr_hashing_context.key);
@@ -661,7 +661,7 @@ void redundancy_mux_close(redundancy_mux *mux)
 void redundancy_mux_close(redundancy_mux *mux)
 {
     // close the sockets of the transport channels
-    cleanup_rasta_states(mux, mux->rasta_tcp_socket_states, mux->port_count);
+    cleanup_rasta_states(mux, mux->tcp_transport_states, mux->port_count);
 }
 #endif
 
@@ -834,14 +834,14 @@ int redundancy_mux_listen_channels(redundancy_mux *mux)
     for (unsigned i = 0; i < mux->port_count; ++i)
     {
 #ifdef USE_TCP
-        if (mux->rasta_tcp_socket_states[i].file_descriptor == 0)
+        if (mux->tcp_transport_states[i].file_descriptor == 0)
         {
             // init socket
-            tcp_init(&mux->rasta_tcp_socket_states[i], &mux->config.tls);
-            tcp_bind_device(&mux->rasta_tcp_socket_states[i],
+            tcp_init(&mux->tcp_transport_states[i], &mux->config.tls);
+            tcp_bind_device(&mux->tcp_transport_states[i],
                             (uint16_t)mux->config.redundancy.connections.data[i].port,
                             mux->config.redundancy.connections.data[i].ip);
-            tcp_listen(&mux->rasta_tcp_socket_states[i]);
+            tcp_listen(&mux->tcp_transport_states[i]);
             result = 1;
         }
 #endif
@@ -852,11 +852,11 @@ int redundancy_mux_listen_channels(redundancy_mux *mux)
 void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port)
 {
     // init socket
-    tcp_init(&mux->rasta_tcp_socket_states[channel], &mux->config.tls);
-    tcp_bind_device(&mux->rasta_tcp_socket_states[channel],
+    tcp_init(&mux->tcp_transport_states[channel], &mux->config.tls);
+    tcp_bind_device(&mux->tcp_transport_states[channel],
                     (uint16_t)mux->config.redundancy.connections.data[channel].port,
                     mux->config.redundancy.connections.data[channel].ip);
-    tcp_connect(&mux->rasta_tcp_socket_states[channel], host, port);
+    tcp_connect(&mux->tcp_transport_states[channel], host, port);
 }
 
 void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels)
@@ -868,7 +868,7 @@ void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct Ra
     {
         rasta_red_add_transport_channel(&channel,
 #ifdef USE_TCP
-                                        mux->rasta_tcp_socket_states[i],
+                                        mux->tcp_transport_states[i],
 #endif
                                         transport_channels[i].ip,
                                         (uint16_t)transport_channels[i].port);
