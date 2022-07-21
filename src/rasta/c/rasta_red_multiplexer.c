@@ -223,8 +223,6 @@ struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux,unsigned c
     return receivedPacket;
 }
 
-
-
 void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback)
 {
 
@@ -324,6 +322,7 @@ fd_event *prepare_receive_event(struct receive_event_data *data)
     memset(evt, 0, sizeof(fd_event));
     evt->enabled = 1;
     evt->carry_data = channel_event_data;
+    evt->callback = channel_receive_event;
 
     return evt;
 }
@@ -334,13 +333,12 @@ fd_event *prepare_tls_accept_event(fd_event *evt, struct rasta_connected_transpo
 {
     struct receive_event_data *channel_event_data = evt->carry_data;
     channel_event_data->ssl = connection->ssl;
-    evt->callback = channel_receive_event;
     evt->fd = connection->file_descriptor;
 
     return evt;
 }
 
-void channel_accept_event_tls(void *carry_data)
+int channel_accept_event_tls(void *carry_data)
 {
     struct rasta_connected_transport_channel_state connection;
     struct receive_event_data *data = carry_data;
@@ -352,6 +350,7 @@ void channel_accept_event_tls(void *carry_data)
     prepare_tls_accept_event(evt, &connection);
 
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
+    return 0;
 }
 #endif
 
