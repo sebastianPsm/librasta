@@ -55,7 +55,7 @@ ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_bu
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-size_t tcp_receive(struct RastaState *transport_state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
+size_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
 
 /**
@@ -101,7 +101,7 @@ void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void tcp_send(struct RastaState *transport_state, unsigned char* message, size_t message_len, char* host, uint16_t port);
+void tcp_send(struct rasta_transport_state *transport_state, unsigned char* message, size_t message_len, char* host, uint16_t port);
 #endif
 
 /**

@@ -198,7 +198,7 @@ ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_bu
     return wolfssl_receive_tls(ssl, received_message, max_buffer_len);
 }
 #else
-size_t tcp_receive(struct RastaState *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
+size_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender)
 {
     if (transport_state->activeMode == TLS_MODE_DISABLED)
     {
@@ -226,7 +226,7 @@ void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len)
     wolfssl_send_tls(ssl, message, message_len);
 }
 #else
-void tcp_send(struct RastaState *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port)
+void tcp_send(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port)
 {
     bsd_send(transport_state->file_descriptor, message, message_len, host, port);
 }
