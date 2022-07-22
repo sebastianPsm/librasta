@@ -19,7 +19,7 @@
 #include "tcp.h"
 #endif
 #include "rastautil.h"
-#include "rasta_transport_callbacks.h" 
+#include "rasta_transport_callbacks.h"
 
 /* --- Notifications --- */
 
@@ -207,7 +207,7 @@ ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *
     return len;
 }
 
-struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux,unsigned char *buffer, ssize_t len)
+struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len)
 {
 
     struct RastaByteArray incomingData;
@@ -277,8 +277,11 @@ void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *
                 }
                 else
                 {
+                    // FIXME: This should not require a null check to prevent a double free
                     // temp channel no longer needed -> free memory
-                    rfree(connected_channel.ip_address);
+                    if(connected_channel.ip_address[0] != '\0'){
+                        rfree(connected_channel.ip_address);
+                    }
                 }
             }
 
@@ -415,8 +418,6 @@ void run_channel_diagnostics(struct rasta_handle *h, unsigned int channel_count,
 
             deferqueue_clear(&current.diagnostics_packet_buffer);
         }
-
-
     }
 }
 
@@ -750,7 +751,6 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 
 // #ifdef USE_UDP
 
-
 // void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 // {
 //     redundancy_mux_send_(mux, data, udp_send_callback);
@@ -759,20 +759,17 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 // #ifdef USE_TCP
 // #ifdef ENABLE_TLS
 
-
 // void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 // {
 //     redundancy_mux_send_(mux, data, tls_send_callback);
 // }
 // #else
 
-
 // void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
 // {
 //     redundancy_mux_send_(mux, data, tcp_send_callback);
 // }
 // #endif
-
 
 int redundancy_try_mux_retrieve(redundancy_mux *mux, unsigned long id, struct RastaPacket *out)
 {
