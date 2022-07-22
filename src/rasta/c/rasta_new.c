@@ -1515,9 +1515,9 @@ void sr_listen(struct rasta_handle *h) {
             memset(&channel_events[i], 0, sizeof(fd_event));
             channel_events[i].carry_data = channel_event_data + i;
 
-#ifdef ENABLE_ELS
+#ifdef ENABLE_TLS
             channel_events[i].callback = channel_accept_event_tls;
-else
+#else
             channel_events[i].callback = channel_accept_event;
 #endif
             channel_events[i].fd = h->mux.tcp_transport_states[i].file_descriptor;
