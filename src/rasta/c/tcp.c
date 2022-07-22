@@ -94,6 +94,7 @@ int tcp_accept(struct rasta_transport_state *transport_state)
         perror("tcp failed to accept connection");
         exit(1);
     }
+
     return socket;
 }
 

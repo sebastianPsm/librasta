@@ -323,6 +323,7 @@ fd_event *prepare_receive_event(struct receive_event_data *data)
     evt->enabled = 1;
     evt->carry_data = channel_event_data;
     evt->callback = channel_receive_event;
+    evt->fd = data->h->mux.tcp_transport_states[data->channel_index].file_descriptor;
 
     return evt;
 }
@@ -360,8 +361,8 @@ int channel_accept_event(void *carry_data)
     struct receive_event_data *data = carry_data;
 
     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept(&data->h->mux.tcp_transport_states[data->channel_index]);
-
+    int socket = tcp_accept(&data->h->mux.tcp_transport_states[data->channel_index]);
+    data->h->mux.tcp_transport_states[data->channel_index].file_descriptor = socket;
     fd_event *evt = prepare_receive_event(data);
 
     // TODO: Leaked event
