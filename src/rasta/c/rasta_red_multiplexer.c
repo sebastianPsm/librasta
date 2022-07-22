@@ -172,14 +172,21 @@ int receive_packet(redundancy_mux *mux, struct receive_event_data *data)
     unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
     struct sockaddr_in sender = {0};
     ssize_t len = abstract_receive_packet(mux, data, buffer, &sender, receive_callback);
+    if (len == 0)
+    {
+        return 0;
+    }
+    if (len < 0)
+    {
+        return -1;
+    }
     struct RastaRedundancyPacket receivedPacket = handle_received_data(mux, buffer, len);
-    update_redundancy_channels(mux,data, receivedPacket, &sender, redundancy_channel_extension_callback);
-                rfree(buffer);
-    return len;
+    update_redundancy_channels(mux, data, receivedPacket, &sender, redundancy_channel_extension_callback);
+    rfree(buffer);
+    return 0;
 }
 
-
-ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in* sender, RastaReceiveFunction receive_callback)
+ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender, RastaReceiveFunction receive_callback)
 {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
 
@@ -190,7 +197,7 @@ ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *
 
     if (len < 0)
     {
-        return 1;
+        return -1;
     }
 
     if (!len)
