@@ -1831,7 +1831,8 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_ti
         // }
         // #endif
 
-        channel_event_data[i].channel_index = i / h->mux.port_count;
+        channel_event_data[i].channel_index = i;
+        // channel_event_data[i].channel_index = i / h->mux.port_count;
         channel_event_data[i].event = channel_events + i;
         channel_event_data[i].h = h;
     }
