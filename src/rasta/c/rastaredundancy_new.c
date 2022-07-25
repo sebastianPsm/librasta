@@ -81,7 +81,10 @@ void deliverDeferQueue(rasta_redundancy_channel * channel){
         struct RastaByteArray * to_fifo = rmalloc(sizeof(struct RastaByteArray));
         allocateRastaByteArray(to_fifo, innerPackerBytes.length);
         rmemcpy(to_fifo->bytes, innerPackerBytes.bytes, innerPackerBytes.length);
-        fifo_push(channel->fifo_recv, to_fifo);
+
+        if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
+            logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red deliver deferq", "discarded packet because receive buffer was full");
+        }
 
         freeRastaByteArray(&innerPackerBytes);
 
@@ -151,7 +154,9 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu=%lu, seq_rx=%lu",
             channel_id, (long unsigned int) packet.sequence_number, channel->seq_rx - 1);
         // received packet as first transport channel -> add with ts to diagnostics buffer
-        deferqueue_add(&channel->diagnostics_packet_buffer, packet, current_ts());
+        if (!deferqueue_add(&channel->diagnostics_packet_buffer, packet, current_ts())) {
+            logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because defer queue was full");
+        }
 
         // forward to next layer by pushing into receive FIFO
 
@@ -163,7 +168,9 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
         struct RastaByteArray * to_fifo = rmalloc(sizeof(struct RastaByteArray));
         allocateRastaByteArray(to_fifo, innerPackerBytes.length);
         rmemcpy(to_fifo->bytes, innerPackerBytes.bytes, innerPackerBytes.length);
-        fifo_push(channel->fifo_recv, to_fifo);
+        if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
+            logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because receive fifo was full");
+        }
 
         freeRastaByteArray(&innerPackerBytes);
 
@@ -201,7 +208,9 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
                            channel_id);
 
                 // add message to defer queue
-                deferqueue_add(&channel->defer_q, packet, current_ts());
+                if (!deferqueue_add(&channel->defer_q, packet, current_ts())) {
+                    logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because defer queue was full");
+                }
             }
         }
     } else if (packet.sequence_number > (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)){

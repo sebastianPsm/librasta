@@ -63,7 +63,7 @@ void deferqueue_destroy(struct defer_queue * queue);
  * @param packet the element that will be added
  * @param recv_ts the timestamp when the @p element was received
  */
-void deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket packet, unsigned long recv_ts);
+int deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket packet, unsigned long recv_ts);
 
 /**
  * removes the given element from the queue if it exists.

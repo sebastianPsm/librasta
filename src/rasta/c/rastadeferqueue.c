@@ -13,9 +13,9 @@ int find_index(struct defer_queue* queue, unsigned long seq_nr){
     unsigned int index = 0;
 
     // naive implementation of search. performance shouldn't be an issue as the amount of messages in the queue is small
-    while ( index < queue->max_count && queue->elements[index].packet.sequence_number != seq_nr ) ++index;
+    while ( index < queue->count && queue->elements[index].packet.sequence_number != seq_nr ) ++index;
 
-    return ( index == queue->max_count ? -1 : (int)index );
+    return ( index == queue->count ? -1 : (int)index );
 }
 
 int cmpfkt(const void * a, const void * b){
@@ -55,10 +55,10 @@ int deferqueue_isfull(struct defer_queue * queue) {
     return result;
 }
 
-void deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket packet, unsigned long recv_ts){
+int deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket packet, unsigned long recv_ts){
     if(queue->count == queue->max_count){
         // queue full, return
-        return;
+        return 0;
     }
 
     struct rasta_redundancy_packet_wrapper element;
@@ -73,6 +73,7 @@ void deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket pac
 
     // sort array
     sort(queue);
+    return 1;
 }
 
 void deferqueue_remove(struct defer_queue * queue, unsigned long seq_nr){
@@ -90,7 +91,7 @@ void deferqueue_remove(struct defer_queue * queue, unsigned long seq_nr){
     }
 
     // decrease counter
-    queue->count = queue->count -1;
+    queue->count--;
 
     // sort the array
     sort(queue);

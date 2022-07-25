@@ -180,8 +180,16 @@ int receive_packet(redundancy_mux *mux, struct receive_event_data *data)
     {
         return -1;
     }
-    struct RastaRedundancyPacket receivedPacket = handle_received_data(mux, buffer, len);
-    update_redundancy_channels(mux, data, receivedPacket, &sender, redundancy_channel_extension_callback);
+
+    size_t len_remaining = len;
+    size_t read_offset = 0;
+    while (len_remaining > 0) {
+        uint16_t currentPacketSize = leShortToHost(&buffer[read_offset]);
+        struct RastaRedundancyPacket receivedPacket = handle_received_data(mux, buffer + read_offset, currentPacketSize);
+        update_redundancy_channels(mux, data, receivedPacket, &sender, redundancy_channel_extension_callback);
+        len_remaining -= currentPacketSize;
+        read_offset += currentPacketSize;
+    }
     rfree(buffer);
     return 0;
 }
@@ -232,7 +240,6 @@ struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned 
 
 void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback)
 {
-
     rasta_transport_channel connected_channel;
     connected_channel.ip_address = rmalloc(sizeof(char) * 15);
     sockaddr_to_host(*sender, connected_channel.ip_address);
@@ -919,9 +926,10 @@ int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out
 {
     for (unsigned int i = 0; i < mux->channel_count; i++)
     {
-        if (get_queue_msg_count(mux, i) > 0)
+        unsigned int msg_count = get_queue_msg_count(mux, i);
+        if (msg_count > 0)
         {
-            logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux retrieve all", "channel with index %d has messages", i);
+            logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux retrieve all", "channel with index %d has %u messages", i, msg_count);
             redundancy_try_mux_retrieve(mux, mux->connected_channels[i].associated_id, out);
             return 1;
         }

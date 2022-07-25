@@ -1572,114 +1572,119 @@ bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfig
 int on_readable_event(void* handle) {
     struct rasta_receive_handle *h = (struct rasta_receive_handle*) handle;
 
-    // wait for incoming packets
-    struct RastaPacket receivedPacket;
-    if (!redundancy_mux_try_retrieve_all(h->mux, &receivedPacket)) {
-        return 0;
-    }
+    for (;;) {
 
-    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet %d from %d to %d", receivedPacket.type, receivedPacket.sender_id, receivedPacket.receiver_id);
+        // wait for incoming packets
+        struct RastaPacket receivedPacket;
+        if (!redundancy_mux_try_retrieve_all(h->mux, &receivedPacket)) {
+            return 0;
+        }
 
-    struct rasta_connection* con;
-    for (con = h->handle->first_con; con; con = con->linkedlist_next) {
-        if (con->remote_id == receivedPacket.sender_id) break;
-    }
-    //new client request
-    if (receivedPacket.type == RASTA_TYPE_CONNREQ){
-        con = handle_conreq(h, con, receivedPacket);
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet %d from %d to %d %u", receivedPacket.type, receivedPacket.sender_id, receivedPacket.receiver_id, receivedPacket.length);
+        // for(int i = 0; i < receivedPacket.length; i++)
+        //     fprintf(stdout, "%02X ", receivedPacket.data.bytes[i]);
+        // fprintf(stdout, "\n");
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+        struct rasta_connection* con;
+        for (con = h->handle->first_con; con; con = con->linkedlist_next) {
+            if (con->remote_id == receivedPacket.sender_id) break;
+        }
+        //new client request
+        if (receivedPacket.type == RASTA_TYPE_CONNREQ){
+            con = handle_conreq(h, con, receivedPacket);
 
-    if (con == NULL) {
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet (%d) from unknown source %d", receivedPacket.type, receivedPacket.sender_id);
-        //received packet from unknown source
-        //TODO: can these packets be ignored?
+            freeRastaByteArray(&receivedPacket.data);
+            return 0;
+        }
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+        if (con == NULL) {
+            logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet (%d) from unknown source %d", receivedPacket.type, receivedPacket.sender_id);
+            //received packet from unknown source
+            //TODO: can these packets be ignored?
 
-    //handle response
-    if (receivedPacket.type == RASTA_TYPE_CONNRESP) {
-        handle_conresp(h, con, receivedPacket);
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+        //handle response
+        if (receivedPacket.type == RASTA_TYPE_CONNRESP) {
+            handle_conresp(h, con, receivedPacket);
+
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
 
-    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Checking packet ...");
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Checking packet ...");
 
-    // check message checksum
-    if (!receivedPacket.checksum_correct){
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet checksum incorrect");
-        // increase safety error counter
-        con->errors.safety++;
+        // check message checksum
+        if (!receivedPacket.checksum_correct){
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet checksum incorrect");
+            // increase safety error counter
+            con->errors.safety++;
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-    // check for plausible ids
-    if (!sr_message_authentic(con, receivedPacket)) {
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet invalid sender/receiver");
-        // increase address error counter
-        con->errors.address++;
+        // check for plausible ids
+        if (!sr_message_authentic(con, receivedPacket)) {
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet invalid sender/receiver");
+            // increase address error counter
+            con->errors.address++;
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-    // check sequency number range
-    if (!sr_sn_range_valid(con, h->config, receivedPacket)){
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet sn range invalid");
+        // check sequency number range
+        if (!sr_sn_range_valid(con, h->config, receivedPacket)){
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet sn range invalid");
 
-        // invalid -> increase error counter and discard packet
-        con->errors.sn++;
+            // invalid -> increase error counter and discard packet
+            con->errors.sn++;
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-    // check confirmed sequence number
-    if (!sr_cs_valid(con, receivedPacket)){
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet cs invalid");
+        // check confirmed sequence number
+        if (!sr_cs_valid(con, receivedPacket)){
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet cs invalid");
 
-        // invalid -> increase error counter and discard packet
-        con->errors.cs++;
+            // invalid -> increase error counter and discard packet
+            con->errors.cs++;
 
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-    if(sr_rekeying_skipped(con,&h->handle->config.values.kex)){
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %"PRIu64" - disconnecting!",get_current_time_ms());
-        sr_close_connection(con,h->handle,h->mux,h->info,RASTA_DISC_REASON_TIMEOUT,0);
-        freeRastaByteArray(&receivedPacket.data);
-        return 0;
-    }
+        if(sr_rekeying_skipped(con,&h->handle->config.values.kex)){
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %"PRIu64" - disconnecting!",get_current_time_ms());
+            sr_close_connection(con,h->handle,h->mux,h->info,RASTA_DISC_REASON_TIMEOUT,0);
+            freeRastaByteArray(&receivedPacket.data);
+            continue;
+        }
 
-    switch (receivedPacket.type){
-        case RASTA_TYPE_RETRDATA:
-            handle_retrdata(h,con, receivedPacket);
-            break;
-        case RASTA_TYPE_DATA:
-            handle_data(h,con, receivedPacket);
-            break;
-        case RASTA_TYPE_RETRREQ:
-            handle_retrreq(h,con, receivedPacket);
-            break;
-        case RASTA_TYPE_RETRRESP:
-            handle_retrresp(h,con, receivedPacket);
-            break;
-        case RASTA_TYPE_DISCREQ:
-            handle_discreq(h,con, receivedPacket);
-            break;
-        case RASTA_TYPE_HB:
-            handle_hb(h,con, receivedPacket);
-            break;
+        switch (receivedPacket.type){
+            case RASTA_TYPE_RETRDATA:
+                handle_retrdata(h,con, receivedPacket);
+                break;
+            case RASTA_TYPE_DATA:
+                handle_data(h,con, receivedPacket);
+                break;
+            case RASTA_TYPE_RETRREQ:
+                handle_retrreq(h,con, receivedPacket);
+                break;
+            case RASTA_TYPE_RETRRESP:
+                handle_retrresp(h,con, receivedPacket);
+                break;
+            case RASTA_TYPE_DISCREQ:
+                handle_discreq(h,con, receivedPacket);
+                break;
+            case RASTA_TYPE_HB:
+                handle_hb(h,con, receivedPacket);
+                break;
 #ifdef ENABLE_OPAQUE
         case RASTA_TYPE_KEX_REQUEST:
             handle_kex_request(h,con,receivedPacket);
@@ -1691,15 +1696,15 @@ int on_readable_event(void* handle) {
             handle_kex_auth(h,con,receivedPacket);
             break;
 #endif
-        default:
-            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received unexpected packet type %d", receivedPacket.type);
-            // increase type error counter
-            con->errors.type++;
-            break;
-    }
+            default:
+                logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received unexpected packet type %d", receivedPacket.type);
+                // increase type error counter
+                con->errors.type++;
+                break;
+        }
 
-    freeRastaByteArray(&receivedPacket.data);
-    return 0;
+        freeRastaByteArray(&receivedPacket.data);
+    }
 }
 
 int event_connection_expired(void* carry_data) {
