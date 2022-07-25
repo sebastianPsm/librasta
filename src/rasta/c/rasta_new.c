@@ -2102,6 +2102,8 @@ rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rast
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA retrieve", "application message with l %d", message.appMessage.length);
     //logger_log(&h->logger, LOG_LEVEL_DEBUG, "RETRIEVE DATA", "Convert bytes to packet");
 
+    logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA retrieve", "Packets in fifo remaining: %d", fifo_get_size(connection->fifo_app_msg));
+
     rfree(element);
 
     //struct RastaPacket packet = bytesToRastaPacket(msg);
