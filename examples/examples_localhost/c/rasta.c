@@ -11,9 +11,9 @@
 #include <rmemory.h>
 #include <fifo.h>
 
-#define CONFIG_PATH_S "/workspaces/rasta-protocol/examples/config/rasta_server_local.cfg"
-#define CONFIG_PATH_C1 "/workspaces/rasta-protocol/examples/config/rasta_client1_local.cfg"
-#define CONFIG_PATH_C2 "/workspaces/rasta-protocol/examples/config/rasta_client2_local.cfg"
+#define CONFIG_PATH_S "rasta_server_local.cfg"
+#define CONFIG_PATH_C1 "rasta_client1_local.cfg"
+#define CONFIG_PATH_C2 "rasta_client2_local.cfg"
 
 #define ID_R 0x61
 #define ID_S1 0x62
