@@ -277,11 +277,9 @@ void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *
                 }
                 else
                 {
-                    // FIXME: This should not require a null check to prevent a double free
                     // temp channel no longer needed -> free memory
-                    if(connected_channel.ip_address[0] != '\0'){
-                        rfree(connected_channel.ip_address);
-                    }
+                    rfree(connected_channel.ip_address);
+                    break;
                 }
             }
 

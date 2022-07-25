@@ -7,6 +7,23 @@
 #include "rmemory.h"
 #include "bsd_utils.h"
 
+struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port)
+{
+    struct sockaddr_in receiver;
+
+    rmemset((char *)&receiver, 0, sizeof(receiver));
+    receiver.sin_family = AF_INET;
+    receiver.sin_port = htons(port);
+
+    // convert host string to usable format
+    if (inet_aton(host, &receiver.sin_addr) == 0)
+    {
+        fprintf(stderr, "inet_aton() failed\n");
+        exit(1);
+    }
+    return receiver;
+}
+
 int bsd_create_socket(int family, int type, int protocol_type)
 {
     // the file descriptor of the socket
@@ -108,18 +125,7 @@ size_t bsd_receive(int file_descriptor, unsigned char *received_message, size_t 
 
 void bsd_send(int file_descriptor, unsigned char *message, size_t message_len, char *host, uint16_t port)
 {
-    struct sockaddr_in receiver;
-
-    rmemset((char *)&receiver, 0, sizeof(receiver));
-    receiver.sin_family = AF_INET;
-    receiver.sin_port = htons(port);
-
-    // convert host string to usable format
-    if (inet_aton(host, &receiver.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
+    struct sockaddr_in receiver = host_port_to_sockaddr(host, port);
 
     // send the message using the other send function
     bsd_send_sockaddr(file_descriptor, message, message_len, receiver);
@@ -168,21 +174,4 @@ int getSO_ERROR(int fd)
 void sockaddr_to_host(struct sockaddr_in sockaddr, char *host)
 {
     inet_ntop(AF_INET, &(sockaddr.sin_addr), host, IPV4_STR_LEN);
-}
-
-struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port)
-{
-    struct sockaddr_in receiver;
-
-    rmemset((char *)&receiver, 0, sizeof(receiver));
-    receiver.sin_family = AF_INET;
-    receiver.sin_port = htons(port);
-
-    // convert host string to usable format
-    if (inet_aton(host, &receiver.sin_addr) == 0)
-    {
-        fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
-    }
-    return receiver;
 }
