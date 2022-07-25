@@ -44,12 +44,12 @@ void redundancy_channel_extension_callback(rasta_transport_channel *channel, str
 #ifdef USE_UDP
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel channel, unsigned int channel_index)
 {
-    udp_send(&mux->udp_socket_states[channel_index], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+    udp_send(&mux->udp_transport_states[channel_index], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
 }
 
 int receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender)
 {
-    return udp_receive(&mux->udp_socket_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, &sender);
+    return udp_receive(&mux->udp_transport_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
 // UDP doesn't need the extension function, as it is the default behavior.
