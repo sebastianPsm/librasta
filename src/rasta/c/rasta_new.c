@@ -1501,25 +1501,24 @@ void sr_init_handle(struct rasta_handle* handle, const char* config_file_path) {
                       handle->config.values.sending.md4_c, handle->config.values.sending.md4_d);
 }
 
-void sr_listen(struct rasta_handle *h) {
+void sr_listen(struct rasta_handle *h)
+{
     int was_not_already_initialized = redundancy_mux_listen_channels(&h->mux);
     (void)was_not_already_initialized;
 
 #ifdef USE_TCP
-    if (was_not_already_initialized) {
+    if (was_not_already_initialized)
+    {
         int channel_event_data_len = h->mux.port_count;
         fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
 
-        for (int i = 0; i < channel_event_data_len; i++) {
+        for (int i = 0; i < channel_event_data_len; i++)
+        {
             memset(&channel_events[i], 0, sizeof(fd_event));
             channel_events[i].carry_data = channel_event_data + i;
 
-#ifdef ENABLE_TLS
-            channel_events[i].callback = channel_accept_event_tls;
-#else
             channel_events[i].callback = channel_accept_event;
-#endif
             channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
             channel_events[i].enabled = 1;
 
@@ -1527,7 +1526,8 @@ void sr_listen(struct rasta_handle *h) {
             channel_event_data[i].event = channel_events + i;
             channel_event_data[i].h = h;
         }
-        for (int i = 0; i < channel_event_data_len; i++) {
+        for (int i = 0; i < channel_event_data_len; i++)
+        {
             // TODO: Leaked Events
             add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
         }
@@ -1535,35 +1535,20 @@ void sr_listen(struct rasta_handle *h) {
 #endif
 }
 
-void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels) {
-    for (struct rasta_connection* con = h->first_con; con; con = con->linkedlist_next) {
-        //TODO: Error handling
-        if (con->remote_id == id) return;
-    }
-    //TODO: const ports in redundancy? (why no dynamic port length)
-    #ifdef USE_TCP
-    for (unsigned int i = 0; i < h->mux.port_count; ++i)
+int connection_exists(struct rasta_handle *h, unsigned long id)
+{
+    for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next)
     {
-        redundancy_mux_connect(&h->mux, i, channels[i].ip, (uint16_t)channels[i].port);
-
-        fd_event* evt = rmalloc(sizeof(fd_event));
-        struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
-        channel_event_data->channel_index = i / h->mux.port_count;
-        channel_event_data->event = evt;
-        channel_event_data->h = h;
-        channel_event_data->event = evt;
-    #ifdef ENABLE_TLS
-        channel_event_data->ssl = h->mux.tcp_transport_states[i].ssl;
-    #endif
-        memset(evt, 0, sizeof(fd_event));
-        evt->enabled = 1;
-        evt->carry_data = channel_event_data;
-        evt->callback = channel_receive_event;
-        evt->fd = h->mux.transport_states[i].file_descriptor;
-
-        add_fd_event(h->ev_sys, evt, EV_READABLE);
+        // TODO: Error handling
+        if (con->remote_id == id)
+            return 1;
     }
-    #endif
+    return 0;
+}
+
+void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels)
+{
+
     redundancy_mux_add_channel(&h->mux, id, channels);
 
     struct rasta_connection new_con;
@@ -1613,22 +1598,75 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
     freeRastaByteArray(&conreq.data);
 
     // fire connection tls_state changed event
-    fire_on_connection_state_change(sr_create_notification_result(h,con));
+    fire_on_connection_state_change(sr_create_notification_result(h, con));
 
     init_connection_events(h, con);
 }
 
-void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages){
+#ifdef USE_TCP
+void init_channels_tcp(struct rasta_handle *h, struct RastaIPData *channels)
+{
+    // TODO: const ports in redundancy? (why no dynamic port length)
+    for (unsigned int i = 0; i < h->mux.port_count; ++i)
+    {
+        redundancy_mux_connect(&h->mux, i, channels[i].ip, (uint16_t)channels[i].port);
+
+        fd_event *evt = rmalloc(sizeof(fd_event));
+        struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
+        channel_event_data->channel_index = i / h->mux.port_count;
+        channel_event_data->event = evt;
+        channel_event_data->h = h;
+        channel_event_data->event = evt;
+#ifdef ENABLE_TLS
+        channel_event_data->ssl = h->mux.tcp_transport_states[i].ssl;
+#endif
+        memset(evt, 0, sizeof(fd_event));
+        evt->enabled = 1;
+        evt->carry_data = channel_event_data;
+        evt->callback = channel_receive_event;
+        evt->fd = h->mux.transport_states[i].file_descriptor;
+
+        add_fd_event(h->ev_sys, evt, EV_READABLE);
+    }
+}
+void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels)
+{
+    if (connection_exists(h, id))
+        return;
+
+    init_channels_tcp(h, channels);
+
+    sr_connect_abstract(h, id, channels);
+}
+
+#else
+
+void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels)
+{
+    if (connection_exists(h, id))
+        return;
+
+    sr_connect_abstract(h, id, channels);
+}
+#endif
+
+void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages)
+{
 
     struct rasta_connection *con;
-    for (con = h->first_con; con; con = con->linkedlist_next) {
-        if (con->remote_id == remote_id) break;
+    for (con = h->first_con; con; con = con->linkedlist_next)
+    {
+        if (con->remote_id == remote_id)
+            break;
     }
 
-    if (con == 0) return;
+    if (con == 0)
+        return;
 
-    if(con->current_state == RASTA_CONNECTION_UP){
-        if (app_messages.count > h->config.values.sending.max_packet){
+    if (con->current_state == RASTA_CONNECTION_UP)
+    {
+        if (app_messages.count > h->config.values.sending.max_packet)
+        {
             // to many application messages
             logger_log(&h->logger, LOG_LEVEL_ERROR, "RaSTA send", "too many application messages to send in one packet. Maximum is %d",
                        h->config.values.sending.max_packet);

@@ -347,7 +347,7 @@ fd_event *prepare_tls_accept_event(fd_event *evt, struct rasta_connected_transpo
     return evt;
 }
 
-int channel_accept_event_tls(void *carry_data)
+int channel_accept_event(void *carry_data)
 {
     struct rasta_connected_transport_channel_state connection;
     struct receive_event_data *data = carry_data;
@@ -361,7 +361,7 @@ int channel_accept_event_tls(void *carry_data)
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
     return 0;
 }
-#endif
+#else
 
 int channel_accept_event(void *carry_data)
 {
@@ -376,6 +376,7 @@ int channel_accept_event(void *carry_data)
     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
     return 0;
 }
+#endif
 #endif
 
 void run_channel_diagnostics(struct rasta_handle *h, unsigned int channel_count, unsigned int channel_index)
