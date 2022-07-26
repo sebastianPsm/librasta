@@ -1520,7 +1520,7 @@ void sr_listen(struct rasta_handle *h) {
 #else
             channel_events[i].callback = channel_accept_event;
 #endif
-            channel_events[i].fd = h->mux.tcp_transport_states[i].file_descriptor;
+            channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
             channel_events[i].enabled = 1;
 
             channel_event_data[i].channel_index = i;
@@ -1559,7 +1559,7 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
         evt->enabled = 1;
         evt->carry_data = channel_event_data;
         evt->callback = channel_receive_event;
-        evt->fd = h->mux.tcp_transport_states[i].file_descriptor;
+        evt->fd = h->mux.transport_states[i].file_descriptor;
 
         add_fd_event(h->ev_sys, evt, EV_READABLE);
     }
@@ -1820,7 +1820,7 @@ void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_ti
         // #ifdef USE_UDP
         channel_events[i].enabled = 1;
         channel_events[i].callback = channel_receive_event;
-        channel_events[i].fd = h->mux.udp_transport_states[i].file_descriptor;
+        channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
         // #endif
         // #ifdef USE_TCP
         // channel_events[i].callback = channel_receive_event;

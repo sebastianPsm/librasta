@@ -103,19 +103,11 @@ extern "C"
          * amount of listen ports, i.e. length of the listen_ports array
          */
         unsigned int port_count;
-#ifdef USE_UDP
-        /**
-         * the file descriptors of the used udp sockes. array has length port_count
-         */
-        struct rasta_transport_state *udp_transport_states;
-#endif
-#ifdef USE_TCP
-        /**
-         * the file descriptors of the used tcp sockets. array has length port_count
-         */
-        struct rasta_transport_state *tcp_transport_states;
 
-#endif
+        /**
+         * the rasta transport state of each used socket. The array has a length of port_count
+         */
+        struct rasta_transport_state *transport_states;
 
         /**
          * the redundancy channels to remote entities this multiplexer is aware of
