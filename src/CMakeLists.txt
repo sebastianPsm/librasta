@@ -2,6 +2,10 @@ if(ENABLE_RASTA_TLS)
     find_package(WolfSSL REQUIRED)
 endif(ENABLE_RASTA_TLS)
 
+if(ENABLE_RASTA_OPAQUE)
+    find_package(sodium REQUIRED)
+endif()
+
 # Target name
 set(target rasta)
 
@@ -170,7 +174,7 @@ foreach(RASTA_VARIANT ${RASTA_VARIANTS})
                 target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-Bdynamic")
             endif()
             # consuming application also needs to link libsodium to resolve opaque's dependencies
-            target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-lsodium")
+            target_link_libraries(${target}_${RASTA_VARIANT} sodium)
         else()
             message(FATAL_ERROR "Linker does not support required linker flags!")
         endif()
