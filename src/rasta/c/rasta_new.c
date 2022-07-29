@@ -1771,18 +1771,14 @@ void sr_cleanup(struct rasta_handle *h) {
     h->notifications.on_disconnection_request_received = NULL;
     h->notifications.on_redundancy_diagnostic_notification = NULL;
 
-
     // close mux
     redundancy_mux_close(&h->mux);
-
 
     // free config
     config_free(&h->config);
 
     // free accepted version
     free_DictionaryArray(&h->receive_handle->accepted_version);
-
-
 
     rfree(h->receive_handle);
     rfree(h->send_handle);
@@ -1807,51 +1803,6 @@ void log_main_loop_state(struct rasta_handle* h, event_system* ev_sys, const cha
         message, fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
 }
 
-#ifdef USE_UDP
-void cleanup_channel_events_udp(event_system *event_system, fd_event *channel_events, int len)
-{
-    for (int i = 0; i < len; i++)
-    {
-        remove_fd_event(event_system, &channel_events[i]);
-    }
-}
-
-void init_channels_udp(struct rasta_handle *h, event_system *event_system, fd_event *channel_events, struct receive_event_data *channel_event_data,int channel_event_data_len)
-{
-
-    // #ifdef USE_TCP
-    // int channel_event_data_len = h->mux.channel_count * h->mux.port_count;
-    // #endif
-
-    for (int i = 0; i < channel_event_data_len; i++)
-    {
-        memset(&channel_events[i], 0, sizeof(fd_event));
-        channel_events[i].carry_data = channel_event_data + i;
-
-        // #ifdef USE_UDP
-        channel_events[i].enabled = 1;
-        channel_events[i].callback = channel_receive_event;
-        channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
-        // #endif
-        // #ifdef USE_TCP
-        // channel_events[i].callback = channel_receive_event;
-        // unsigned int connected_channel_idx = i % h->mux.port_count;
-        // if (h->mux.connected_channels[i / h->mux.port_count].connected_channel_count > connected_channel_idx) {
-        //     channel_events[i].enabled = 1;
-        //     channel_events[i].fd = h->mux.connected_channels[i / h->mux.port_count].connected_channels[connected_channel_idx].fd;
-        // }
-        // #endif
-
-        channel_event_data[i].channel_index = i;
-        // channel_event_data[i].channel_index = i / h->mux.port_count;
-        channel_event_data[i].event = channel_events + i;
-        channel_event_data[i].h = h;
-    }
-    for (int i = 0; i < channel_event_data_len; i++)
-    {
-        add_fd_event(event_system, &channel_events[i], EV_READABLE);
-    }
-}
 
 #define IO_INTERVAL 10000
 void sr_begin_abstract(struct rasta_handle* h, event_system* event_system, int channel_timeout_ms, int listen) {
@@ -1895,6 +1846,37 @@ void sr_begin_abstract(struct rasta_handle* h, event_system* event_system, int c
     remove_timed_event(event_system, &send_event);
     remove_timed_event(event_system, &receive_event);
     remove_timed_event(event_system, &channel_timeout_event);
+}
+
+
+#ifdef USE_UDP
+void cleanup_channel_events_udp(event_system *event_system, fd_event *channel_events, int len)
+{
+    for (int i = 0; i < len; i++)
+    {
+        remove_fd_event(event_system, &channel_events[i]);
+    }
+}
+
+void init_channels_udp(struct rasta_handle *h, event_system *event_system, fd_event *channel_events, struct receive_event_data *channel_event_data,int channel_event_data_len)
+{
+    for (int i = 0; i < channel_event_data_len; i++)
+    {
+        memset(&channel_events[i], 0, sizeof(fd_event));
+        channel_events[i].carry_data = channel_event_data + i;
+        channel_events[i].enabled = 1;
+        channel_events[i].callback = channel_receive_event;
+        channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
+
+        channel_event_data[i].channel_index = i;
+        // channel_event_data[i].channel_index = i / h->mux.port_count;
+        channel_event_data[i].event = channel_events + i;
+        channel_event_data[i].h = h;
+    }
+    for (int i = 0; i < channel_event_data_len; i++)
+    {
+        add_fd_event(event_system, &channel_events[i], EV_READABLE);
+    }
 }
 
 void sr_begin(struct rasta_handle* h, event_system* event_system, int channel_timeout_ms, int listen) {
