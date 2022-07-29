@@ -272,7 +272,7 @@ int main(int argc, char *argv[]){
         enable_timed_event(&termination_event);
         disable_timed_event(&connect_on_timeout_event);
         add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        rasta_lib_start(rc, 0, false);
+        rasta_lib_start(rc, 0, true);
 
         fifo_destroy(server_fifo);
     }
