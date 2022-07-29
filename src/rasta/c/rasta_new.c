@@ -1618,7 +1618,7 @@ void init_channels_tcp(struct rasta_handle *h, struct RastaIPData *channels)
         channel_event_data->h = h;
         channel_event_data->event = evt;
 #ifdef ENABLE_TLS
-        channel_event_data->ssl = h->mux.tcp_transport_states[i].ssl;
+        channel_event_data->ssl = h->mux.transport_states[i].ssl;
 #endif
         memset(evt, 0, sizeof(fd_event));
         evt->enabled = 1;

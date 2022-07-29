@@ -353,7 +353,7 @@ int channel_accept_event(void *carry_data)
     struct receive_event_data *data = carry_data;
 
     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-    tcp_accept_tls(&data->h->mux.tcp_transport_states[data->channel_index], &connection);
+    tcp_accept_tls(&data->h->mux.transport_states[data->channel_index], &connection);
 
     fd_event *evt = prepare_receive_event(data);
     prepare_tls_accept_event(evt, &connection);
