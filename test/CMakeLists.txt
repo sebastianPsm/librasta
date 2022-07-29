@@ -35,7 +35,7 @@ target_include_directories(rastaTest PRIVATE rastaTest/headers)
 target_link_libraries(rastaTest rasta PkgConfig::CUnit)
 target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
 
-add_dependencies(rastaTest rasta)
+add_dependencies(rastaTest rasta_udp)
 
 add_test(NAME test_rastaTest
          COMMAND rastaTest)
