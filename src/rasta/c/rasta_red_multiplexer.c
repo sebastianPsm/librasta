@@ -600,29 +600,6 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
     mux.connected_channels = rmalloc(sizeof(rasta_redundancy_channel));
     mux.channel_count = 0;
 
-    // load channel that is specified in config
-    // if (mux.config.redundancy.connections.count > 0)
-    // {
-    //     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading redundancy channel from config");
-    //     rasta_redundancy_channel new_channel = rasta_red_init(mux.logger, mux.config, mux.port_count, mux.config.general.rasta_id);
-    //     new_channel.associated_id = 0x0;
-
-    //     for (unsigned int j = 0; j < mux.config.redundancy.connections.count; ++j)
-    //     {
-    //         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "setting up transport channel %d/%d",
-    //                    j + 1, mux.config.redundancy.connections.count);
-    //         logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "transport channel: ip=%s, port=%d",
-    //                    mux.config.redundancy.connections.data[j].ip, mux.config.redundancy.connections.data[j].port);
-    //         // no associated channel found -> received message from new partner
-    //         // add transport channel to redundancy channel
-    //         rasta_red_add_transport_channel(&new_channel, mux.config.redundancy.connections.data[j].ip,
-    //                                         (uint16_t)mux.config.redundancy.connections.data[j].port);
-    //     }
-
-    //     mux.connected_channels[mux.channel_count] = new_channel;
-    //     mux.channel_count++;
-    // }
-
     logger_log(&mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
     return mux;
 }
@@ -743,32 +720,6 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA Red send", "Data sent over all transport channels");
 }
 
-// void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
-// {
-//     redundancy_mux_send_(mux, data, send_callback);
-// }
-
-// #ifdef USE_UDP
-
-// void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
-// {
-//     redundancy_mux_send_(mux, data, udp_send_callback);
-// }
-// #endif
-// #ifdef USE_TCP
-// #ifdef ENABLE_TLS
-
-// void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
-// {
-//     redundancy_mux_send_(mux, data, tls_send_callback);
-// }
-// #else
-
-// void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data)
-// {
-//     redundancy_mux_send_(mux, data, tcp_send_callback);
-// }
-// #endif
 
 int redundancy_try_mux_retrieve(redundancy_mux *mux, unsigned long id, struct RastaPacket *out)
 {
