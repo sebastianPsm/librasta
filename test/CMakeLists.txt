@@ -32,7 +32,7 @@ add_executable(rastaTest
     rastaTest/c/opaquetest.c
     rastaTest/headers/opaquetest.h)
 target_include_directories(rastaTest PRIVATE rastaTest/headers)
-target_link_libraries(rastaTest rasta PkgConfig::CUnit)
+target_link_libraries(rastaTest rasta_udp PkgConfig::CUnit)
 target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
 
 add_dependencies(rastaTest rasta_udp)
@@ -50,7 +50,7 @@ add_executable(sciTest
     sciTest/c/scipTests.c
     sciTest/c/sciTests.c)
 target_include_directories(sciTest PRIVATE sciTest/headers)
-target_link_libraries(sciTest rasta PkgConfig::CUnit)
+target_link_libraries(sciTest rasta_udp PkgConfig::CUnit)
 target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
 
 add_test(NAME test_sciTest

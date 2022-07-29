@@ -30,28 +30,28 @@ target_compile_options(event_system_example_local PRIVATE ${DEFAULT_COMPILE_OPTI
 target_link_libraries(event_system_example_local rasta_udp)
 
 if(ENABLE_RASTA_TLS)
-add_executable(dtls_example_local
-        examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
-set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
-target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(dtls_example_local rasta_dtls wolfssl)
-add_executable(tls_example_local
-        examples_localhost/c/tls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
-set_target_properties(tls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
-target_compile_options(tls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(tls_example_local rasta_tls wolfssl)
+        add_executable(dtls_example_local
+                examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
+        set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+        target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+        target_link_libraries(dtls_example_local rasta_dtls wolfssl)
+        add_executable(tls_example_local
+                examples_localhost/c/tls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
+        set_target_properties(tls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+        target_compile_options(tls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+        target_link_libraries(tls_example_local rasta_tls wolfssl)
 endif()
 
 if(ENABLE_RASTA_OPAQUE)
         add_executable(kex_example_local examples_localhost/c/kex.c)
         set_target_properties(kex_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(kex_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-        target_link_libraries(kex_example_local rasta sodium)
+        target_link_libraries(kex_example_local rasta_udp sodium)
 
         add_executable(record_generator examples_localhost/c/record_generator.c)
         set_target_properties(record_generator PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(record_generator PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-        target_link_libraries(record_generator rasta sodium)
+        target_link_libraries(record_generator rasta_udp sodium)
 endif()
 
 # Copy RaSTA configs to build directory
