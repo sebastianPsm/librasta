@@ -86,195 +86,101 @@ set(SCI_HDRS
     sci/headers/scip_telegram_factory.h
 )
 
-# Shared object for RaSTA and SCI protocols
-add_library(${target}_udp SHARED ${RASTA_SRCS})
-add_library(${target}_tcp SHARED ${RASTA_SRCS})
 if(ENABLE_RASTA_TLS)
-    add_library(${target}_dtls SHARED ${RASTA_SRCS})
-    add_library(${target}_tls SHARED ${RASTA_SRCS})
-endif(ENABLE_RASTA_TLS)
-
-# Link system libraries for librasta
-target_link_libraries(${target}_udp rt pthread)
-if(ENABLE_RASTA_TLS)
-    target_link_libraries(${target}_dtls wolfssl)
-    target_link_libraries(${target}_tls wolfssl)
-endif(ENABLE_RASTA_TLS)
-
-set_property(TARGET ${target}_udp
-    PROPERTY PUBLIC_HEADER
-    ${RASTA_HDRS}
-    ${SCI_HDRS})
-set_property(TARGET ${target}_tcp
-    PROPERTY PUBLIC_HEADER
-    ${RASTA_HDRS}
-    ${SCI_HDRS})
-if(ENABLE_RASTA_TLS)
-    set_property(TARGET ${target}_dtls
-        PROPERTY PUBLIC_HEADER
-        ${RASTA_HDRS}
-        ${SCI_HDRS})
-    set_property(TARGET ${target}_tls
-        PROPERTY PUBLIC_HEADER
-        ${RASTA_HDRS}
-        ${SCI_HDRS})
-endif(ENABLE_RASTA_TLS)
-
-# if USE_OPENSSL parameter is passed to cmake or if architecture is ARM -> use openssl md4 implementation
-if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${USE_OPENSSL})
-    message("Using OpenSSL MD4 implementation (only standard IV)")
-
-    # define flag to use openssl in rastamd4
-    target_compile_definitions(${target}_udp PUBLIC USE_OPENSSL)
-    target_compile_definitions(${target}_tcp PUBLIC USE_OPENSSL)
-    if(ENABLE_RASTA_TLS)
-        target_compile_definitions(${target}_dtls PUBLIC USE_OPENSSL)
-        target_compile_definitions(${target}_tls PUBLIC USE_OPENSSL)
-    endif(ENABLE_RASTA_TLS)
-    # link libcrypto
-    target_link_libraries(${target}_udp crypto)
-    target_link_libraries(${target}_tcp crypto)
-    if(ENABLE_RASTA_TLS)
-        target_link_libraries(${target}_dtls crypto)
-        target_link_libraries(${target}_tls crypto)
-    endif(ENABLE_RASTA_TLS)
+    set(RASTA_VARIANTS udp tcp dtls tls)
 else()
-    message("Using rasta-c MD4 implementation")
-endif()
-
-#
-# Project options
-#
-
-set_target_properties(${target}_udp
-    PROPERTIES
-    ${DEFAULT_PROJECT_OPTIONS}
-)
-set_target_properties(${target}_tcp
-    PROPERTIES
-    ${DEFAULT_PROJECT_OPTIONS}
-)
-if(ENABLE_RASTA_TLS)
-    set_target_properties(${target}_dtls
-        PROPERTIES
-        ${DEFAULT_PROJECT_OPTIONS}
-    )
-    set_target_properties(${target}_tls
-        PROPERTIES
-        ${DEFAULT_PROJECT_OPTIONS}
-    )
+    set(RASTA_VARIANTS udp tcp)
 endif(ENABLE_RASTA_TLS)
 
-#
-# Include directories
-#
+foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
-target_include_directories(${target}_udp
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+    # Shared object for RaSTA and SCI protocols
+    add_library(${target}_${RASTA_VARIANT} SHARED ${RASTA_SRCS})
 
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
-)
-target_include_directories(${target}_tcp
-    PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
-    ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+    # Link system libraries for librasta
+    target_link_libraries(${target}_${RASTA_VARIANT} rt pthread)
 
-    INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
-)
-if(ENABLE_RASTA_TLS)
-    target_include_directories(${target}_dtls
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
-        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+    set_property(TARGET ${target}_${RASTA_VARIANT}
+        PROPERTY PUBLIC_HEADER
+        ${RASTA_HDRS}
+        ${SCI_HDRS})
 
-        INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
-    )
-    target_include_directories(${target}_tls
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
-        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+    # if USE_OPENSSL parameter is passed to cmake or if architecture is ARM -> use openssl md4 implementation
+    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${USE_OPENSSL})
+        message("Using OpenSSL MD4 implementation (only standard IV)")
 
-        INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
-    )
-endif(ENABLE_RASTA_TLS)
-
-#
-# Compile options
-#
-
-target_compile_options(${target}_udp
-    PRIVATE
-    ${DEFAULT_COMPILE_OPTIONS}
-)
-target_compile_options(${target}_tcp
-    PRIVATE
-    ${DEFAULT_COMPILE_OPTIONS}
-)
-if(ENABLE_RASTA_TLS)
-    target_compile_options(${target}_dtls
-        PRIVATE
-        ${DEFAULT_COMPILE_OPTIONS}
-    )
-    target_compile_options(${target}_tls
-        PRIVATE
-        ${DEFAULT_COMPILE_OPTIONS}
-    )
-endif(ENABLE_RASTA_TLS)
-
-if(ENABLE_RASTA_OPAQUE)
-    include(CheckLinkerFlag)
-    target_compile_definitions(rasta PUBLIC ENABLE_OPAQUE)
-    # libopaque headers
-    target_include_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/include)
-    target_link_directories(rasta PUBLIC ${CMAKE_BINARY_DIR}/lib)
-
-    check_linker_flag(C "-static" LINK_STATIC_SUPPORTED)
-    check_linker_flag(C "-dynamic" LINK_DYNAMIC_SUPPORTED)
-    if(${LINK_DYNAMIC_SUPPORTED} AND ${LINK_STATIC_SUPPORTED})
-        message("Linker supports -static")
-        # link only the libopaque library statically, and force all modules to be included
-        target_link_options(rasta PUBLIC "LINKER:-static")
-        if(APPLE)
-            target_link_options(rasta PUBLIC "LINKER:-force-load LINKER:-lopaque")
-            target_link_options(rasta PUBLIC "LINKER:-dynamic")
-        else()
-            target_link_options(rasta PUBLIC LINKER:--whole-archive LINKER:-lopaque LINKER:--no-whole-archive)
-            target_link_options(rasta PUBLIC "LINKER:-Bdynamic")
-        endif()
-        # consuming application also needs to link libsodium to resolve opaque's dependencies
-        target_link_options(rasta PUBLIC "LINKER:-lsodium")
+        # define flag to use openssl in rastamd4
+        target_compile_definitions(${target}_${RASTA_VARIANT} PUBLIC USE_OPENSSL)
+        # link libcrypto
+        target_link_libraries(${target}_${RASTA_VARIANT} crypto)
     else()
-        message(FATAL_ERROR "Linker does not support required linker flags!")
+        message("Using rasta-c MD4 implementation")
     endif()
-endif()
 
-# Installation for library
-install(TARGETS ${target}_udp
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(TARGETS ${target}_tcp
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    #
+    # Project options
+    #
 
-if(ENABLE_RASTA_TLS)
-    install(TARGETS ${target}_dtls
+    set_target_properties(${target}_${RASTA_VARIANT}
+        PROPERTIES
+        ${DEFAULT_PROJECT_OPTIONS}
+    )
+
+    #
+    # Include directories
+    #
+
+    target_include_directories(${target}_${RASTA_VARIANT}
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
+        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+
+        INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
+    )
+
+    #
+    # Compile options
+    #
+
+    target_compile_options(${target}_${RASTA_VARIANT}
+        PRIVATE
+        ${DEFAULT_COMPILE_OPTIONS}
+    )
+
+    if(ENABLE_RASTA_OPAQUE)
+        include(CheckLinkerFlag)
+        target_compile_definitions(${target}_${RASTA_VARIANT} PUBLIC ENABLE_OPAQUE)
+        # libopaque headers
+        target_include_directories(${target}_${RASTA_VARIANT} PUBLIC ${CMAKE_BINARY_DIR}/include)
+        target_link_directories(${target}_${RASTA_VARIANT} PUBLIC ${CMAKE_BINARY_DIR}/lib)
+
+        check_linker_flag(C "-static" LINK_STATIC_SUPPORTED)
+        check_linker_flag(C "-dynamic" LINK_DYNAMIC_SUPPORTED)
+        if(${LINK_DYNAMIC_SUPPORTED} AND ${LINK_STATIC_SUPPORTED})
+            message("Linker supports -static")
+            # link only the libopaque library statically, and force all modules to be included
+            target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-static")
+            if(APPLE)
+                target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-force-load LINKER:-lopaque")
+                target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-dynamic")
+            else()
+                target_link_options(${target}_${RASTA_VARIANT} PUBLIC LINKER:--whole-archive LINKER:-lopaque LINKER:--no-whole-archive)
+                target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-Bdynamic")
+            endif()
+            # consuming application also needs to link libsodium to resolve opaque's dependencies
+            target_link_options(${target}_${RASTA_VARIANT} PUBLIC "LINKER:-lsodium")
+        else()
+            message(FATAL_ERROR "Linker does not support required linker flags!")
+        endif()
+    endif()
+
+    # Installation for library
+    install(TARGETS ${target}_${RASTA_VARIANT}
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install(TARGETS ${target}_tls
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-endif(ENABLE_RASTA_TLS)
-
+endforeach()
 
 target_compile_definitions(${target}_udp PUBLIC USE_UDP)
 target_compile_definitions(${target}_tcp PUBLIC USE_TCP)
@@ -282,4 +188,7 @@ target_compile_definitions(${target}_tcp PUBLIC USE_TCP)
 if(ENABLE_RASTA_TLS)
     target_compile_definitions(${target}_dtls PUBLIC USE_UDP ENABLE_TLS)
     target_compile_definitions(${target}_tls PUBLIC USE_TCP ENABLE_TLS)
+
+    target_link_libraries(${target}_dtls wolfssl)
+    target_link_libraries(${target}_tls wolfssl)
 endif(ENABLE_RASTA_TLS)
