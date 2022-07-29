@@ -56,7 +56,7 @@ int deferqueue_isfull(struct defer_queue * queue) {
 }
 
 void deferqueue_add(struct defer_queue * queue, struct RastaRedundancyPacket packet, unsigned long recv_ts){
-    if((queue->count == queue->max_count)){
+    if(queue->count == queue->max_count){
         // queue full, return
         return;
     }

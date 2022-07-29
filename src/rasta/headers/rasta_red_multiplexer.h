@@ -12,6 +12,9 @@ extern "C"
 #include "rastamodule.h"
 #include "rastaredundancy_new.h"
 #include <udp.h>
+#include <tcp.h>
+
+#define UNUSED(x) (void)(x)
 
     /**
      * define struct as type here to allow usage in notification pointers
@@ -27,6 +30,12 @@ extern "C"
         WOLFSSL *ssl;
 #endif
     };
+
+    typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
+
+    typedef int (*RastaReceiveFunction)(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
+
+    typedef void (*RastaSendFunction)(redundancy_mux *mux, struct RastaByteArray bytes_to_send, rasta_transport_channel channel, unsigned int channel_index);
 
     /**
      * pointer to a function that will be called in a separate thread when a new entity has sent data to this entity
@@ -94,19 +103,11 @@ extern "C"
          * amount of listen ports, i.e. length of the listen_ports array
          */
         unsigned int port_count;
-#ifdef USE_UDP
-        /**
-         * the file descriptors of the used udp sockes. array has length port_count
-         */
-        struct RastaState *udp_socket_states;
-#endif
-#ifdef USE_TCP
-        /**
-         * the file descriptors of the used tcp sockets. array has length port_count
-         */
-        struct RastaState *rasta_tcp_socket_states;
 
-#endif
+        /**
+         * the rasta transport state of each used socket. The array has a length of port_count
+         */
+        struct rasta_transport_state *transport_states;
 
         /**
          * the redundancy channels to remote entities this multiplexer is aware of
@@ -173,6 +174,7 @@ extern "C"
      */
     void redundancy_mux_close(redundancy_mux *mux);
 
+    int channel_accept_event_tls(void *carry_data);
     int channel_accept_event(void *carry_data);
     int channel_receive_event(void *carry_data);
 
@@ -192,12 +194,6 @@ extern "C"
      */
     void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-    /**
-     * sends data to a known redundancy channel. The channel where the data is sent is identified by the receiver id field
-     * in the @p data PDU
-     * @param mux the multiplexer which will try to send the @p data
-     * @param data the PDU which will be sent to data#receiver_id
-     */
     void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data);
 
     /**
@@ -249,6 +245,14 @@ extern "C"
      * @return a packet that was received in any of the connected redundancy channels
      */
     int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
+
+    int receive_packet(redundancy_mux *mux, struct receive_event_data *data);
+
+    ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in* sender, RastaReceiveFunction receive_callback);
+
+    struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux,unsigned char *buffer, ssize_t len);
+
+    void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback);
 
 #ifdef __cplusplus
 }

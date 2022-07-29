@@ -5,7 +5,7 @@ add_executable(scip_example_local
                 examples_localhost/c/scip.c)
 set_target_properties(scip_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(scip_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(scip_example_local rasta)
+target_link_libraries(scip_example_local rasta_udp)
 
 
 # scils_example on localhost
@@ -13,37 +13,33 @@ add_executable(scils_example_local
                 examples_localhost/c/scils.c)
 set_target_properties(scils_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(scils_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(scils_example_local rasta)
+target_link_libraries(scils_example_local rasta_udp)
 
 # rasta_example_new on localhost
 add_executable(rasta_example_local
                 examples_localhost/c/rasta.c)
 set_target_properties(rasta_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(rasta_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(rasta_example_local rasta)
+target_link_libraries(rasta_example_local rasta_udp)
 
 
 add_executable(event_system_example_local
                 examples_localhost/c/event_test.c)
 set_target_properties(event_system_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(event_system_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(event_system_example_local rasta)
+target_link_libraries(event_system_example_local rasta_udp)
 
 if(ENABLE_RASTA_TLS)
-if(USE_UDP)
 add_executable(dtls_example_local
         examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
 set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(dtls_example_local rasta wolfssl)
-endif()
-if(USE_TCP)
+target_link_libraries(dtls_example_local rasta_dtls wolfssl)
 add_executable(tls_example_local
         examples_localhost/c/tls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
 set_target_properties(tls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(tls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(tls_example_local rasta wolfssl)
-endif()
+target_link_libraries(tls_example_local rasta_tls wolfssl)
 endif()
 
 if(ENABLE_RASTA_OPAQUE)

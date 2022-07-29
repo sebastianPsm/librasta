@@ -8,35 +8,34 @@
 #include <stdio.h>
 #include <rastamd4.h>
 
-
 /*
  * The basic MD4 functions.
  */
-#define F(x, y, z)			((z) ^ ((x) & ((y) ^ (z))))
-#define G(x, y, z)			(((x) & ((y) | (z))) | ((y) & (z)))
-#define H(x, y, z)			((x) ^ (y) ^ (z))
+#define F(x, y, z) ((z) ^ ((x) & ((y) ^ (z))))
+#define G(x, y, z) (((x) & ((y) | (z))) | ((y) & (z)))
+#define H(x, y, z) ((x) ^ (y) ^ (z))
 
 /*
  * The MD4 transformation for all three rounds.
  */
-#define STEP(f, a, b, c, d, x, s) \
-	(a) += f((b), (c), (d)) + (x); \
-	(a) = (((a) << (s)) | (((a) & 0xffffffff) >> (32 - (s))));
+#define STEP(f, a, b, c, d, x, s)  \
+    (a) += f((b), (c), (d)) + (x); \
+    (a) = (((a) << (s)) | (((a)&0xffffffff) >> (32 - (s))));
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-	(*(MD4_u32plus *)&ptr[(n) * 4])
+    (*(MD4_u32plus *)&ptr[(n)*4])
 #define GET(n) \
-	SET(n)
+    SET(n)
 #else
-#define SET(n) \
-	(ctx->block[(n)] = \
-	(MD4_u32plus)ptr[(n) * 4] | \
-	((MD4_u32plus)ptr[(n) * 4 + 1] << 8) | \
-	((MD4_u32plus)ptr[(n) * 4 + 2] << 16) | \
-	((MD4_u32plus)ptr[(n) * 4 + 3] << 24))
+#define SET(n)                                 \
+    (ctx->block[(n)] =                         \
+         (MD4_u32plus)ptr[(n)*4] |             \
+         ((MD4_u32plus)ptr[(n)*4 + 1] << 8) |  \
+         ((MD4_u32plus)ptr[(n)*4 + 2] << 16) | \
+         ((MD4_u32plus)ptr[(n)*4 + 3] << 24))
 #define GET(n) \
-	(ctx->block[(n)])
+    (ctx->block[(n)])
 #endif
 
 /*
@@ -57,13 +56,14 @@ static const void *body(MD4_CTX_RASTA *ctx, const void *data, unsigned long size
     c = ctx->c;
     d = ctx->d;
 
-    do {
+    do
+    {
         saved_a = a;
         saved_b = b;
         saved_c = c;
         saved_d = d;
 
-/* Round 1 */
+        /* Round 1 */
         STEP(F, a, b, c, d, SET(0), 3)
         STEP(F, d, a, b, c, SET(1), 7)
         STEP(F, c, d, a, b, SET(2), 11)
@@ -81,7 +81,7 @@ static const void *body(MD4_CTX_RASTA *ctx, const void *data, unsigned long size
         STEP(F, c, d, a, b, SET(14), 11)
         STEP(F, b, c, d, a, SET(15), 19)
 
-/* Round 2 */
+        /* Round 2 */
         STEP(G, a, b, c, d, GET(0) + ac1, 3)
         STEP(G, d, a, b, c, GET(4) + ac1, 5)
         STEP(G, c, d, a, b, GET(8) + ac1, 9)
@@ -99,7 +99,7 @@ static const void *body(MD4_CTX_RASTA *ctx, const void *data, unsigned long size
         STEP(G, c, d, a, b, GET(11) + ac1, 9)
         STEP(G, b, c, d, a, GET(15) + ac1, 13)
 
-/* Round 3 */
+        /* Round 3 */
         STEP(H, a, b, c, d, GET(0) + ac2, 3)
         STEP(H, d, a, b, c, GET(8) + ac2, 9)
         STEP(H, c, d, a, b, GET(4) + ac2, 11)
@@ -156,10 +156,12 @@ void MD4_Update_Rasta(MD4_CTX_RASTA *ctx, const void *data, unsigned long size)
 
     used = saved_lo & 0x3f;
 
-    if (used) {
+    if (used)
+    {
         available = 64 - used;
 
-        if (size < available) {
+        if (size < available)
+        {
             memcpy(&ctx->buffer[used], data, size);
             return;
         }
@@ -170,7 +172,8 @@ void MD4_Update_Rasta(MD4_CTX_RASTA *ctx, const void *data, unsigned long size)
         body(ctx, ctx->buffer, 64);
     }
 
-    if (size >= 64) {
+    if (size >= 64)
+    {
         data = body(ctx, data, size & ~(unsigned long)0x3f);
         size &= 0x3f;
     }
@@ -178,11 +181,11 @@ void MD4_Update_Rasta(MD4_CTX_RASTA *ctx, const void *data, unsigned long size)
     memcpy(ctx->buffer, data, size);
 }
 
-#define OUT(dst, src) \
-	(dst)[0] = (unsigned char)(src); \
-	(dst)[1] = (unsigned char)((src) >> 8); \
-	(dst)[2] = (unsigned char)((src) >> 16); \
-	(dst)[3] = (unsigned char)((src) >> 24);
+#define OUT(dst, src)                        \
+    (dst)[0] = (unsigned char)(src);         \
+    (dst)[1] = (unsigned char)((src) >> 8);  \
+    (dst)[2] = (unsigned char)((src) >> 16); \
+    (dst)[3] = (unsigned char)((src) >> 24);
 
 void MD4_Final_Rasta(unsigned char *result, MD4_CTX_RASTA *ctx)
 {
@@ -194,7 +197,8 @@ void MD4_Final_Rasta(unsigned char *result, MD4_CTX_RASTA *ctx)
 
     available = 64 - used;
 
-    if (available < 8) {
+    if (available < 8)
+    {
         memset(&ctx->buffer[used], 0, available);
         body(ctx, ctx->buffer, 64);
         used = 0;
@@ -217,7 +221,8 @@ void MD4_Final_Rasta(unsigned char *result, MD4_CTX_RASTA *ctx)
     memset(ctx, 0, sizeof(*ctx));
 }
 
-MD4_CONTEXT md4InitContext (MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d){
+MD4_CONTEXT md4InitContext(MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d)
+{
 #ifdef USE_OPENSSL
     MD4_CTX context;
     MD4_Init(&context);
@@ -236,10 +241,11 @@ MD4_CONTEXT md4InitContext (MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32
     return context;
 }
 
-void generateMD4(unsigned char* data, int length, int type, unsigned char* result) {
+void generateMD4(unsigned char *data, int length, int type, unsigned char *result)
+{
     MD4_CONTEXT context;
 #ifdef USE_OPENSSL
-    MD4_Init (&context);
+    MD4_Init(&context);
 #else
     MD4_Init_Rasta(&context);
 #endif
@@ -247,37 +253,42 @@ void generateMD4(unsigned char* data, int length, int type, unsigned char* resul
     generateMD4WithVector(data, length, type, &context, result);
 }
 
-void generateMD4WithVector(unsigned char* data, int length, int type, MD4_CONTEXT* context, unsigned char* result) {
+void generateMD4WithVector(unsigned char *data, int length, int type, MD4_CONTEXT *context, unsigned char *result)
+{
     unsigned char MD4code[type == 2 ? 16 : 8];
 #ifdef USE_OPENSSL
-    MD4_Update (context, data, length);
-    MD4_Final (MD4code, context);
+    MD4_Update(context, data, length);
+    MD4_Final(MD4code, context);
 #else
     MD4_Update_Rasta(context, data, length);
     MD4_Final_Rasta(MD4code, context);
 #endif
 
-    switch(type) {
-        // 5.3.11 Sicherheitscode
-        // kein Sicherheitscode
-        case 0:
-            for (int i = 0; i < 8; i++) {
-                result[i] = 0;
-            }
-            break;
-            // untere Hälfte des MD4
-        case 1:
-            for (int i = 0; i < 8; i++) {
-                result[i] = (unsigned char) MD4code[i];
-            }
-            break;
-            // volle MD4
-        case 2:
-            for (int i = 0; i < 16; i++) {
-                result[i] = (unsigned char) MD4code[i];
-            }
-            break;
-        default:
-            return;
+    switch (type)
+    {
+    // 5.3.11 Sicherheitscode
+    // kein Sicherheitscode
+    case 0:
+        for (int i = 0; i < 8; i++)
+        {
+            result[i] = 0;
+        }
+        break;
+        // untere Hälfte des MD4
+    case 1:
+        for (int i = 0; i < 8; i++)
+        {
+            result[i] = (unsigned char)MD4code[i];
+        }
+        break;
+        // volle MD4
+    case 2:
+        for (int i = 0; i < 16; i++)
+        {
+            result[i] = (unsigned char)MD4code[i];
+        }
+        break;
+    default:
+        return;
     }
 }
