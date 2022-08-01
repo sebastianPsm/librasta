@@ -69,7 +69,9 @@ static int Tls13SecretCallback(WOLFSSL* ssl, int id, const unsigned char* secret
             break;
     }
 
-    fprintf(fp, "%s ", str);
+    if (str != NULL) {
+        fprintf(fp, "%s ", str);
+    }
     for (i = 0; i < clientRandomSz; i++) {
         fprintf(fp, "%02x", clientRandom[i]);
     }
