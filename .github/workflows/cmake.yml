@@ -21,9 +21,6 @@ jobs:
     - name: Install CUnit
       run: sudo apt-get install libcunit1 libcunit1-doc libcunit1-dev
 
-    - name: Install WolfSSL
-      run: sudo apt-get install libwolfssl-dev
-
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
@@ -37,6 +34,17 @@ jobs:
         cmake ../.. -DgRPC_INSTALL=ON
         make -j8 && sudo make install
         cd / && rm -rf /tmp/grpc
+
+    - name: Install WolfSSL
+      run: |
+        sudo apt-get install libtool autogen automake
+        cd /tmp
+        git clone --recurse-submodules -b v4.6.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl
+        cd wolfssl
+        ./autogen.sh
+        ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra
+        make && sudo make install
+        cd / && rm -rf /tmp/wolfssl
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
