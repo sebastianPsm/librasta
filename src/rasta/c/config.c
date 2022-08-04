@@ -802,6 +802,10 @@ void config_setstd(struct RastaConfig * cfg) {
         cfg->values.tls.tls_hostname[MAX_DOMAIN_LENGTH-1] = 0;
         memcpy(cfg->values.tls.tls_hostname,entr.value.string.c, MAX_DOMAIN_LENGTH);
     }
+    entr = config_get(cfg, "RASTA_TLS_PEER_CERT_PATH");
+    if(entr.type == DICTIONARY_STRING){
+        memcpy(cfg->values.tls.peer_tls_cert_path,entr.value.string.c,PATH_MAX);
+    }
 #endif
 
     cfg->values.kex.mode = KEY_EXCHANGE_MODE_NONE;

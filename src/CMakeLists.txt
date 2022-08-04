@@ -1,5 +1,13 @@
 if(ENABLE_RASTA_TLS)
     find_package(WolfSSL REQUIRED)
+    include(CheckSymbolExists)
+    check_symbol_exists(wolfSSL_set_tls13_secret_cb "wolfssl/ssl.h" WOLFSSL_SET_TLS13_SECRET_CB_EXISTS)
+    if(WOLFSSL_SET_TLS13_SECRET_CB_EXISTS)
+        add_compile_definitions("-DWOLFSSL_SET_TLS13_SECRET_CB_EXISTS")
+        message("Found method wolfSSL_set_tls 13_secret_cb - can provide TLS keys for debugging!")
+    else()
+        message("Could not find method wolfSSL_set_tls 13_secret_cb - cannot provide TLS keys for debugging!")
+    endif(WOLFSSL_SET_TLS13_SECRET_CB_EXISTS)
 endif(ENABLE_RASTA_TLS)
 
 if(ENABLE_RASTA_OPAQUE)

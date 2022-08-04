@@ -22,6 +22,7 @@
     #define WOLFSSL_SSLKEYLOGFILE_OUTPUT "sslkeylog.log"
 #endif
 
+#ifdef WOLFSSL_SET_TLS13_SECRET_CB_EXISTS
 /* Callback function for TLS v1.3 secrets for use with Wireshark */
 static int Tls13SecretCallback(WOLFSSL* ssl, int id, const unsigned char* secret,
     int secretSz, void* ctx)
@@ -87,6 +88,7 @@ static int Tls13SecretCallback(WOLFSSL* ssl, int id, const unsigned char* secret
 
     return 0;
 }
+#endif
 #endif
 
 void tcp_init(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config)
@@ -173,6 +175,7 @@ int tcp_accept(struct rasta_transport_state *transport_state)
 }
 
 #ifdef ENABLE_TLS
+
 void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_connected_transport_channel_state *connectionState){
     int socket = tcp_accept(transport_state);
 
@@ -195,6 +198,8 @@ void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_
                 wolfSSL_get_error(connectionState->ssl, ret));
         exit(1);
     }
+
+    tls_pin_certificate(connectionState->ssl,connectionState->tls_config->peer_tls_cert_path);
 
     set_tls_async(socket, connectionState->ssl);
     connectionState->file_descriptor = socket;
@@ -256,11 +261,11 @@ void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint
 
     /* required for getting random used */
     wolfSSL_KeepArrays(transport_state->ssl);
-
+#ifdef WOLFSSL_SET_TLS13_SECRET_CB_EXISTS
     /* optional logging for wireshark */
     wolfSSL_set_tls13_secret_cb(transport_state->ssl, Tls13SecretCallback,
         (void*)WOLFSSL_SSLKEYLOGFILE_OUTPUT);
-
+#endif
     /* Connect to wolfSSL on the server side */
     if (wolfSSL_connect(transport_state->ssl) != WOLFSSL_SUCCESS)
     {
@@ -268,6 +273,8 @@ void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint
         fprintf(stderr, "ERROR: failed to connect to wolfSSL %s.\n", error_str);
         exit(1);
     }
+
+    tls_pin_certificate(transport_state->ssl,transport_state->tls_config->peer_tls_cert_path);
 
     wolfSSL_FreeArrays(transport_state->ssl);
     set_tls_async(transport_state->file_descriptor, transport_state->ssl);
