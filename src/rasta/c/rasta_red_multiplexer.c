@@ -893,7 +893,7 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 
     rfree(mux->connected_channels);
     mux->connected_channels = new_channels;
-    mux->channel_count--;
+    mux->channel_count = newIndex;
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux remove channel", "%d channels left", mux->channel_count);
 }
 
