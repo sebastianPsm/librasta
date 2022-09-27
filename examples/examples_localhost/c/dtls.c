@@ -1,7 +1,3 @@
-//
-// Created by tobia on 24.02.2018.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +16,7 @@
 #define ID_S1 0x62
 #define ID_S2 0x63
 
-void printHelpAndExit(void){
+void printHelpAndExit(void) {
     printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
     exit(1);
 }
@@ -216,19 +212,18 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
 void prepare_certs(const char *config_path) {
     struct RastaConfig config = config_load(config_path);
     // do not overwrite existing certificates, might lead to failure in clients
-    if(access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
+    if (access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
         create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
 
         printf("Generated Certificates");
     }
-    }
+}
 
-
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
-    rasta_lib_configuration_t rc;
+    rasta_lib_configuration_t rc = {0};
 
     struct RastaIPData toServer[2];
 
@@ -272,9 +267,10 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
         rc->h.notifications.on_heartbeat_timeout = onTimeout;
-        enable_timed_event(&termination_event);
-        disable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
+        enable_fd_event(&termination_event);
+        disable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, true);
 
         fifo_destroy(server_fifo);
@@ -288,11 +284,11 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
-
-        enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
+        printf("->   Press Enter to connect\n");
+        disable_fd_event(&termination_event);
+        enable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
     else if (strcmp(argv[1], "s2") == 0) {
@@ -304,12 +300,12 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
-
-        enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
+        printf("->   Press Enter to connect\n");
+        disable_fd_event(&termination_event);
+        enable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
+    return 0;
 }
-

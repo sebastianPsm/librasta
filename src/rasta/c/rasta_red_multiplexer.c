@@ -217,7 +217,6 @@ ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *
 
 struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len)
 {
-
     struct RastaByteArray incomingData;
     incomingData.length = (unsigned int)len;
     incomingData.bytes = buffer;

@@ -1,7 +1,3 @@
-//
-// Created by tobia on 24.02.2018.
-//
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +15,7 @@
 #define ID_S1 0x62
 #define ID_S2 0x63
 
-void printHelpAndExit(void){
+void printHelpAndExit(void) {
     printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
     exit(1);
 }
@@ -297,4 +293,5 @@ int main(int argc, char *argv[]) {
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
+    return 0;
 }

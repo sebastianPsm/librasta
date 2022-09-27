@@ -16,7 +16,7 @@
 #define ID_S1 0x62
 #define ID_S2 0x63
 
-void printHelpAndExit(void){
+void printHelpAndExit(void) {
     printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
     exit(1);
 }
@@ -34,7 +34,6 @@ void addRastaString(struct RastaMessageData * data, int pos, char * str) {
 int client1 = 1;
 int client2 = 1;
 
-// static rastaApplicationMessage received_packet;
 fifo_t *server_fifo;
 
 void send_pending_messages(struct rasta_handle *h) {
@@ -55,8 +54,6 @@ void send_pending_messages(struct rasta_handle *h) {
                 freeRastaMessageData(&messageData1);
 
                 printf("Message forwarded\n");
-                // printf("Disconnect to client %lu \n", (long unsigned int) result->connection.remote_id);
-                // sr_disconnect(result->handle, &result->connection);
                 message_forwarded = 1;
             }
         }
@@ -85,30 +82,21 @@ void onConnectionStateChange(struct rasta_notification_result *result) {
         case RASTA_CONNECTION_UP:
             printf("CONNECTION_UP\n");
             //send data to server
-            if (result->connection.my_id == ID_S1) { //Client 1
+            if (result->connection.my_id == ID_S1) { // Client 1
                 struct RastaMessageData messageData1;
                 allocateRastaMessageData(&messageData1, 1);
 
-                // messageData1.data_array[0] = msg1;
-                // messageData1.data_array[1] = msg2;
                 addRastaString(&messageData1, 0, "Message from Sender 1");
 
                 //send data to server
                 sr_send(result->handle,ID_R, messageData1);
-
-                //freeRastaMessageData(&messageData1);
-            } else if (result->connection.my_id == ID_S2) { //Client 2
+            } else if (result->connection.my_id == ID_S2) { // Client 2
                 struct RastaMessageData messageData1;
                 allocateRastaMessageData(&messageData1, 1);
-
-                // messageData1.data_array[0] = msg1;
-                // messageData1.data_array[1] = msg2;
                 addRastaString(&messageData1, 0, "Message from Sender 2");
 
                 //send data to server
-                sr_send(result->handle,ID_R, messageData1);
-
-                //freeRastaMessageData(&messageData1);
+                sr_send(result->handle, ID_R, messageData1);
             }
             else if (result->connection.my_id == ID_R) {
                 if (result->connection.remote_id == ID_S1) client1 = 0;
@@ -212,19 +200,18 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
 void prepare_certs(const char *config_path) {
     struct RastaConfig config = config_load(config_path);
     // do not overwrite existing certificates, might lead to failure in clients
-    if(access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
+    if (access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
         create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
 
         printf("Generated Certificates");
     }
-    }
+}
 
-
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
-    rasta_lib_configuration_t rc;
+    rasta_lib_configuration_t rc = {0};
 
     struct RastaIPData toServer[2];
 
@@ -308,5 +295,5 @@ int main(int argc, char *argv[]){
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
+    return 0;
 }
-

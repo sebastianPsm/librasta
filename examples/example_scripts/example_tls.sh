@@ -1,7 +1,8 @@
 #! /bin/bash
-# needs to be run from top-level directory, i.e. ./examples/example_scripts/example_kex.sh
+# needs to be run from top-level directory, i.e. ./examples/example_scripts/example_tls.sh
 cd build/examples || exit 1
-function run_example_kex() {
+
+function run_example_tls() {
     MODE=$1
 
     # Set up fifo to be able to pass in commands
@@ -10,10 +11,12 @@ function run_example_kex() {
     # Keep the fifo open
     cat > /tmp/$MODE-input &
 
-    tail -f /tmp/$MODE-input | ../kex_example_local $MODE &
+    tail -f /tmp/$MODE-input | ../tls_example_local $MODE &
 }
 
-run_example_kex r
+# let server generate certificates
+
+run_example_tls r
 SERVER_PID=$!
 
 # Listen
@@ -23,7 +26,7 @@ sleep 1
 
 echo "Connecting to server..."
 
-run_example_kex s1
+run_example_tls s1
 CLIENT_PID=$!
 
 # Connect

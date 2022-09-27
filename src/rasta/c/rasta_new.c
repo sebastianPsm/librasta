@@ -1705,6 +1705,7 @@ int on_readable_event(void* handle) {
 
         freeRastaByteArray(&receivedPacket.data);
     }
+    return 0;
 }
 
 int event_connection_expired(void* carry_data) {

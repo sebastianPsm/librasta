@@ -221,7 +221,8 @@ int main(int argc, char *argv[]){
         force_disable_rekeying = true;
         printf("Disabling rekeying!");
     }
-    rasta_lib_configuration_t rc;
+
+    rasta_lib_configuration_t rc = {0};
 
     struct RastaIPData toServer[2];
 
@@ -253,7 +254,7 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
-        if(force_disable_rekeying){
+        if (force_disable_rekeying) {
             rc->h.config.values.kex.rekeying_interval_ms = 0;
         }
 
@@ -272,7 +273,7 @@ int main(int argc, char *argv[]){
         disable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, true);
+        rasta_lib_start(rc, 0, true);
 
         fifo_destroy(server_fifo);
     }
@@ -283,7 +284,7 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
-        if(force_disable_rekeying){
+        if (force_disable_rekeying) {
             rc->h.config.values.kex.rekeying_interval_ms = 0;
         }
 
@@ -296,7 +297,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 0, false);
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
@@ -305,7 +306,7 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
-        if(force_disable_rekeying){
+        if (force_disable_rekeying) {
             rc->h.config.values.kex.rekeying_interval_ms = 0;
         }
 
@@ -319,7 +320,7 @@ int main(int argc, char *argv[]){
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, false);
+        rasta_lib_start(rc, 0, false);
     }
+    return 0;
 }
-
