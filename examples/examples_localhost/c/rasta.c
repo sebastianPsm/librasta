@@ -178,8 +178,8 @@ void onReceive(struct rasta_notification_result *result) {
 struct connect_event_data {
     struct rasta_handle * h;
     struct RastaIPData * ip_data_arr;
-    timed_event * connect_event;
-    timed_event * schwarzenegger;
+    fd_event * connect_event;
+    fd_event * schwarzenegger;
 };
 
 int connect_on_stdin(void* carry_data) {
@@ -189,32 +189,15 @@ int connect_on_stdin(void* carry_data) {
     printf("->   Connection request sent to 0x%lX\n", (unsigned long)ID_R);
     struct connect_event_data* data = carry_data;
     sr_connect(data->h, ID_R, data->ip_data_arr);
-    enable_timed_event(data->schwarzenegger);
-    disable_timed_event(data->connect_event);
+    enable_fd_event(data->schwarzenegger);
+    disable_fd_event(data->connect_event);
     return 0;
 }
 
-static bool test_success = false;
-
 int terminator(void* h) {
-    struct rasta_handle *handle = (struct rasta_handle*) h;
     printf("terminating\n");
-    // server checks for success and tears down, client relies on server
-    if(handle->last_con->role == RASTA_ROLE_SERVER) {
-
-        if (!handle->last_con) {
-            printf("Test failure - no last connection!\n");
-        } else if (handle->last_con->current_state != RASTA_CONNECTION_UP) {
-            printf("Test failure - last connection state was not UP: %u\n", handle->last_con->current_state);
-        } else {
-            test_success = true;
-            printf("Test success!\n");
-        }
-    }
-    else{
-        printf("Check server log for test status!\n");
-        test_success = true;
-    }
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
     sr_cleanup(h);
     return 1;
 }
@@ -229,7 +212,7 @@ void on_con_end(rasta_lib_connection_t connection, void* memory) {
     free(memory);
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
@@ -242,17 +225,17 @@ int main(int argc, char *argv[]){
     toServer[0].port = 8888;
     toServer[1].port = 8889;
 
-    timed_event termination_event, connect_on_timeout_event;
+    fd_event termination_event, connect_on_stdin_event;
     struct connect_event_data connect_on_stdin_event_data = {
-            .h = &rc->h,
-            .ip_data_arr = toServer,
-            .schwarzenegger = &termination_event,
-            .connect_event = &connect_on_timeout_event
+        .h = &rc->h,
+        .ip_data_arr = toServer,
+        .schwarzenegger = &termination_event,
+        .connect_event = &connect_on_stdin_event
     };
 
     termination_event.callback = terminator;
     termination_event.carry_data = &rc->h;
-    termination_event.interval = 30000000000ul;
+    termination_event.fd = STDIN_FILENO;
 
     connect_on_stdin_event.callback = connect_on_stdin;
     connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
@@ -264,6 +247,9 @@ int main(int argc, char *argv[]){
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
+        printf("->   Press Enter to listen\n");
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
 
         server_fifo = fifo_init(128);
 
@@ -271,10 +257,10 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
         rc->h.notifications.on_heartbeat_timeout = onTimeout;
-
-        enable_timed_event(&termination_event);
-        disable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
+        enable_fd_event(&termination_event);
+        disable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, true);
 
         fifo_destroy(server_fifo);
@@ -288,10 +274,11 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
-        enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
+        printf("->   Press Enter to connect\n");
+        disable_fd_event(&termination_event);
+        enable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
     else if (strcmp(argv[1], "s2") == 0) {
@@ -303,12 +290,11 @@ int main(int argc, char *argv[]){
         rc->h.notifications.on_connection_state_change = onConnectionStateChange;
         rc->h.notifications.on_receive = onReceive;
         rc->h.notifications.on_handshake_complete = onHandshakeCompleted;
-        enable_timed_event(&termination_event);
-        enable_timed_event(&connect_on_timeout_event);
-        add_timed_event(&rc->rasta_lib_event_system, &termination_event);
-        add_timed_event(&rc->rasta_lib_event_system, &connect_on_timeout_event);
+        printf("->   Press Enter to connect\n");
+        disable_fd_event(&termination_event);
+        enable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
         rasta_lib_start(rc, 0, false);
     }
-    return test_success != true;
 }
-
