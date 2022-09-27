@@ -182,7 +182,10 @@ struct connect_event_data {
     timed_event * schwarzenegger;
 };
 
-int connect_timed(void* carry_data) {
+int connect_on_stdin(void* carry_data) {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+
     printf("->   Connection request sent to 0x%lX\n", (unsigned long)ID_R);
     struct connect_event_data* data = carry_data;
     sr_connect(data->h, ID_R, data->ip_data_arr);
@@ -251,9 +254,9 @@ int main(int argc, char *argv[]){
     termination_event.carry_data = &rc->h;
     termination_event.interval = 30000000000ul;
 
-    connect_on_timeout_event.callback = connect_timed;
-    connect_on_timeout_event.carry_data = &connect_on_stdin_event_data;
-    connect_on_timeout_event.interval = 3000000000ul;
+    connect_on_stdin_event.callback = connect_on_stdin;
+    connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
+    connect_on_stdin_event.fd = STDIN_FILENO;
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
