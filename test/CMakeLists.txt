@@ -39,19 +39,3 @@ add_dependencies(rastaTest rasta_udp)
 
 add_test(NAME test_rastaTest
          COMMAND rastaTest)
-
-add_executable(sciTest
-    sciTest/headers/registerTests.h
-    sciTest/headers/scilsTests.h
-    sciTest/headers/scipTests.h
-    sciTest/headers/sciTests.h
-    sciTest/c/registerTests.c
-    sciTest/c/scilsTests.c
-    sciTest/c/scipTests.c
-    sciTest/c/sciTests.c)
-target_include_directories(sciTest PRIVATE sciTest/headers)
-target_link_libraries(sciTest rasta_udp PkgConfig::CUnit)
-target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
-
-add_test(NAME test_sciTest
-         COMMAND sciTest)

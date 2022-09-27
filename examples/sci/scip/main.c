@@ -1,10 +1,9 @@
 #include <rasta_new.h>
-#include <scip.h>
-#include <scils.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
 #include <rmemory.h>
+#include <scip.h>
 
 #define CONFIG_PATH_S "../../../rasta_server.cfg"
 #define CONFIG_PATH_C "../../../rasta_client1.cfg"

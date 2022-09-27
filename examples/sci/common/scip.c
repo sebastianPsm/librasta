@@ -1,6 +1,6 @@
-#include <scip.h>
-#include <sci_telegram_factory.h>
-#include <sci.h>
+#include "scip.h"
+#include "sci_telegram_factory.h"
+#include "sci.h"
 #include <rmemory.h>
 #include <memory.h>
 #include <rasta_new.h>

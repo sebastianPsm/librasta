@@ -1,4 +1,4 @@
-#include <scip_telegram_factory.h>
+#include "scip_telegram_factory.h"
 
 sci_telegram * scip_create_change_location_telegram(char *sender, char *receiver, scip_point_target_location location){
     sci_telegram * telegram = sci_create_base_telegram(SCI_PROTOCOL_P, sender, receiver, SCIP_MESSAGE_TYPE_CHANGE_LOCATION);

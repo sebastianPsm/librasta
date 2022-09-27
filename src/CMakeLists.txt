@@ -17,9 +17,7 @@ endif()
 # Target name
 set(target rasta)
 
-include_directories(
-    rasta/headers
-    sci/headers)
+include_directories(rasta/headers)
 
 # RaSTA headers
 set(RASTA_HDRS
@@ -49,6 +47,7 @@ set(RASTA_HDRS
     rasta/headers/rastablake2.h
     rasta/headers/rastasiphash24.h
     rasta/headers/rastahashing.h
+    rasta/headers/key_exchange.h
 )
 
 set(RASTA_SRCS
@@ -74,29 +73,10 @@ set(RASTA_SRCS
     rasta/c/tcp.c
     rasta/c/bsd_utils.c
     rasta/c/ssl_utils.c
-    sci/c/hashmap.c
     rasta/c/rastablake2.c
     rasta/c/rastasiphash24.c
     rasta/c/rastahashing.c
-    # SCI sources
-    sci/c/sci.c
-    sci/c/sci_telegram_factory.c
-    sci/c/scils.c
-    sci/c/scils_telegram_factory.c
-    sci/c/scip.c
-    sci/c/scip_telegram_factory.c
-        rasta/c/key_exchange.c rasta/headers/key_exchange.h)
-
-# SCI headers
-set(SCI_HDRS
-    sci/headers/hashmap.h
-    sci/headers/sci.h
-    sci/headers/sci_telegram_factory.h
-    sci/headers/scils.h
-    sci/headers/scils_telegram_factory.h
-    sci/headers/scip.h
-    sci/headers/scip_telegram_factory.h
-)
+    rasta/c/key_exchange.c)
 
 if(ENABLE_RASTA_TLS)
     set(RASTA_VARIANTS udp tcp dtls tls)
@@ -106,7 +86,7 @@ endif(ENABLE_RASTA_TLS)
 
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
-    # Shared object for RaSTA and SCI protocols
+    # Shared object for RaSTA protocol
     add_library(${target}_${RASTA_VARIANT} SHARED ${RASTA_SRCS})
 
     # Link system libraries for librasta

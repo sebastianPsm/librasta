@@ -1,4 +1,5 @@
-#include <sci.h>
+#include "sci.h"
+
 #include <memory.h>
 #include <rmemory.h>
 #include <rastafactory.h>

@@ -6,9 +6,9 @@ extern "C" {  // only need to export C interface if
               // used by C++ source code
 #endif
 
-#include <sci.h>
-#include <hashmap.h>
-#include <scils_telegram_factory.h>
+#include "sci.h"
+#include "hashmap.h"
+#include "scils_telegram_factory.h"
 #include <rasta_new.h>
 
 /**

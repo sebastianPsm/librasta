@@ -1,9 +1,9 @@
 #include <scilsTests.h>
 #include <CUnit/CUnit.h>
 
-#include <scils_telegram_factory.h>
+#include "scils_telegram_factory.h"
 #include <rmemory.h>
-#include <sci.h>
+#include "sci.h"
 
 void testSignalAspectDefaults(){
     scils_signal_aspect * signal_aspect = scils_signal_aspect_defaults();
