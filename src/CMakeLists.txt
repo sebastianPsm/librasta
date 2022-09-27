@@ -47,28 +47,29 @@ set(headers
 )
 
 set(sources
-    c/bsd_utils.c
-    c/event_system.c
-    c/fifo.c
-    c/key_exchange.c
-    c/rasta_lib.c
     c/rasta_new.c
-    c/rasta_red_multiplexer.c
-    c/rastablake2.c
-    c/rastacrc.c
-    c/rastadeferqueue.c
     c/rastafactory.c
+    c/transport/rasta_transport_callbacks.h
+    c/transport/tcp.c
+    c/transport/udp.c
+    c/transport/bsd_utils.c
+    c/transport/ssl_utils.c
+    c/redundancy/rastaredundancy_new.c
+    c/redundancy/rasta_red_multiplexer.c
+    c/experimental/key_exchange.c
+    c/util/rastamodule.c
+    c/util/rastacrc.c
+    c/util/rastautil.c
+    c/util/rastahashing.c
+    c/util/rastamd4.c
+    c/util/event_system.c
+    c/util/rmemory.c
+    c/util/fifo.c
+    c/util/rastablake2.c
+    c/util/rastasiphash24.c
+    c/util/rastadeferqueue.c
+    c/rasta_lib.c
     c/rastahandle.c
-    c/rastahashing.c
-    c/rastamd4.c
-    c/rastamodule.c
-    c/rastaredundancy_new.c
-    c/rastasiphash24.c
-    c/rastautil.c
-    c/rmemory.c
-    c/ssl_utils.c
-    c/tcp.c
-    c/udp.c
 )
 
 if(ENABLE_RASTA_TLS)

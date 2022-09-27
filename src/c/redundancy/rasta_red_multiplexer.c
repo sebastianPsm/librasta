@@ -20,7 +20,7 @@
 #include <rasta/tcp.h>
 #endif
 #include <rasta/rastautil.h>
-#include "rasta_transport_callbacks.h"
+#include "../transport/rasta_transport_callbacks.h"
 
 /* --- Notifications --- */
 
