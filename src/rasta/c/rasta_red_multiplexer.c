@@ -296,6 +296,7 @@ void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *
                 logger_log(&mux->logger, LOG_LEVEL_DEBUG, "MUX", "channel %d, id=%0x%lX", i, mux->connected_channels[i].associated_id);
             }*/
             rasta_red_f_receive(redundancy_mux_get_channel(mux, receivedPacket.data.sender_id), receivedPacket, data->channel_index);
+            return;
         }
     }
 
