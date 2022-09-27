@@ -4,8 +4,8 @@
 
 // include tests
 #include "sciTests.h"
-#include "scipTests.h"
 #include "scilsTests.h"
+#include "scipTests.h"
 /*
  * Called by the Gradle CUnit launcher to register all CUnit tests.
  */

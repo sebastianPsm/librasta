@@ -1,27 +1,27 @@
-#include <iostream>
 #include <chrono>
 #include <condition_variable>
+#include <functional>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
-#include <iomanip>
-#include <functional>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/eventfd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 
+#include <grpcpp/ext/proto_server_reflection_plugin.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
-#include <grpcpp/ext/proto_server_reflection_plugin.h>
 
-#include <rasta_new.h>
 #include <rasta_lib.h>
+#include <rasta_new.h>
 #include <rmemory.h>
 
-#include <rasta.pb.h>
 #include <rasta.grpc.pb.h>
+#include <rasta.pb.h>
 
 using namespace std::chrono_literals;
 
@@ -32,16 +32,16 @@ static std::unique_ptr<grpc::ClientContext> s_currentContext;
 static std::unique_ptr<grpc::ClientReaderWriter<sci::SciPacket, sci::SciPacket>> s_currentStream;
 
 // Server
-static grpc::ServerReaderWriter<sci::SciPacket, sci::SciPacket>* s_currentServerStream;
-static grpc::ServerContext* s_currentServerContext;
+static grpc::ServerReaderWriter<sci::SciPacket, sci::SciPacket> *s_currentServerStream;
+static grpc::ServerContext *s_currentServerContext;
 
-void* on_con_start(rasta_lib_connection_t connection) {
-    (void) connection;
+void *on_con_start(rasta_lib_connection_t connection) {
+    (void)connection;
     return malloc(sizeof(rasta_lib_connection_t));
 }
 
-void on_con_end(rasta_lib_connection_t connection, void* memory) {
-    (void) connection;
+void on_con_end(rasta_lib_connection_t connection, void *memory) {
+    (void)connection;
     free(memory);
 }
 
@@ -55,28 +55,28 @@ static int accept_event = -1;
 static struct rasta_connection accept_connection;
 void handle_handshake_complete(struct rasta_notification_result *result) {
     memcpy(&accept_connection, &result->connection, sizeof(struct rasta_connection));
-    struct rasta_connection* r = &accept_connection;
-    uint64_t ignore = write(accept_event, &r, sizeof(struct rasta_connection*));
+    struct rasta_connection *r = &accept_connection;
+    uint64_t ignore = write(accept_event, &r, sizeof(struct rasta_connection *));
     (void)ignore;
 }
 
 void handle_connection_state_change(struct rasta_notification_result *result) {
     if (result->connection.current_state == RASTA_CONNECTION_CLOSED) {
         if (accept_event != -1) {
-            uint64_t ignore = write(accept_event, (void*)-1, sizeof(struct rasta_connection*));
+            uint64_t ignore = write(accept_event, (void *)-1, sizeof(struct rasta_connection *));
             (void)ignore;
         }
     }
 }
 
-void rasta_listen(rasta_lib_configuration_t rc, const char* config_file_path) {
+void rasta_listen(rasta_lib_configuration_t rc, const char *config_file_path) {
     rasta_lib_init_configuration(rc, config_file_path);
     rc->h.user_handles->on_connection_start = on_con_start;
     rc->h.user_handles->on_disconnect = on_con_end;
 
     rc->h.notifications.on_handshake_complete = handle_handshake_complete;
     rc->h.notifications.on_connection_state_change = handle_connection_state_change;
-    rc->h.notifications.on_receive =  [](struct rasta_notification_result *result) {
+    rc->h.notifications.on_receive = [](struct rasta_notification_result *result) {
         static std::mutex s_busy_writing;
         std::lock_guard<std::mutex> guard(s_busy_writing);
         rastaApplicationMessage p;
@@ -84,42 +84,41 @@ void rasta_listen(rasta_lib_configuration_t rc, const char* config_file_path) {
 
         const int siz_ar = p.appMessage.length / sizeof(char);
 
-        logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char*)"RaSTA retrieve", (char*)"printing message data...");
+        logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"printing message data...");
 
-        for(int i = 0; i < siz_ar; i++)
+        for (int i = 0; i < siz_ar; i++)
             fprintf(stdout, "%02X ", p.appMessage.bytes[i]);
         std::cout << std::endl;
 
-        logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char*)"RaSTA retrieve", (char*)"printed message data.");
+        logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"printed message data.");
 
         std::lock_guard<std::mutex> streamGuard(s_busy);
         if (s_currentStream != nullptr) {
-            logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char*)"RaSTA retrieve", (char*)"forwarding packet to grpc");
+            logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
             sci::SciPacket outPacket;
             outPacket.set_message(p.appMessage.bytes, p.appMessage.length);
             s_currentStream->Write(outPacket);
         } else if (s_currentServerStream != nullptr) {
-            logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char*)"RaSTA retrieve", (char*)"forwarding packet to grpc");
+            logger_log(&result->handle->logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
             sci::SciPacket outPacket;
             outPacket.set_message(p.appMessage.bytes, p.appMessage.length);
             s_currentServerStream->Write(outPacket);
         } else {
-            logger_log(&result->handle->logger, LOG_LEVEL_ERROR, (char*)"RaSTA retrieve", (char*)"discarding packet.");
+            logger_log(&result->handle->logger, LOG_LEVEL_ERROR, (char *)"RaSTA retrieve", (char *)"discarding packet.");
         }
     };
 }
 
 int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, struct rasta_connection *connection) {
-    struct rasta_connection * existing_connection = NULL;
-    for (struct rasta_connection* con = rc->h.first_con; con; con = con->linkedlist_next) {
+    struct rasta_connection *existing_connection = NULL;
+    for (struct rasta_connection *con = rc->h.first_con; con; con = con->linkedlist_next) {
         if (con->remote_id == channel->remote_id) {
             existing_connection = con;
             break;
         }
     }
 
-    if ((existing_connection == NULL || existing_connection->current_state == RASTA_CONNECTION_CLOSED)
-        && rc->h.config.values.general.rasta_id < channel->remote_id) {
+    if ((existing_connection == NULL || existing_connection->current_state == RASTA_CONNECTION_CLOSED) && rc->h.config.values.general.rasta_id < channel->remote_id) {
         // This is a client, initiate handshake
         rc->h.ev_sys = &rc->rasta_lib_event_system;
         sr_connect(&rc->h, channel->remote_id, channel->subchannels);
@@ -129,7 +128,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     accept_event = eventfd(0, 0);
     fd_event fd_event;
     memset(&fd_event, 0, sizeof(fd_event));
-    fd_event.callback = [](void*) { return 1; };
+    fd_event.callback = [](void *) { return 1; };
     fd_event.carry_data = &rc->h;
     fd_event.fd = accept_event;
     fd_event.enabled = 0;
@@ -146,7 +145,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     remove_fd_event(&rc->rasta_lib_event_system, &fd_event);
 
     existing_connection = NULL;
-    for (struct rasta_connection* con = rc->h.first_con; con; con = con->linkedlist_next) {
+    for (struct rasta_connection *con = rc->h.first_con; con; con = con->linkedlist_next) {
         if (con->remote_id == channel->remote_id) {
             existing_connection = con;
             break;
@@ -154,8 +153,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     }
 
     if (existing_connection != NULL &&
-            (existing_connection->current_state == RASTA_CONNECTION_START
-                || existing_connection->current_state == RASTA_CONNECTION_CLOSED)) {
+        (existing_connection->current_state == RASTA_CONNECTION_START || existing_connection->current_state == RASTA_CONNECTION_CLOSED)) {
         // Connection request timeout
         if (existing_connection->current_state == RASTA_CONNECTION_START) {
             sr_disconnect(&rc->h, existing_connection);
@@ -163,8 +161,8 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
         return false;
     }
 
-    struct rasta_connection* result;
-    uint64_t ignore = read(accept_event, &result, sizeof(struct rasta_connection*));
+    struct rasta_connection *result;
+    uint64_t ignore = read(accept_event, &result, sizeof(struct rasta_connection *));
     (void)ignore;
     if (result == &accept_connection) {
         memcpy(connection, &accept_connection, sizeof(struct rasta_connection));
@@ -184,9 +182,9 @@ static std::mutex s_fifo_mutex;
 static fifo_t *s_message_fifo;
 
 void processRasta(std::string config,
-                std::string rasta_channel1_address, std::string rasta_channel1_port,
-                std::string rasta_channel2_address, std::string rasta_channel2_port,
-                std::string rasta_local_id, std::string rasta_target_id, std::function<std::thread()> run_thread) {
+                  std::string rasta_channel1_address, std::string rasta_channel1_port,
+                  std::string rasta_channel2_address, std::string rasta_channel2_port,
+                  std::string rasta_local_id, std::string rasta_target_id, std::function<std::thread()> run_thread) {
     (void)rasta_local_id;
 
     // Channels
@@ -203,8 +201,7 @@ void processRasta(std::string config,
     rasta_lib_configuration_t rc;
     rasta_listen(rc, config.c_str());
 
-    while (true)
-    {
+    while (true) {
         struct rasta_connection new_connection;
         if (rasta_accept(rc, &channel, &new_connection)) {
             s_message_fifo = fifo_init(128);
@@ -213,13 +210,13 @@ void processRasta(std::string config,
             s_data_fd = eventfd(0, 0);
             fd_event data_event;
             memset(&data_event, 0, sizeof(fd_event));
-            data_event.callback = [](void* carry) {
-                rasta_handle *h = reinterpret_cast<rasta_handle*>(carry);
+            data_event.callback = [](void *carry) {
+                rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
                 RastaByteArray *msg = nullptr;
 
                 {
                     std::lock_guard<std::mutex> guard(s_fifo_mutex);
-                    msg = reinterpret_cast<RastaByteArray*>(fifo_pop(s_message_fifo));
+                    msg = reinterpret_cast<RastaByteArray *>(fifo_pop(s_message_fifo));
                 }
 
                 if (msg != nullptr) {
@@ -244,10 +241,10 @@ void processRasta(std::string config,
             s_terminator_fd = eventfd(0, 0);
             fd_event terminator_event;
             memset(&terminator_event, 0, sizeof(fd_event));
-            terminator_event.callback = [](void* carry) {
-                rasta_handle *h = reinterpret_cast<rasta_handle*>(carry);
-                struct rasta_connection * existing_connection = NULL;
-                for (struct rasta_connection* con = h->first_con; con; con = con->linkedlist_next) {
+            terminator_event.callback = [](void *carry) {
+                rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
+                struct rasta_connection *existing_connection = NULL;
+                for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next) {
                     if (con->remote_id == s_remote_id) {
                         existing_connection = con;
                         break;
@@ -294,19 +291,15 @@ void processRasta(std::string config,
     sr_cleanup(&rc->h);
 }
 
-class RastaService final : public sci::Rasta::Service
-{
- public:
+class RastaService final : public sci::Rasta::Service {
+  public:
     RastaService(std::string config,
-                std::string rasta_channel1_address, std::string rasta_channel1_port,
-                std::string rasta_channel2_address, std::string rasta_channel2_port,
-                std::string rasta_local_id, std::string rasta_target_id)
-                : _config(config)
-                , _rasta_channel1_address(rasta_channel1_address), _rasta_channel1_port(rasta_channel1_port)
-                , _rasta_channel2_address(rasta_channel2_address), _rasta_channel2_port(rasta_channel2_port)
-                , _rasta_local_id(rasta_local_id), _rasta_target_id(rasta_target_id) {}
+                 std::string rasta_channel1_address, std::string rasta_channel1_port,
+                 std::string rasta_channel2_address, std::string rasta_channel2_port,
+                 std::string rasta_local_id, std::string rasta_target_id)
+        : _config(config), _rasta_channel1_address(rasta_channel1_address), _rasta_channel1_port(rasta_channel1_port), _rasta_channel2_address(rasta_channel2_address), _rasta_channel2_port(rasta_channel2_port), _rasta_local_id(rasta_local_id), _rasta_target_id(rasta_target_id) {}
 
-    grpc::Status Stream(grpc::ServerContext* context, grpc::ServerReaderWriter<sci::SciPacket, sci::SciPacket>* stream) override {
+    grpc::Status Stream(grpc::ServerContext *context, grpc::ServerReaderWriter<sci::SciPacket, sci::SciPacket> *stream) override {
         {
             std::lock_guard<std::mutex> guard(s_busy);
             s_currentServerContext = context;
@@ -318,7 +311,7 @@ class RastaService final : public sci::Rasta::Service
                 sci::SciPacket message;
                 while (s_currentServerStream->Read(&message)) {
                     printf("Forwarding gRPC message...\n");
-                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray*>(rmalloc(sizeof(struct RastaByteArray)));
+                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray *>(rmalloc(sizeof(struct RastaByteArray)));
                     allocateRastaByteArray(msg, message.message().size());
                     rmemcpy(msg->bytes, message.message().c_str(), message.message().size());
 
@@ -349,7 +342,7 @@ class RastaService final : public sci::Rasta::Service
         return grpc::Status::OK;
     }
 
-protected:
+  protected:
     std::string _config;
     std::string _rasta_channel1_address;
     std::string _rasta_channel1_port;
@@ -359,7 +352,7 @@ protected:
     std::string _rasta_target_id;
 };
 
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
     if (argc < 9) {
         std::cout << "Usage: " << argv[0] << " <config_file> <listen_address> <target_host_ch0> <target_port_ch0> <target_host_ch1> <target_port_ch1> <local_rasta_id> <local_remote_id> <?grpc_target_address>" << std::endl;
         return 1;
@@ -388,9 +381,9 @@ int main(int argc, char * argv[]) {
     if (grpc_server_address.length() == 0) {
         // Start a gRPC server and wait for incoming connection before doing anything RaSTA
         RastaService svc(config,
-                            rasta_channel1_address, rasta_channel1_port,
-                            rasta_channel2_address, rasta_channel2_port,
-                            rasta_local_id, rasta_target_id);
+                         rasta_channel1_address, rasta_channel1_port,
+                         rasta_channel2_address, rasta_channel2_port,
+                         rasta_local_id, rasta_target_id);
 
         grpc::EnableDefaultHealthCheckService(true);
         grpc::reflection::InitProtoReflectionServerBuilderPlugin();
@@ -425,7 +418,7 @@ int main(int argc, char * argv[]) {
                 sci::SciPacket message;
                 while (s_currentStream->Read(&message)) {
                     printf("Forwarding gRPC message...\n");
-                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray*>(rmalloc(sizeof(struct RastaByteArray)));
+                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray *>(rmalloc(sizeof(struct RastaByteArray)));
                     allocateRastaByteArray(msg, message.message().size());
                     rmemcpy(msg->bytes, message.message().c_str(), message.message().size());
 
@@ -453,9 +446,9 @@ int main(int argc, char * argv[]) {
 
         // Establish a RaSTA connection and connect to gRPC server afterwards
         processRasta(config,
-                        rasta_channel1_address, rasta_channel1_port,
-                        rasta_channel2_address, rasta_channel2_port,
-                        rasta_local_id, rasta_target_id, connectGrpc);
+                     rasta_channel1_address, rasta_channel1_port,
+                     rasta_channel2_address, rasta_channel2_port,
+                     rasta_local_id, rasta_target_id, connectGrpc);
     }
     return 0;
 }

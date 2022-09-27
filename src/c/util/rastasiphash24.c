@@ -1,21 +1,21 @@
 #include <rasta/rastasiphash24.h>
 #include <rasta/rmemory.h>
 
-void generateSiphash24(const unsigned char* data, int data_length, const unsigned char * key,  int hash_type, unsigned char* result){
-    switch (hash_type){
-        case 1:
-            // 8 byte hash -> halfsiphash
-            halfsiphash(data, (const size_t) data_length, key, result, 8);
-            break;
-        case 2:
-            // 8 byte hash -> siphash
-            siphash(data, (const size_t) data_length, key, result, 16);
-            break;
-        default:
-            // default no checksum
-            // if no hash is wanted, return 8 zero bytes
-            memset(result, 0, 8);
-            break;
+void generateSiphash24(const unsigned char *data, int data_length, const unsigned char *key, int hash_type, unsigned char *result) {
+    switch (hash_type) {
+    case 1:
+        // 8 byte hash -> halfsiphash
+        halfsiphash(data, (const size_t)data_length, key, result, 8);
+        break;
+    case 2:
+        // 8 byte hash -> siphash
+        siphash(data, (const size_t)data_length, key, result, 16);
+        break;
+    default:
+        // default no checksum
+        // if no hash is wanted, return 8 zero bytes
+        memset(result, 0, 8);
+        break;
     }
 }
 
@@ -39,100 +39,99 @@ void generateSiphash24(const unsigned char* data, int data_length, const unsigne
 
 #define ROTL(x, b) (((x) << (b)) | ((uint64_t)(x) >> (64 - (b))))
 
-#define U32TO8_LE(p, v)                                                        \
-    (p)[0] = (uint8_t)((v));                                                   \
-    (p)[1] = (uint8_t)((v) >> 8);                                              \
-    (p)[2] = (uint8_t)((v) >> 16);                                             \
+#define U32TO8_LE(p, v)            \
+    (p)[0] = (uint8_t)((v));       \
+    (p)[1] = (uint8_t)((v) >> 8);  \
+    (p)[2] = (uint8_t)((v) >> 16); \
     (p)[3] = (uint8_t)((v) >> 24);
 
-#define U64TO8_LE(p, v)                                                        \
-    U32TO8_LE((p), (uint32_t)((v)));                                           \
+#define U64TO8_LE(p, v)              \
+    U32TO8_LE((p), (uint32_t)((v))); \
     U32TO8_LE((p) + 4, (uint32_t)((v) >> 32));
 
-#define U8TO64_LE(p)                                                           \
-    (((uint64_t)((p)[0])) | ((uint64_t)((p)[1]) << 8) |                        \
-     ((uint64_t)((p)[2]) << 16) | ((uint64_t)((p)[3]) << 24) |                 \
-     ((uint64_t)((p)[4]) << 32) | ((uint64_t)((p)[5]) << 40) |                 \
+#define U8TO64_LE(p)                                           \
+    (((uint64_t)((p)[0])) | ((uint64_t)((p)[1]) << 8) |        \
+     ((uint64_t)((p)[2]) << 16) | ((uint64_t)((p)[3]) << 24) | \
+     ((uint64_t)((p)[4]) << 32) | ((uint64_t)((p)[5]) << 40) | \
      ((uint64_t)((p)[6]) << 48) | ((uint64_t)((p)[7]) << 56))
 
-#define SIPROUND                                                               \
-    do {                                                                       \
-        v0 += v1;                                                              \
-        v1 = ROTL(v1, 13);                                                     \
-        v1 ^= v0;                                                              \
-        v0 = ROTL(v0, 32);                                                     \
-        v2 += v3;                                                              \
-        v3 = ROTL(v3, 16);                                                     \
-        v3 ^= v2;                                                              \
-        v0 += v3;                                                              \
-        v3 = ROTL(v3, 21);                                                     \
-        v3 ^= v0;                                                              \
-        v2 += v1;                                                              \
-        v1 = ROTL(v1, 17);                                                     \
-        v1 ^= v2;                                                              \
-        v2 = ROTL(v2, 32);                                                     \
+#define SIPROUND           \
+    do {                   \
+        v0 += v1;          \
+        v1 = ROTL(v1, 13); \
+        v1 ^= v0;          \
+        v0 = ROTL(v0, 32); \
+        v2 += v3;          \
+        v3 = ROTL(v3, 16); \
+        v3 ^= v2;          \
+        v0 += v3;          \
+        v3 = ROTL(v3, 21); \
+        v3 ^= v0;          \
+        v2 += v1;          \
+        v1 = ROTL(v1, 17); \
+        v1 ^= v2;          \
+        v2 = ROTL(v2, 32); \
     } while (0)
 
 #ifdef DEBUG
-#define TRACE                                                                  \
-    do {                                                                       \
-        printf("(%3d) v0 %08x %08x\n", (int)inlen, (uint32_t)(v0 >> 32),       \
-               (uint32_t)v0);                                                  \
-        printf("(%3d) v1 %08x %08x\n", (int)inlen, (uint32_t)(v1 >> 32),       \
-               (uint32_t)v1);                                                  \
-        printf("(%3d) v2 %08x %08x\n", (int)inlen, (uint32_t)(v2 >> 32),       \
-               (uint32_t)v2);                                                  \
-        printf("(%3d) v3 %08x %08x\n", (int)inlen, (uint32_t)(v3 >> 32),       \
-               (uint32_t)v3);                                                  \
+#define TRACE                                                            \
+    do {                                                                 \
+        printf("(%3d) v0 %08x %08x\n", (int)inlen, (uint32_t)(v0 >> 32), \
+               (uint32_t)v0);                                            \
+        printf("(%3d) v1 %08x %08x\n", (int)inlen, (uint32_t)(v1 >> 32), \
+               (uint32_t)v1);                                            \
+        printf("(%3d) v2 %08x %08x\n", (int)inlen, (uint32_t)(v2 >> 32), \
+               (uint32_t)v2);                                            \
+        printf("(%3d) v3 %08x %08x\n", (int)inlen, (uint32_t)(v3 >> 32), \
+               (uint32_t)v3);                                            \
     } while (0)
 #else
 #define TRACE
 #endif
 
-
 #define ROTL_H(x, b) (uint32_t)(((x) << (b)) | ((x) >> (32 - (b))))
 
-#define U32TO8_LE_H(p, v)                                                        \
-    (p)[0] = (uint8_t)((v));                                                   \
-    (p)[1] = (uint8_t)((v) >> 8);                                              \
-    (p)[2] = (uint8_t)((v) >> 16);                                             \
+#define U32TO8_LE_H(p, v)          \
+    (p)[0] = (uint8_t)((v));       \
+    (p)[1] = (uint8_t)((v) >> 8);  \
+    (p)[2] = (uint8_t)((v) >> 16); \
     (p)[3] = (uint8_t)((v) >> 24);
 
-#define U32TO8_LE_H(p, v)                                                        \
-    (p)[0] = (uint8_t)((v));                                                   \
-    (p)[1] = (uint8_t)((v) >> 8);                                              \
-    (p)[2] = (uint8_t)((v) >> 16);                                             \
+#define U32TO8_LE_H(p, v)          \
+    (p)[0] = (uint8_t)((v));       \
+    (p)[1] = (uint8_t)((v) >> 8);  \
+    (p)[2] = (uint8_t)((v) >> 16); \
     (p)[3] = (uint8_t)((v) >> 24);
 
-#define U8TO32_LE(p)                                                           \
-    (((uint32_t)((p)[0])) | ((uint32_t)((p)[1]) << 8) |                        \
+#define U8TO32_LE(p)                                    \
+    (((uint32_t)((p)[0])) | ((uint32_t)((p)[1]) << 8) | \
      ((uint32_t)((p)[2]) << 16) | ((uint32_t)((p)[3]) << 24))
 
-#define SIPROUND_H                                                               \
-    do {                                                                       \
-        v0 += v1;                                                              \
-        v1 = ROTL(v1, 5);                                                      \
-        v1 ^= v0;                                                              \
-        v0 = ROTL(v0, 16);                                                     \
-        v2 += v3;                                                              \
-        v3 = ROTL(v3, 8);                                                      \
-        v3 ^= v2;                                                              \
-        v0 += v3;                                                              \
-        v3 = ROTL(v3, 7);                                                      \
-        v3 ^= v0;                                                              \
-        v2 += v1;                                                              \
-        v1 = ROTL(v1, 13);                                                     \
-        v1 ^= v2;                                                              \
-        v2 = ROTL(v2, 16);                                                     \
+#define SIPROUND_H         \
+    do {                   \
+        v0 += v1;          \
+        v1 = ROTL(v1, 5);  \
+        v1 ^= v0;          \
+        v0 = ROTL(v0, 16); \
+        v2 += v3;          \
+        v3 = ROTL(v3, 8);  \
+        v3 ^= v2;          \
+        v0 += v3;          \
+        v3 = ROTL(v3, 7);  \
+        v3 ^= v0;          \
+        v2 += v1;          \
+        v1 = ROTL(v1, 13); \
+        v1 ^= v2;          \
+        v2 = ROTL(v2, 16); \
     } while (0)
 
 #ifdef DEBUG
-#define TRACE                                                                  \
-    do {                                                                       \
-        printf("(%3d) v0 %08x\n", (int)inlen, v0);                             \
-        printf("(%3d) v1 %08x\n", (int)inlen, v1);                             \
-        printf("(%3d) v2 %08x\n", (int)inlen, v2);                             \
-        printf("(%3d) v3 %08x\n", (int)inlen, v3);                             \
+#define TRACE                                      \
+    do {                                           \
+        printf("(%3d) v0 %08x\n", (int)inlen, v0); \
+        printf("(%3d) v1 %08x\n", (int)inlen, v1); \
+        printf("(%3d) v2 %08x\n", (int)inlen, v2); \
+        printf("(%3d) v3 %08x\n", (int)inlen, v3); \
     } while (0)
 #else
 #define TRACE_H
@@ -173,29 +172,29 @@ int siphash(const uint8_t *in, const size_t inlen, const uint8_t *k,
     }
 
     switch (left) {
-        case 7:
-            b |= ((uint64_t)in[6]) << 48;
-              // fall through
-        case 6:
-            b |= ((uint64_t)in[5]) << 40;
-              // fall through
-        case 5:
-            b |= ((uint64_t)in[4]) << 32;
-              // fall through
-        case 4:
-            b |= ((uint64_t)in[3]) << 24;
-              // fall through
-        case 3:
-            b |= ((uint64_t)in[2]) << 16;
-              // fall through
-        case 2:
-            b |= ((uint64_t)in[1]) << 8;
-              // fall through
-        case 1:
-            b |= ((uint64_t)in[0]);
-            break;
-        default:
-            break;
+    case 7:
+        b |= ((uint64_t)in[6]) << 48;
+        // fall through
+    case 6:
+        b |= ((uint64_t)in[5]) << 40;
+        // fall through
+    case 5:
+        b |= ((uint64_t)in[4]) << 32;
+        // fall through
+    case 4:
+        b |= ((uint64_t)in[3]) << 24;
+        // fall through
+    case 3:
+        b |= ((uint64_t)in[2]) << 16;
+        // fall through
+    case 2:
+        b |= ((uint64_t)in[1]) << 8;
+        // fall through
+    case 1:
+        b |= ((uint64_t)in[0]);
+        break;
+    default:
+        break;
     }
 
     v3 ^= b;
@@ -268,17 +267,17 @@ int halfsiphash(const uint8_t *in, const size_t inlen, const uint8_t *k,
     }
 
     switch (left) {
-        case 3:
-            b |= ((uint32_t)in[2]) << 16;
-            // fall through
-        case 2:
-            b |= ((uint32_t)in[1]) << 8;
-            // fall through
-        case 1:
-            b |= ((uint32_t)in[0]);
-            break;
-        default:
-            break;
+    case 3:
+        b |= ((uint32_t)in[2]) << 16;
+        // fall through
+    case 2:
+        b |= ((uint32_t)in[1]) << 8;
+        // fall through
+    case 1:
+        b |= ((uint32_t)in[0]);
+        break;
+    default:
+        break;
     }
 
     v3 ^= b;

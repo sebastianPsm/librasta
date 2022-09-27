@@ -29,4 +29,3 @@ void checkDisconnectionRequest();
  * tests all packages, that transmit different data
  */
 void checkMessagePacket();
-

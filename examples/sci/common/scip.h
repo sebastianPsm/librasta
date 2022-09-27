@@ -1,15 +1,15 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-#include <rastahandle.h>
 #include "hashmap.h"
 #include "sci.h"
 #include "scip_telegram_factory.h"
 #include <rasta_new.h>
+#include <rastahandle.h>
 
 /**
  * define struct as type here to allow usage in notification pointers
@@ -22,7 +22,7 @@ typedef struct scip_t scip_t;
  * 2nd parameter is the sender name.
  * 3rd parameter is the ESTW version.
  */
-typedef void(*scip_on_version_request_received_ptr)(scip_t *, char *, unsigned char);
+typedef void (*scip_on_version_request_received_ptr)(scip_t *, char *, unsigned char);
 
 /**
  * Pointer to a function that will be called when a version response telegram is received.
@@ -33,29 +33,29 @@ typedef void(*scip_on_version_request_received_ptr)(scip_t *, char *, unsigned c
  * 5th parameter is the checksum length
  * 6th parameter is the checksum
  */
-typedef void(*scip_on_version_response_received_ptr)(scip_t *, char *, unsigned char, sci_version_check_result, unsigned char,
-                                            unsigned char *);
+typedef void (*scip_on_version_response_received_ptr)(scip_t *, char *, unsigned char, sci_version_check_result, unsigned char,
+                                                      unsigned char *);
 
 /**
  * Pointer to a function that will be called when a status request telegram is received.
  * 1st parameter is the scip instance.
  * 2nd parameter is the sender name.
  */
-typedef void(*scip_on_status_request_received_ptr)(scip_t *, char*);
+typedef void (*scip_on_status_request_received_ptr)(scip_t *, char *);
 
 /**
  * Pointer to a function that will be called when a status begin telegram is received.
  * 1st parameter is the scip instance.
  * 2nd parameter is the sender name.
  */
-typedef void(*scip_on_status_begin_received_ptr)(scip_t *, char*);
+typedef void (*scip_on_status_begin_received_ptr)(scip_t *, char *);
 
 /**
  * Pointer to a function that will be called when a status finish telegram is received.
  * 1st parameter is the scip instance.
  * 2nd parameter is the sender name.
  */
-typedef void(*scip_on_status_finish_received_ptr)(scip_t *, char*);
+typedef void (*scip_on_status_finish_received_ptr)(scip_t *, char *);
 
 /**
  * Pointer to a function that will be called when a change location telegram is received.
@@ -63,7 +63,7 @@ typedef void(*scip_on_status_finish_received_ptr)(scip_t *, char*);
  * 2nd parameter is the sender name.
  * 3rd parameter is the target location of the point
  */
-typedef void(*scip_on_change_location_received_ptr)(scip_t*, char*, scip_point_target_location);
+typedef void (*scip_on_change_location_received_ptr)(scip_t *, char *, scip_point_target_location);
 
 /**
  * Pointer to a function that will be called when a change location telegram is received.
@@ -71,14 +71,14 @@ typedef void(*scip_on_change_location_received_ptr)(scip_t*, char*, scip_point_t
  * 2nd parameter is the sender name.
  * 3rd parameter is the current location of the point
  */
-typedef void(*scip_on_location_status_received_ptr)(scip_t*, char*, scip_point_location);
+typedef void (*scip_on_location_status_received_ptr)(scip_t *, char *, scip_point_location);
 
 /**
  * Pointer to a function that will be called when a timeout telegram is received.
  * 1st parameter is the scip instance.
  * 2nd parameter is the sender name.
  */
-typedef void(*scip_on_timeout_received_ptr)(scip_t*, char*);
+typedef void (*scip_on_timeout_received_ptr)(scip_t *, char *);
 
 /**
  * Representation of notifications/events for a SCI-P instance
@@ -116,20 +116,20 @@ typedef struct {
      * Invoked when a timeout is received.
      */
     scip_on_timeout_received_ptr on_timeout_received;
-}scip_notification_ptr;
+} scip_notification_ptr;
 
 /**
  * Representation of a SCI-P instance.
  */
-struct scip_t{
+struct scip_t {
     /**
      * The SCI name of this SCI-P instance.
      */
-    char * sciName;
+    char *sciName;
     /**
      * The underlying RaSTA handle
      */
-    struct rasta_handle * rasta_handle;
+    struct rasta_handle *rasta_handle;
     /**
      * Used for mapping RaSTA IDs to SCI names
      */
@@ -143,13 +143,13 @@ struct scip_t{
  * @param sciName the SCI name of the instance
  * @return an initialized SCI instance
  */
-scip_t * scip_init(struct rasta_handle * handle, char * sciName);
+scip_t *scip_init(struct rasta_handle *handle, char *sciName);
 
 /**
  * Cleans up and frees the memory of the SCI-P instance.
  * @param p the SCI-P instance
  */
-void scip_cleanup(scip_t * p);
+void scip_cleanup(scip_t *p);
 
 /**
  * Sends a version request to the specified receiver.
@@ -229,7 +229,7 @@ sci_return_code scip_send_timeout(scip_t *p, char *receiver);
  * You need to call this function inside RaSTA's onReceiver Notification in order to receive SCI-P telegrams!
  * @param message the received RaSTA application message
  */
-void scip_on_rasta_receive(scip_t * p, rastaApplicationMessage message);
+void scip_on_rasta_receive(scip_t *p, rastaApplicationMessage message);
 
 /**
  * Registers the relation between a SCI name and a RaSTA ID.
@@ -237,7 +237,7 @@ void scip_on_rasta_receive(scip_t * p, rastaApplicationMessage message);
  * @param sci_name the SCI name of the remote
  * @param rasta_id the RaSTA ID of the remote
  */
-void scip_register_sci_name(scip_t * p, char * sci_name, unsigned long rasta_id);
+void scip_register_sci_name(scip_t *p, char *sci_name, unsigned long rasta_id);
 
 #ifdef __cplusplus
 }

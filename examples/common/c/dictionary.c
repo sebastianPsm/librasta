@@ -1,14 +1,14 @@
 #include <ctype.h>
 #include <string.h>
 
-#include <rasta/rmemory.h>
 #include "dictionary.h"
+#include <rasta/rmemory.h>
 
 /**
  * makes the string uppercase
  * @param string
  */
-void uppercase(char * string) {
+void uppercase(char *string) {
     for (unsigned int i = 0; i < strlen(string); i++) {
         if (isalpha(string[i])) {
             string[i] = (char)toupper(string[i]);
@@ -20,8 +20,8 @@ void uppercase(char * string) {
  * @param dict
  * @param size
  */
-void dictionary_change_size(struct Dictionary* dict, unsigned int size) {
-    dict->data = rrealloc(dict->data,size * sizeof(struct DictionaryEntry));
+void dictionary_change_size(struct Dictionary *dict, unsigned int size) {
+    dict->data = rrealloc(dict->data, size * sizeof(struct DictionaryEntry));
     dict->actual_size = size;
 }
 
@@ -32,13 +32,13 @@ void dictionary_change_size(struct Dictionary* dict, unsigned int size) {
  * @param entry
  * @return 1 if the entry was added successfully else 0
  */
-int dictionary_add(struct Dictionary* dict, struct DictionaryEntry entry) {
-    if (dictionary_isin(dict,entry.key)) return 0;
+int dictionary_add(struct Dictionary *dict, struct DictionaryEntry entry) {
+    if (dictionary_isin(dict, entry.key)) return 0;
 
     uppercase(entry.key);
 
     if (dict->size >= dict->actual_size) {
-        dictionary_change_size(dict,dict->actual_size*2);
+        dictionary_change_size(dict, dict->actual_size * 2);
     }
     dict->data[dict->size] = entry;
     dict->size++;
@@ -52,17 +52,17 @@ int dictionary_add(struct Dictionary* dict, struct DictionaryEntry entry) {
 
 struct DictionaryArray allocate_DictionaryArray(unsigned int size) {
     struct DictionaryArray result;
-    result.data = rmalloc(sizeof(struct DictionaryString)* size);
+    result.data = rmalloc(sizeof(struct DictionaryString) * size);
     result.count = size;
     return result;
 }
 
-void reallocate_DictionaryArray(struct DictionaryArray* array, unsigned int new_size) {
-    array->data = rrealloc(array->data,sizeof(struct DictionaryString)*new_size);
+void reallocate_DictionaryArray(struct DictionaryArray *array, unsigned int new_size) {
+    array->data = rrealloc(array->data, sizeof(struct DictionaryString) * new_size);
     array->count = new_size;
 }
 
-void free_DictionaryArray(struct DictionaryArray* array) {
+void free_DictionaryArray(struct DictionaryArray *array) {
     if (array->count == 0) return;
     array->count = 0;
     rfree(array->data);
@@ -78,7 +78,7 @@ struct Dictionary dictionary_create(unsigned int initial_size) {
     return result;
 }
 
-void dictionary_free(struct Dictionary* dict) {
+void dictionary_free(struct Dictionary *dict) {
     for (unsigned int i = 0; i < dict->size; i++) {
         if (dict->data[i].type == DICTIONARY_ARRAY) {
             free_DictionaryArray(&dict->data[i].value.array);
@@ -91,15 +91,15 @@ void dictionary_free(struct Dictionary* dict) {
     }
 }
 
-int dictionary_isin(struct Dictionary* dict, const char* key) {
+int dictionary_isin(struct Dictionary *dict, const char *key) {
     int result = 0;
     char nkey[256];
-    strcpy(nkey,key);
+    strcpy(nkey, key);
     uppercase(nkey);
 
     for (unsigned int i = 0; i < dict->size; i++) {
         if (strcmp(nkey, dict->data[i].key) == 0) {
-            //key matched
+            // key matched
             result = 1;
             return result;
         }
@@ -108,46 +108,44 @@ int dictionary_isin(struct Dictionary* dict, const char* key) {
     return result;
 }
 
-int dictionary_addNumber(struct Dictionary* dict, const char* key, int number) {
+int dictionary_addNumber(struct Dictionary *dict, const char *key, int number) {
     struct DictionaryEntry entr;
     entr.type = DICTIONARY_NUMBER;
     strcpy(entr.key, key);
     entr.value.number = number;
 
-    return dictionary_add(dict,entr);
+    return dictionary_add(dict, entr);
 }
 
-int dictionary_addString(struct Dictionary* dict, const char* key, struct DictionaryString string) {
+int dictionary_addString(struct Dictionary *dict, const char *key, struct DictionaryString string) {
     struct DictionaryEntry entr;
     entr.type = DICTIONARY_STRING;
-    strcpy(entr.key,key);
+    strcpy(entr.key, key);
     entr.value.string = string;
 
-    return dictionary_add(dict,entr);
+    return dictionary_add(dict, entr);
 }
 
-int dictionary_addArray(struct Dictionary* dict, const char* key, struct DictionaryArray array) {
+int dictionary_addArray(struct Dictionary *dict, const char *key, struct DictionaryArray array) {
     struct DictionaryEntry entr;
     entr.type = DICTIONARY_ARRAY;
-    strcpy(entr.key,key);
+    strcpy(entr.key, key);
     entr.value.array = array;
 
-    return dictionary_add(dict,entr);
+    return dictionary_add(dict, entr);
 }
 
-struct DictionaryEntry dictionary_get(struct Dictionary* dict, const char* key) {
+struct DictionaryEntry dictionary_get(struct Dictionary *dict, const char *key) {
     struct DictionaryEntry result;
     result.type = DICTIONARY_ERROR;
     char nkey[256];
-    strncpy(nkey,key, 255);
+    strncpy(nkey, key, 255);
     uppercase(nkey);
     for (unsigned int i = 0; i < dict->size; i++) {
         if (strcmp(nkey, dict->data[i].key) == 0) {
-            //found
+            // found
             return dict->data[i];
         }
     }
     return result;
 }
-
-

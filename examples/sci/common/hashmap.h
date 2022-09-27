@@ -9,14 +9,14 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-#define MAP_MISSING -3  /* No such element */
-#define MAP_FULL -2 	/* Hashmap is full */
-#define MAP_OMEM -1 	/* Out of Memory */
-#define MAP_OK 0 	/* OK */
+#define MAP_MISSING -3 /* No such element */
+#define MAP_FULL -2    /* Hashmap is full */
+#define MAP_OMEM -1    /* Out of Memory */
+#define MAP_OK 0       /* OK */
 
 /*
  * any_t is a pointer.  This allows you to put arbitrary structures in
@@ -39,7 +39,7 @@ typedef any_t map_t;
 
 /*
  * Return an empty hashmap. Returns NULL if empty.
-*/
+ */
 extern map_t hashmap_new();
 
 /*
@@ -54,17 +54,17 @@ extern int hashmap_iterate(map_t in, PFany f, any_t item);
 /*
  * Add an element to the hashmap. Return MAP_OK or MAP_OMEM.
  */
-extern int hashmap_put(map_t in, char* key, any_t value);
+extern int hashmap_put(map_t in, char *key, any_t value);
 
 /*
  * Get an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_get(map_t in, char* key, any_t *arg);
+extern int hashmap_get(map_t in, char *key, any_t *arg);
 
 /*
  * Remove an element from the hashmap. Return MAP_OK or MAP_MISSING.
  */
-extern int hashmap_remove(map_t in, char* key);
+extern int hashmap_remove(map_t in, char *key);
 
 /*
  * Get any element. Return MAP_OK or MAP_MISSING.

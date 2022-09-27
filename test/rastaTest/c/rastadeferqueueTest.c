@@ -1,6 +1,6 @@
-#include <CUnit/Basic.h>
 #include "../headers/rastadeferqueueTest.h"
 #include "rastadeferqueue.h"
+#include <CUnit/Basic.h>
 
 void test_deferqueue_init() {
     struct defer_queue queue_to_test = deferqueue_init(3);
@@ -8,8 +8,6 @@ void test_deferqueue_init() {
     CU_ASSERT_EQUAL(queue_to_test.max_count, 3);
     CU_ASSERT_EQUAL(queue_to_test.count, 0);
 }
-
-
 
 void test_deferqueue_destroy() {
     struct defer_queue queue_to_test = deferqueue_init(3);
@@ -52,7 +50,6 @@ void test_deferqueue_remove() {
     struct RastaRedundancyPacket packet;
     packet.sequence_number = 1;
     unsigned long packet_ts = 42;
-
 
     struct RastaRedundancyPacket packet2;
     packet2.sequence_number = 2;
@@ -153,7 +150,6 @@ void test_deferqueue_isfull() {
     int res = deferqueue_isfull(&queue_to_test);
 
     CU_ASSERT_EQUAL(res, 0);
-
 
     struct RastaRedundancyPacket packet3;
     packet3.sequence_number = 3;

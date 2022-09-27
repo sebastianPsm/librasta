@@ -2,17 +2,17 @@
 #include <CUnit/Basic.h>
 
 // INCLUDE TESTS
-#include "rastamoduleTest.h"
-#include "rastamd4Test.h"
-#include "rastacrcTest.h"
-#include "rastafactoryTest.h"
-#include "dictionarytest.h"
-#include "rastadeferqueueTest.h"
-#include "configtest.h"
-#include "rastalisttest.h"
-#include "fifotest.h"
 #include "blake2test.h"
+#include "configtest.h"
+#include "dictionarytest.h"
+#include "fifotest.h"
 #include "opaquetest.h"
+#include "rastacrcTest.h"
+#include "rastadeferqueueTest.h"
+#include "rastafactoryTest.h"
+#include "rastalisttest.h"
+#include "rastamd4Test.h"
+#include "rastamoduleTest.h"
 
 int suite_init(void) {
     return 0;
@@ -26,7 +26,7 @@ void cunit_register() {
     CU_pSuite pSuiteMath = CU_add_suite("port tests", suite_init, suite_clean);
     CU_add_test(pSuiteMath, "testConversion", testConversion);
 
-    //MD4 tests
+    // MD4 tests
     CU_add_test(pSuiteMath, "testMD4function", testMD4function);
     CU_add_test(pSuiteMath, "testRastaMD4Sample", testRastaMD4Sample);
 
@@ -37,12 +37,11 @@ void cunit_register() {
     CU_add_test(pSuiteMath, "test_opt_e", test_opt_e);
     CU_add_test(pSuiteMath, "test_without_gen_table", test_without_gen_table);
 
-    //Tests for rastafactory
+    // Tests for rastafactory
     CU_add_test(pSuiteMath, "checkConnectionPacket", checkConnectionPacket);
     CU_add_test(pSuiteMath, "checkNormalPacket", checkNormalPacket);
     CU_add_test(pSuiteMath, "checkDisconnectionRequest", checkDisconnectionRequest);
     CU_add_test(pSuiteMath, "checkMessagePacket", checkMessagePacket);
-
 
     // Tests for the Redundancy layer factory and model
     CU_add_test(pSuiteMath, "testRedundancyConversionWithCrcChecksumCorrect", testRedundancyConversionWithCrcChecksumCorrect);
@@ -51,13 +50,12 @@ void cunit_register() {
     CU_add_test(pSuiteMath, "testCreateRedundancyPacket", testCreateRedundancyPacket);
     CU_add_test(pSuiteMath, "testCreateRedundancyPacketNoChecksum", testCreateRedundancyPacketNoChecksum);
 
-    //Test for dictionary
+    // Test for dictionary
     CU_add_test(pSuiteMath, "testDictionary", testDictionary);
 
-    //Test for config
+    // Test for config
     CU_add_test(pSuiteMath, "check_std_config", check_std_config);
     CU_add_test(pSuiteMath, "check_var_config", check_var_config);
-
 
     // Tests for the defer queue
     CU_add_test(pSuiteMath, "test_deferqueue_init", test_deferqueue_init);
@@ -75,8 +73,8 @@ void cunit_register() {
     CU_add_test(pSuiteMath, "test_deferqueue_clear", test_deferqueue_clear);
     CU_add_test(pSuiteMath, "test_deferqueue_get_ts_doesnt_contain", test_deferqueue_get_ts_doesnt_contain);
 
-    //tests for rastalist
-    //CU_add_test(pSuiteMath, "check_rastalist", check_rastalist);
+    // tests for rastalist
+    // CU_add_test(pSuiteMath, "check_rastalist", check_rastalist);
 
     // Tests for the FIFO
     CU_add_test(pSuiteMath, "test_push", test_push);
@@ -91,7 +89,7 @@ void cunit_register() {
 #endif
 }
 
-int main () {
+int main() {
     if (CUE_SUCCESS != CU_initialize_registry())
         return CU_get_error();
 

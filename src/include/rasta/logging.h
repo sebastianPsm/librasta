@@ -8,12 +8,12 @@
  */
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-#include <mqueue.h>
 #include "fifo.h"
+#include <mqueue.h>
 #include <stdio.h>
 
 #define LOG_FORMAT "[%s][%s][%s] %s\n"
@@ -67,7 +67,7 @@ typedef enum {
      * log to console and file
      */
     LOGGER_TYPE_BOTH = 2
-}logger_type;
+} logger_type;
 
 /**
  * wrapper struct to pass multiple parameters to the write thread handler
@@ -76,23 +76,23 @@ typedef struct {
     /**
      * the buffer FIFO
      */
-    fifo_t * buffer;
+    fifo_t *buffer;
 
     /**
      * if logger is Console or Both: path to the log file. NULL otherwise
      */
-    char * log_file;
+    char *log_file;
 
     /**
      * the type of the logger
      */
     logger_type type;
-}write_thread_parameter_wrapper;
+} write_thread_parameter_wrapper;
 
 /**
  * represents a logger
  */
-struct logger_t{
+struct logger_t {
     /**
      * maximum log level the logger will log
      */
@@ -106,17 +106,17 @@ struct logger_t{
     /**
      * the path to the log file, when file logging is used
      */
-    char* log_file;
+    char *log_file;
 
     /**
      * the FIFO that is used to buffer log messages
      */
-    fifo_t * buffer;
+    fifo_t *buffer;
 
     /**
      * the pointer to the wrapper that was passed to the write thread. Used to free in logger_destroy.
      */
-    write_thread_parameter_wrapper * wrapper_ptr;
+    write_thread_parameter_wrapper *wrapper_ptr;
 };
 
 /**
@@ -132,7 +132,7 @@ struct logger_t logger_init(log_level max_log_level, logger_type type);
  * @param logger the logger where the file should be set
  * @param path the path to the file
  */
-void logger_set_log_file(struct logger_t* logger, char * path);
+void logger_set_log_file(struct logger_t *logger, char *path);
 
 /**
  * logs a message
@@ -142,7 +142,7 @@ void logger_set_log_file(struct logger_t* logger, char * path);
  * @param format the message which should be logged. can contain formatting information like %s, %d, ...
  * @param ... the format parameters
  */
-void logger_log(struct logger_t * logger, log_level level, char* location ,char* format, ...) __attribute__ ((format (printf, 4, 5)));
+void logger_log(struct logger_t *logger, log_level level, char *location, char *format, ...) __attribute__((format(printf, 4, 5)));
 
 /**
  * logs a message of a specified condition is true (1)
@@ -153,13 +153,13 @@ void logger_log(struct logger_t * logger, log_level level, char* location ,char*
  * @param format the message which should be logged. can contain formatting information like %s, %d, ...
  * @param ... the format parameters
  */
-void logger_log_if(struct logger_t * logger, int cond, log_level level, char * location, char * format, ...)  __attribute__ ((format (printf, 5, 6)));
+void logger_log_if(struct logger_t *logger, int cond, log_level level, char *location, char *format, ...) __attribute__((format(printf, 5, 6)));
 
 /**
  * stops the write thread and frees resources of the logger
  * @param logger the logger that is cleared
  */
-void logger_destroy(struct logger_t * logger);
+void logger_destroy(struct logger_t *logger);
 
 /**
  * Print a description, followed by a memory range in hex and ascii

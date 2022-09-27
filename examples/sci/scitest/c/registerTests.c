@@ -1,8 +1,8 @@
 #include <CUnit/Basic.h>
 
 #include "sciTests.h"
-#include "scipTests.h"
 #include "scilsTests.h"
+#include "scipTests.h"
 
 int suite_init(void) {
     return 0;
@@ -55,7 +55,7 @@ void cunit_register() {
     CU_add_test(sci_suite, "testParseBrightnessStatus", testParseBrightnessStatus);
 }
 
-int main () {
+int main() {
     if (CUE_SUCCESS != CU_initialize_registry())
         return CU_get_error();
 

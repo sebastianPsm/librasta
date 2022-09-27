@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 #include <limits.h>
 
@@ -14,7 +14,7 @@ typedef enum {
     DICTIONARY_ARRAY,
     DICTIONARY_NUMBER,
     DICTIONARY_ERROR
-}dic_entry_type;
+} dic_entry_type;
 
 #define MAX_DICTIONARY_STRING_LENGTH_BYTES PATH_MAX
 
@@ -29,7 +29,7 @@ struct DictionaryString {
  * represents an array
  */
 struct DictionaryArray {
-    struct DictionaryString* data;
+    struct DictionaryString *data;
     unsigned int count;
 };
 
@@ -59,8 +59,7 @@ struct Dictionary {
     unsigned int size;
     unsigned int actual_size;
 
-    struct DictionaryEntry* data;
-
+    struct DictionaryEntry *data;
 };
 /**
  * returns an allocated DictionaryArray
@@ -74,12 +73,12 @@ struct DictionaryArray allocate_DictionaryArray(unsigned int size);
  * @param array
  * @param new_size
  */
-void reallocate_DictionaryArray(struct DictionaryArray* array, unsigned int new_size);
+void reallocate_DictionaryArray(struct DictionaryArray *array, unsigned int new_size);
 /**
  * frees an DictionaryArray
  * @param array
  */
-void free_DictionaryArray(struct DictionaryArray* array);
+void free_DictionaryArray(struct DictionaryArray *array);
 
 /**
  * creates a dictionary with the initial size
@@ -92,14 +91,14 @@ struct Dictionary dictionary_create(unsigned int initial_size);
  * frees the dictionary and all data
  * @param dict
  */
-void dictionary_free(struct Dictionary* dict);
+void dictionary_free(struct Dictionary *dict);
 /**
  * checks if the dictionary contains an entry with key
  * @param dict
  * @param key
  * @return 1 if its in the dicitonary else 0
  */
-int dictionary_isin(struct Dictionary* dict, const char* key);
+int dictionary_isin(struct Dictionary *dict, const char *key);
 
 /**
  * adds a number to the dictionary
@@ -108,7 +107,7 @@ int dictionary_isin(struct Dictionary* dict, const char* key);
  * @param number
  * @return 1 if successfully added, 0 else
  */
-int dictionary_addNumber(struct Dictionary* dict, const char * key, int number);
+int dictionary_addNumber(struct Dictionary *dict, const char *key, int number);
 
 /**
  * adds a string to the dictionary
@@ -117,7 +116,7 @@ int dictionary_addNumber(struct Dictionary* dict, const char * key, int number);
  * @param string
  * @return 1 if successfully added, 0 else
  */
-int dictionary_addString(struct Dictionary* dict, const char * key, struct DictionaryString string);
+int dictionary_addString(struct Dictionary *dict, const char *key, struct DictionaryString string);
 
 /**
  * adds an array to the dictionary
@@ -126,7 +125,7 @@ int dictionary_addString(struct Dictionary* dict, const char * key, struct Dicti
  * @param array
  * @return 1 if successfully added, 0 else
  */
-int dictionary_addArray(struct Dictionary* dict, const char * key, struct DictionaryArray array);
+int dictionary_addArray(struct Dictionary *dict, const char *key, struct DictionaryArray array);
 
 /**
  * returns an dictionary entry associated with the key, if the key is not in the dictionary, the type is set to DICTIONARY_ERROR
@@ -135,8 +134,7 @@ int dictionary_addArray(struct Dictionary* dict, const char * key, struct Dictio
  * @param key
  * @return
  */
-struct DictionaryEntry dictionary_get(struct Dictionary* dict, const char* key);
-
+struct DictionaryEntry dictionary_get(struct Dictionary *dict, const char *key);
 
 #ifdef __cplusplus
 }

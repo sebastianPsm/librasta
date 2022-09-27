@@ -5,8 +5,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 /* Any 32-bit or wider unsigned integer data type will do */
@@ -34,7 +34,7 @@ typedef struct {
  * @param d the d word of the initial value
  * @return
  */
-MD4_CONTEXT md4InitContext (MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
+MD4_CONTEXT md4InitContext(MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
 
 /**
  * generates MD4-Hash for data and saves it in result
@@ -43,7 +43,7 @@ MD4_CONTEXT md4InitContext (MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32
  * @param type of security code (0 means no code, 1 means half the code, 2 all of the code)
  * @param result array for the result
  */
-void generateMD4(unsigned char* data, int length, int type, unsigned char* result);
+void generateMD4(unsigned char *data, int length, int type, unsigned char *result);
 
 /**
  * generates MD4-Hash for data and saves it in result
@@ -52,7 +52,7 @@ void generateMD4(unsigned char* data, int length, int type, unsigned char* resul
  * @param type of security code (0 means no code, 1 means half the code, 2 all of the code)
  * @param result array for the result
  */
-void generateMD4WithVector(unsigned char* data, int length, int type, MD4_CONTEXT* context, unsigned char* result);
+void generateMD4WithVector(unsigned char *data, int length, int type, MD4_CONTEXT *context, unsigned char *result);
 
 #ifdef __cplusplus
 }

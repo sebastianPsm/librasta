@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include "sci.h"
@@ -35,7 +35,7 @@ typedef enum {
     SCI_PARSE_INVALID_PAYLOAD_LENGTH = 0x01,
     SCI_PARSE_INVALID_MESSAGE_TYPE = 0x02,
     SCI_PARSE_SUCCESS = 0x00
-}sci_parse_result;
+} sci_parse_result;
 
 /**
  * Creates a SCI version request telegram.
@@ -45,7 +45,7 @@ typedef enum {
  * @param version the ESTW version
  * @return a version request telegram
  */
-sci_telegram * sci_create_version_request(protocol_type protocolType, char * sender, char * receiver, unsigned char version);
+sci_telegram *sci_create_version_request(protocol_type protocolType, char *sender, char *receiver, unsigned char version);
 
 /**
  * Creates a SCI version response telegram.
@@ -58,9 +58,9 @@ sci_telegram * sci_create_version_request(protocol_type protocolType, char * sen
  * @param checksum the checksum data
  * @return a version response telegram
  */
-sci_telegram * sci_create_version_response(protocol_type protocolType, char * sender, char * receiver,
-                                           unsigned char version, sci_version_check_result version_check_result,
-                                           unsigned char checksum_len, unsigned char * checksum);
+sci_telegram *sci_create_version_response(protocol_type protocolType, char *sender, char *receiver,
+                                          unsigned char version, sci_version_check_result version_check_result,
+                                          unsigned char checksum_len, unsigned char *checksum);
 
 /**
  * Creates a SCI status request.
@@ -69,7 +69,7 @@ sci_telegram * sci_create_version_response(protocol_type protocolType, char * se
  * @param receiver the receiver name without underscores
  * @return a status request telegram
  */
-sci_telegram * sci_create_status_request(protocol_type protocolType, char * sender, char * receiver);
+sci_telegram *sci_create_status_request(protocol_type protocolType, char *sender, char *receiver);
 
 /**
  * Creates a SCI status begin telegram.
@@ -78,7 +78,7 @@ sci_telegram * sci_create_status_request(protocol_type protocolType, char * send
  * @param receiver the receiver name without underscores
  * @return a status begin telegram
  */
-sci_telegram * sci_create_status_begin(protocol_type protocolType, char * sender, char * receiver);
+sci_telegram *sci_create_status_begin(protocol_type protocolType, char *sender, char *receiver);
 
 /**
  * Creates a SCI status finish telegram.
@@ -87,7 +87,7 @@ sci_telegram * sci_create_status_begin(protocol_type protocolType, char * sender
  * @param receiver the receiver name without underscores
  * @return a status finish telegram
  */
-sci_telegram * sci_create_status_finish(protocol_type protocolType, char * sender, char * receiver);
+sci_telegram *sci_create_status_finish(protocol_type protocolType, char *sender, char *receiver);
 
 /**
  * Creates a base telegram, sets the payload to all 0s
@@ -97,7 +97,7 @@ sci_telegram * sci_create_status_finish(protocol_type protocolType, char * sende
  * @param message_type the message type of the telegram
  * @return a basic SCI telegram
  */
-sci_telegram * sci_create_base_telegram(protocol_type protocolType, char * sender, char * receiver, unsigned short message_type);
+sci_telegram *sci_create_base_telegram(protocol_type protocolType, char *sender, char *receiver, unsigned short message_type);
 
 /**
  * Tries to parse the payload of a version request telegram. The values will be written to the corresponding pointers.
@@ -105,7 +105,7 @@ sci_telegram * sci_create_base_telegram(protocol_type protocolType, char * sende
  * @param estw_version value: the version of the ESTW
  * @return 0 if success, error code otherwise
  */
-sci_parse_result sci_parse_version_request_payload(sci_telegram * version_request, unsigned char * estw_version);
+sci_parse_result sci_parse_version_request_payload(sci_telegram *version_request, unsigned char *estw_version);
 
 /**
  * Tries to parse the payload of a version response telegram. The values will be written to the corresponding pointers.
@@ -116,8 +116,8 @@ sci_parse_result sci_parse_version_request_payload(sci_telegram * version_reques
  * @param checksum value: checksum data with length checksum_len
  * @return 0 if success, error code otherwise
  */
-sci_parse_result sci_parse_version_response_payload(sci_telegram * version_response, unsigned char * btp_version, sci_version_check_result * result,
-                                       unsigned char * checksum_len, unsigned char * checksum);
+sci_parse_result sci_parse_version_response_payload(sci_telegram *version_response, unsigned char *btp_version, sci_version_check_result *result,
+                                                    unsigned char *checksum_len, unsigned char *checksum);
 
 #ifdef __cplusplus
 }

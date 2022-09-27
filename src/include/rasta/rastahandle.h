@@ -1,16 +1,16 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-#include <mqueue.h>
-#include "rastahashing.h"
-#include "rastafactory.h"
-#include "logging.h"
 #include "config.h"
+#include "logging.h"
 #include "rasta_red_multiplexer.h"
+#include "rastafactory.h"
+#include "rastahashing.h"
+#include <mqueue.h>
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>
@@ -28,48 +28,48 @@ typedef enum {
     /**
      * The connection is closed
      */
-            RASTA_CONNECTION_CLOSED,
+    RASTA_CONNECTION_CLOSED,
     /**
      * OpenConnection was called, the connection is ready to be established
      */
-            RASTA_CONNECTION_DOWN,
+    RASTA_CONNECTION_DOWN,
     /**
      * In case the role is client: a ConReq was sent, waiting for ConResp
      * In case the role is server: a ConResp was sent, waiting for HB
      */
-            RASTA_CONNECTION_START,
+    RASTA_CONNECTION_START,
     /**
      * Waiting for Key Exchange Request
      */
-        RASTA_CONNECTION_KEX_REQ,
+    RASTA_CONNECTION_KEX_REQ,
     /**
      * Waiting for Key Exchange Response
      */
-        RASTA_CONNECTION_KEX_RESP,
+    RASTA_CONNECTION_KEX_RESP,
     /**
      * Waiting for Key Exchange Authentication
      */
-        RASTA_CONNECTION_KEX_AUTH,
+    RASTA_CONNECTION_KEX_AUTH,
     /**
      * The connection was established, ready to send data
      */
-            RASTA_CONNECTION_UP,
+    RASTA_CONNECTION_UP,
     /**
      * Retransmission requested
      * RetrReq was sent, waiting for RetrResp
      */
-            RASTA_CONNECTION_RETRREQ,
+    RASTA_CONNECTION_RETRREQ,
     /**
      * Retransmission running
      * After receiving the RetrResp, resend data will be accepted until HB or regular data arrives
      */
-            RASTA_CONNECTION_RETRRUN
+    RASTA_CONNECTION_RETRRUN
 } rasta_sr_state;
 
 /**
-* representation of the RaSTA error counters, as specified in 5.5.5
-*/
-struct rasta_error_counters{
+ * representation of the RaSTA error counters, as specified in 5.5.5
+ */
+struct rasta_error_counters {
     /**
      * received message with faulty checksum
      */
@@ -125,14 +125,14 @@ struct diagnostic_interval {
  * The data that is passed to most timed events.
  */
 struct timed_event_data {
-    void* handle;
-    struct rasta_connection* connection;
+    void *handle;
+    struct rasta_connection *connection;
 };
 
 struct rasta_connection {
 
-    struct rasta_connection* linkedlist_next;
-    struct rasta_connection* linkedlist_prev;
+    struct rasta_connection *linkedlist_next;
+    struct rasta_connection *linkedlist_prev;
 
     /**
      * the event operating the heartbeats on this connection
@@ -174,12 +174,12 @@ struct rasta_connection {
     /**
      * the name of the receiving message queue
      */
-    fifo_t * fifo_app_msg;
+    fifo_t *fifo_app_msg;
 
     /**
      * the name of the sending message queue
      */
-    fifo_t * fifo_send;
+    fifo_t *fifo_send;
 
     /**
      * the N_SENDMAX of the connection partner,  -1 if not connected
@@ -255,23 +255,22 @@ struct rasta_connection {
      * diagnostic intervals defined at 5.5.6.4 to diagnose healthiness of this connection
      * number of fields defined by DIAGNOSTIC_INTERVAL_SIZE
      */
-    struct diagnostic_interval* diagnostic_intervals;
+    struct diagnostic_interval *diagnostic_intervals;
 
     /**
      * the pdu fifo for retransmission purposes
      */
-    fifo_t * fifo_retr;
+    fifo_t *fifo_retr;
 
     /**
-    *   the error counters as specified in 5.5.5
-    */
+     *   the error counters as specified in 5.5.5
+     */
     struct rasta_error_counters errors;
 
     /**
      * Session data for and derived from key exchange
      */
     struct key_exchange_state kex_state;
-
 };
 
 /**
@@ -293,13 +292,13 @@ struct rasta_notification_result {
  * pointer to a function that will be called when application messages are ready for processing
  * first parameter is the connection that fired the event
  */
-typedef void(*on_receive_ptr)(struct rasta_notification_result *result);
+typedef void (*on_receive_ptr)(struct rasta_notification_result *result);
 
 /**
  * pointer to a function that will be called when connection tls_state has changed
  * first parameter is the connection that fired the event
  */
-typedef void(*on_connection_state_change_ptr)(struct rasta_notification_result *result);
+typedef void (*on_connection_state_change_ptr)(struct rasta_notification_result *result);
 
 /**
  * pointer to a function that will be called when diagnostic notification will be send
@@ -307,7 +306,7 @@ typedef void(*on_connection_state_change_ptr)(struct rasta_notification_result *
  * second parameter is the length for the provided array
  * third parameter it the array with tracked diagnostic data
  */
-typedef void(*on_diagnostic_notification_ptr)(struct rasta_notification_result *result);
+typedef void (*on_diagnostic_notification_ptr)(struct rasta_notification_result *result);
 
 /**
  * pointer to a function that will be called when a DiscReq are received
@@ -315,24 +314,24 @@ typedef void(*on_diagnostic_notification_ptr)(struct rasta_notification_result *
  * second parameter is the reason for this DiscReq
  * third parameter is the detail for this DiscReq
  */
-typedef void(*on_disconnection_request_received_ptr)(struct rasta_notification_result *result, unsigned short reason, unsigned short detail);
+typedef void (*on_disconnection_request_received_ptr)(struct rasta_notification_result *result, unsigned short reason, unsigned short detail);
 
 /**
  * pointer to a function that will be called when an entity successfully completed the handshake and is now in tls_state UP.
  * first parameter is the connection that fired the event
  */
-typedef void(*on_handshake_complete_ptr)(struct rasta_notification_result *);
+typedef void (*on_handshake_complete_ptr)(struct rasta_notification_result *);
 
 /**
  * pointer to a function that will be called when the T_i timer of an entity expired.
  * first parameter is the connection that fired the event
  */
-typedef void(*on_heartbeat_timeout_ptr)(struct rasta_notification_result *);
+typedef void (*on_heartbeat_timeout_ptr)(struct rasta_notification_result *);
 
 /**
  * function pointers for the notifications that are specified in 5.2.2
  */
-struct rasta_notification_ptr{
+struct rasta_notification_ptr {
     /**
      * called when a application message is ready for processing
      */
@@ -341,7 +340,7 @@ struct rasta_notification_ptr{
     /**
      * called when connection tls_state has changed
      */
-    on_connection_state_change_ptr  on_connection_state_change;
+    on_connection_state_change_ptr on_connection_state_change;
 
     /**
      * called when diagnostic notification will be send
@@ -375,12 +374,10 @@ struct rasta_disconnect_notification_result {
     unsigned short detail;
 };
 
-
-
 struct rasta_sending_handle {
     /**
- * configuration values
- */
+     * configuration values
+     */
     struct RastaConfigInfoSending config;
     struct RastaConfigInfoGeneral info;
 
@@ -391,20 +388,20 @@ struct rasta_sending_handle {
     /**
      * handle for notification only
      */
-    struct rasta_handle * handle;
+    struct rasta_handle *handle;
 
     int *running;
 
     /**
      * The paramenters that are used for SR checksums
      */
-    rasta_hashing_context_t * hashing_context;
+    rasta_hashing_context_t *hashing_context;
 };
 
 struct rasta_heartbeat_handle {
     /**
- * configuration values
- */
+     * configuration values
+     */
     struct RastaConfigInfoSending config;
     struct RastaConfigInfoGeneral info;
 
@@ -415,14 +412,14 @@ struct rasta_heartbeat_handle {
     /**
      * handle for notification only
      */
-    struct rasta_handle * handle;
+    struct rasta_handle *handle;
 
     int *running;
 
     /**
      * The paramenters that are used for SR checksums
      */
-    rasta_hashing_context_t * hashing_context;
+    rasta_hashing_context_t *hashing_context;
 };
 
 struct rasta_receive_handle {
@@ -439,21 +436,20 @@ struct rasta_receive_handle {
     /**
      * handle for notification only
      */
-    struct rasta_handle* handle;
+    struct rasta_handle *handle;
 
-    int* running;
+    int *running;
 
     /**
      * The paramenters that are used for SR checksums
      */
-    rasta_hashing_context_t * hashing_context;
-
+    rasta_hashing_context_t *hashing_context;
 };
 
 struct rasta_handle {
     /**
-    * the receiving data
-    */
+     * the receiving data
+     */
     struct rasta_receive_handle *receive_handle;
     int recv_running;
 
@@ -470,28 +466,26 @@ struct rasta_handle {
     int hb_running;
 
     /**
-    * pointers to functions that will be called on notifications as described in 5.2.2 and 5.5.6.4
-    */
+     * pointers to functions that will be called on notifications as described in 5.2.2 and 5.5.6.4
+     */
     struct rasta_notification_ptr notifications;
 
     /**
-    * the logger which is used to log protocol activities
-    */
+     * the logger which is used to log protocol activities
+     */
     struct logger_t logger;
 
     struct logger_t redlogger;
 
     /**
      * RaSTA parameters
-    */
+     */
     struct RastaConfigInfo config;
-
 
     /**
      * versions that this RaSTA entity will accept during the handshake
      */
-    //struct DictionaryArray accepted_version;
-
+    // struct DictionaryArray accepted_version;
 
     /**
      * provides access to the redundancy layer
@@ -501,8 +495,8 @@ struct rasta_handle {
     /**
      * linked list of rasta connections
      */
-    struct rasta_connection* first_con;
-    struct rasta_connection* last_con;
+    struct rasta_connection *first_con;
+    struct rasta_connection *last_con;
 
     /**
      * The paramenters that are used for SR checksums
@@ -512,12 +506,12 @@ struct rasta_handle {
     /**
      * the global event system on the main thread
      */
-    event_system* ev_sys;
+    event_system *ev_sys;
 
     /**
      * the user specified configurations for RaSTA
      */
-    struct user_callbacks* user_handles;
+    struct user_callbacks *user_handles;
 };
 /**
  * creates the container for all notification events

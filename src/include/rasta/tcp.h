@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <netinet/in.h>
+#include <stdint.h>
 // TODO: remove udp.h
 #include "udp.h"
 
@@ -32,7 +32,7 @@ void tcp_listen(struct rasta_transport_state *transport_state);
  * @param port the port the socket will listen on
  * @param ip the IPv4 address of the network interface the socket will listen on.
  */
-void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char * ip);
+void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char *ip);
 
 #ifdef ENABLE_TLS
 /**
@@ -55,7 +55,7 @@ ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_bu
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-size_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char* received_message,size_t max_buffer_len, struct sockaddr_in *sender);
+size_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
 
 /**
@@ -82,7 +82,7 @@ void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void tcp_connect(struct rasta_transport_state *transport_state,  char *host, uint16_t port);
+void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint16_t port);
 
 #ifdef ENABLE_TLS
 /**
@@ -90,7 +90,7 @@ void tcp_connect(struct rasta_transport_state *transport_state,  char *host, uin
  * @param ssl the wolfssl session object
  * @param message the message that which will be send
  * @param message_len the length of the @p message
-*/
+ */
 void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
 #else
 /**
@@ -101,7 +101,7 @@ void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
  * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
  * @param port the target port on the host
  */
-void tcp_send(struct rasta_transport_state *transport_state, unsigned char* message, size_t message_len, char* host, uint16_t port);
+void tcp_send(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port);
 #endif
 
 /**

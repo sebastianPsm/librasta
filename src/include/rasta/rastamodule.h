@@ -1,15 +1,15 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include <stdint.h>
 
-#include "rastautil.h"
 #include "rastacrc.h"
 #include "rastahashing.h"
+#include "rastautil.h"
 
 #define RASTA_CHECKSUM_VALID 1
 #define RASTA_CHECKSUM_INVALID 0
@@ -27,7 +27,7 @@ typedef enum {
      * package length is set wrong
      */
     RASTA_ERRORS_PACKAGE_LENGTH_INVALID = 2
-}rasta_error_type;
+} rasta_error_type;
 
 /**
  * type of a rasta packet
@@ -40,7 +40,7 @@ typedef enum {
     /**
      *  ConnectionResponse
      */
-    RASTA_TYPE_CONNRESP =6201,
+    RASTA_TYPE_CONNRESP = 6201,
     /**
      * Retransmissionrequest
      */
@@ -70,17 +70,17 @@ typedef enum {
     /**
      * Contains key exchange request
      */
-    RASTA_TYPE_KEX_REQUEST=6250,
+    RASTA_TYPE_KEX_REQUEST = 6250,
     /**
      * Contains key exchange response
      */
-    RASTA_TYPE_KEX_RESPONSE=6251,
+    RASTA_TYPE_KEX_RESPONSE = 6251,
     /**
      * Contains user authentication data
      */
-    RASTA_TYPE_KEX_AUTHENTICATION=6252,
+    RASTA_TYPE_KEX_AUTHENTICATION = 6252,
 #endif
-}rasta_conn_type;
+} rasta_conn_type;
 
 /**
  * returns 1 if the machine is BigEndian and 0 else
@@ -96,14 +96,13 @@ int isBigEndian();
  * @param c c part of starting vector
  * @param d d part of starting vector
  */
-//void setMD4checksum(rasta_checksum_type type, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
-
+// void setMD4checksum(rasta_checksum_type type, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
 
 /**
  * function to return the stored md4 type
  * @return
  */
-//rasta_checksum_type getMD4checksumType();
+// rasta_checksum_type getMD4checksumType();
 /**
  * returns the last error from a previously called rasta function
  * note: calling this function will reset the errors to none
@@ -116,21 +115,21 @@ rasta_error_type getRastamoduleLastError();
  * @param v the ushort
  * @param result the assigned uchar array; length should be 2
  */
-void hostShortTole(uint16_t v, unsigned char* result);
+void hostShortTole(uint16_t v, unsigned char *result);
 
 /**
  * Converts a uchar pointer to a ushort in host byte order
  * @param v pointer to 2 bytes in little-endian byte order
  * @return the ushort
  */
-uint16_t leShortToHost(const unsigned char* v);
+uint16_t leShortToHost(const unsigned char *v);
 
 /**
  * Converts a unsigned long into a uchar array
  * @param v the uchar array
  * @param result the assigned uchar array; length should be 4
  */
-void hostLongToLe(uint32_t v, unsigned char* result);
+void hostLongToLe(uint32_t v, unsigned char *result);
 
 /**
  * Converts a uchar array to a ulong
@@ -138,7 +137,6 @@ void hostLongToLe(uint32_t v, unsigned char* result);
  * @return the ulong
  */
 uint32_t leLongToHost(const unsigned char v[4]);
-
 
 /**
  * Struct representing a generic rasta packet
@@ -161,15 +159,15 @@ struct RastaPacket {
     uint32_t sequence_number;
     uint32_t confirmed_sequence_number;
 
-    //type could change later
+    // type could change later
     uint32_t timestamp;
     uint32_t confirmed_timestamp;
 
     struct RastaByteArray data;
     struct RastaByteArray checksum;
 
-    //1 if the checksum is correct, 0 if it's not
-    //NOTE: this field is only set, if you use the "bytestoRastaPacket" function
+    // 1 if the checksum is correct, 0 if it's not
+    // NOTE: this field is only set, if you use the "bytestoRastaPacket" function
     int checksum_correct;
 };
 
@@ -214,22 +212,21 @@ struct RastaRedundancyPacket {
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytes(struct RastaPacket packet, rasta_hashing_context_t * hashing_context);
+struct RastaByteArray rastaModuleToBytes(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a rasta packet and converts it into an allocated bytearray without calculating the safety code
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket packet, rasta_hashing_context_t * hashing_context);
+struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a rasta packet while checking the md4 checksum
  * @param data the data
  * @return if length = 0, the data packet was to short. If checksum_correct=0, the packed should be discarded
  */
-struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t * hashing_context);
-
+struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a RaSTA redundancy layer packet and converts it into a byte array
@@ -237,7 +234,7 @@ struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return an already allocated RastaByteArray (no need to free it yourself)
  */
-struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket packet, rasta_hashing_context_t * hashing_context);
+struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a RaSTA redundancy layer packet
@@ -247,7 +244,7 @@ struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket 
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return a RaSTA Redundancy layer packet containing all data that was in the @p data byte array
  */
-struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t * hashing_context);
+struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context);
 
 #ifdef __cplusplus
 }

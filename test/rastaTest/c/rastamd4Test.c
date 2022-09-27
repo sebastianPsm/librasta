@@ -3,25 +3,24 @@
 //
 
 #include <CUnit/Basic.h>
-#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
+#include "../headers/rastamd4Test.h"
 #include <rastamd4.h>
 #include <rmemory.h>
-#include "../headers/rastamd4Test.h"
 
-void testMD4function(){
+void testMD4function() {
 
     unsigned char MD4result1[8];
 
     unsigned char MD4result2[8];
 
-
     srand(time(NULL));
     unsigned int len = rand() % 3 + 30;
 
-    unsigned char* data;
+    unsigned char *data;
     data = rmalloc(len);
 
     for (int i = 0; i < len; i++) {
@@ -48,8 +47,7 @@ void testMD4function(){
         CU_ASSERT_EQUAL(MD4result3[i], MD4result4[i]);
     }
 
-
-    //Vergleichen ob überhaupt richtiger Hashwert erzeugt wird
+    // Vergleichen ob überhaupt richtiger Hashwert erzeugt wird
     unsigned char MD4result5[16];
 
     // MD4("") = 31d6cfe0d16ae931b73c59d7e0c089c0 source: Test Suite https://tools.ietf.org/html/rfc1320
@@ -69,8 +67,7 @@ void testMD4function(){
         0xe0,
         0xc0,
         0x89,
-        0xc0
-    };
+        0xc0};
 
     generateMD4("", 0, 2, MD4result5);
 
@@ -81,7 +78,7 @@ void testMD4function(){
 
 void testRastaMD4Sample() {
 
-    //example data
+    // example data
     unsigned char data[28];
 
     data[0] = 0x24;
@@ -113,7 +110,7 @@ void testRastaMD4Sample() {
     data[26] = 0x00;
     data[27] = 0x00;
 
-    //correct full MD4
+    // correct full MD4
     unsigned char md4[16];
 
     md4[0] = 0x83;
@@ -133,27 +130,27 @@ void testRastaMD4Sample() {
     md4[14] = 0xc9;
     md4[15] = 0x8d;
 
-    //std context
+    // std context
 
-    MD4_CONTEXT context = md4InitContext(0x67452301,0xefcdab89,0x98badcfe,0x10325476);
+    MD4_CONTEXT context = md4InitContext(0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476);
 
-    //holder for md4
+    // holder for md4
     unsigned char calc_md4[16];
 
-    //generate half md4
-    generateMD4WithVector(data,28,1,&context,calc_md4);
+    // generate half md4
+    generateMD4WithVector(data, 28, 1, &context, calc_md4);
 
-    //check half
+    // check half
     for (int i = 0; i < 8; i++) {
-        CU_ASSERT_EQUAL(md4[i],calc_md4[i]);
+        CU_ASSERT_EQUAL(md4[i], calc_md4[i]);
     }
 
-    context = md4InitContext(0x67452301,0xefcdab89,0x98badcfe,0x10325476);
-    //generate full md4
-    generateMD4WithVector(data,28,2,&context,calc_md4);
+    context = md4InitContext(0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476);
+    // generate full md4
+    generateMD4WithVector(data, 28, 2, &context, calc_md4);
 
-    //check full
+    // check full
     for (int i = 0; i < 16; i++) {
-        CU_ASSERT_EQUAL(md4[i],calc_md4[i]);
+        CU_ASSERT_EQUAL(md4[i], calc_md4[i]);
     }
 }

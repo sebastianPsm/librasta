@@ -25,8 +25,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include "rastautil.h"
@@ -34,7 +34,7 @@ extern "C" {  // only need to export C interface if
 /**
  * representation of the options the the crc algorithm will use
  */
-struct crc_options{
+struct crc_options {
     /**
      * length of crc in bit
      */
@@ -122,7 +122,7 @@ struct crc_options crc_init_opt_e();
  * generate the crc lookup table for the given @p options
  * @param options the options which the table is generated for
  */
-void crc_generate_table(struct crc_options * options);
+void crc_generate_table(struct crc_options *options);
 
 /**
  * calculates the crc of the given @p data with the given @p options
@@ -131,7 +131,7 @@ void crc_generate_table(struct crc_options * options);
  * @param data the data which's checksum is calculated
  * @return the calculated checksum
  */
-unsigned long crc_calculate (struct crc_options * options, struct RastaByteArray data);
+unsigned long crc_calculate(struct crc_options *options, struct RastaByteArray data);
 
 #ifdef __cplusplus
 }

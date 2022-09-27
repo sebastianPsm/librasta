@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include "sci.h"
@@ -46,7 +46,7 @@ typedef enum {
  * @param location the target location of the point
  * @return a change location telegram
  */
-sci_telegram * scip_create_change_location_telegram(char *sender, char *receiver, scip_point_target_location location);
+sci_telegram *scip_create_change_location_telegram(char *sender, char *receiver, scip_point_target_location location);
 
 /**
  * Creates a SCI-P location status telegram
@@ -55,7 +55,7 @@ sci_telegram * scip_create_change_location_telegram(char *sender, char *receiver
  * @param location the location of the point
  * @return a location status telegram
  */
-sci_telegram * scip_create_location_status_telegram(char *sender, char *receiver, scip_point_location location);
+sci_telegram *scip_create_location_status_telegram(char *sender, char *receiver, scip_point_location location);
 
 /**
  * Creates a SCI-P timeout telegram
@@ -63,7 +63,7 @@ sci_telegram * scip_create_location_status_telegram(char *sender, char *receiver
  * @param receiver the receiver name without underscores
  * @return a timeout telegram
  */
-sci_telegram * scip_create_timeout_telegram(char *sender, char *receiver);
+sci_telegram *scip_create_timeout_telegram(char *sender, char *receiver);
 
 /**
  * Tries to parse the payload of a change location telegram. The values will be written to the corresponding pointers.
@@ -71,7 +71,7 @@ sci_telegram * scip_create_timeout_telegram(char *sender, char *receiver);
  * @param location value: the point's target location
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scip_parse_change_location_payload(sci_telegram * telegram, scip_point_target_location * location);
+sci_parse_result scip_parse_change_location_payload(sci_telegram *telegram, scip_point_target_location *location);
 
 /**
  * Tries to parse the payload of a location status telegram. The values will be written to the corresponding pointers.
@@ -79,7 +79,7 @@ sci_parse_result scip_parse_change_location_payload(sci_telegram * telegram, sci
  * @param location value: the point's location
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scip_parse_location_status_payload(sci_telegram * telegram, scip_point_location * location);
+sci_parse_result scip_parse_location_status_payload(sci_telegram *telegram, scip_point_location *location);
 
 #ifdef __cplusplus
 }

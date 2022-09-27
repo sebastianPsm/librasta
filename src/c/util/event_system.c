@@ -1,7 +1,7 @@
 #include <rasta/event_system.h>
 
-#include <time.h>
 #include <sys/select.h>
+#include <time.h>
 
 #include <rasta/rasta_new.h>
 
@@ -11,10 +11,10 @@ uint64_t get_nanotime() {
     return t.tv_sec * 1000000000 + t.tv_nsec;
 }
 
-int get_max_nfds(struct fd_event_linked_list_s* fd_events) {
+int get_max_nfds(struct fd_event_linked_list_s *fd_events) {
     int nfds = 0;
     // find highest fd and set nfds to 1 higher
-    for (fd_event* current = fd_events->first; current; current = current->next) {
+    for (fd_event *current = fd_events->first; current; current = current->next) {
         nfds = nfds < current->fd ? current->fd : nfds;
     }
     nfds++;
@@ -28,7 +28,7 @@ int get_max_nfds(struct fd_event_linked_list_s* fd_events) {
  * @param len the length of the fd event array
  * @return the amount of fd events that got called or -1 to terminate the event loop
  */
-int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s* fd_events) {
+int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s *fd_events) {
     struct timeval tv;
     tv.tv_sec = time_to_wait / 1000000000;
     tv.tv_usec = (time_to_wait / 1000) % 1000000;
@@ -44,7 +44,7 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s* fd_
     FD_ZERO(&on_readable);
     FD_ZERO(&on_writable);
     FD_ZERO(&on_exceptional);
-    for (fd_event* current = fd_events->first; current; current = current->next) {
+    for (fd_event *current = fd_events->first; current; current = current->next) {
         if (current->enabled) {
             if (current->options & EV_READABLE)
                 FD_SET(current->fd, &on_readable);
@@ -60,7 +60,7 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s* fd_
         // syscall error or error on select()
         return -1;
     }
-    for (fd_event* current = fd_events->first; current; current = current->next) {
+    for (fd_event *current = fd_events->first; current; current = current->next) {
         if (current->enabled && FD_ISSET(current->fd, &on_readable)) {
             if (current->callback(current->carry_data)) return -1;
         }
@@ -79,7 +79,7 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s* fd_
  * resulting in a delay of the event
  * @param event the event to delay
  */
-void reschedule_event(timed_event * event) {
+void reschedule_event(timed_event *event) {
     event->last_call = get_nanotime();
 }
 
@@ -91,9 +91,9 @@ void reschedule_event(timed_event * event) {
  * @param cur_time the current time
  * @return uint64_t the time to wait
  */
-uint64_t calc_next_timed_event(struct timed_event_linked_list_s* timed_events, timed_event** next_timed_event, uint64_t cur_time) {
+uint64_t calc_next_timed_event(struct timed_event_linked_list_s *timed_events, timed_event **next_timed_event, uint64_t cur_time) {
     uint64_t time_to_wait = UINT64_MAX;
-    for (timed_event* current = timed_events->first; current; current = current->next) {
+    for (timed_event *current = timed_events->first; current; current = current->next) {
         if (current->enabled) {
             uint64_t continue_at = current->last_call + current->interval;
             if (continue_at <= cur_time) {
@@ -101,8 +101,7 @@ uint64_t calc_next_timed_event(struct timed_event_linked_list_s* timed_events, t
                     *next_timed_event = current;
                 }
                 return 0;
-            }
-            else {
+            } else {
                 uint64_t new_time_to_wait = continue_at - cur_time;
                 if (new_time_to_wait < time_to_wait) {
                     if (next_timed_event) {
@@ -122,13 +121,13 @@ uint64_t calc_next_timed_event(struct timed_event_linked_list_s* timed_events, t
  * @param ev_sys contains all the events the loop should handel.
  * Can be modified from the calling thread while running.
  */
-void event_system_start(event_system* ev_sys) {
+void event_system_start(event_system *ev_sys) {
     uint64_t cur_time = get_nanotime();
-    for (timed_event* current = ev_sys->timed_events.first; current; current = current->next) {
+    for (timed_event *current = ev_sys->timed_events.first; current; current = current->next) {
         current->last_call = cur_time;
     }
     while (1) {
-        timed_event* next_event;
+        timed_event *next_event;
         cur_time = get_nanotime();
         uint64_t time_to_wait = calc_next_timed_event(&ev_sys->timed_events, &next_event, cur_time);
         if (time_to_wait == UINT64_MAX) {
@@ -138,14 +137,12 @@ void event_system_start(event_system* ev_sys) {
                 break;
             }
             continue;
-        }
-        else if (time_to_wait != 0) {
+        } else if (time_to_wait != 0) {
             int result = event_system_sleep(time_to_wait, &ev_sys->fd_events);
             if (result == -1) {
                 // select failed, exit loop
                 return;
-            }
-            else if (result >= 0) {
+            } else if (result >= 0) {
                 // the sleep didn't time out, but a fd event occured
                 // recalculate next timed event in case one got rescheduled
                 continue;
@@ -164,7 +161,7 @@ void event_system_start(event_system* ev_sys) {
  * enables a timed event, it will fire in event::interval nanoseconds
  * @param event the event to enable
  */
-void enable_timed_event(timed_event* event) {
+void enable_timed_event(timed_event *event) {
     event->enabled = 1;
     reschedule_event(event);
 }
@@ -173,7 +170,7 @@ void enable_timed_event(timed_event* event) {
  * temporarily disables a timed event
  * @param event the event to disable
  */
-void disable_timed_event(timed_event* event) {
+void disable_timed_event(timed_event *event) {
     event->enabled = 0;
 }
 
@@ -181,7 +178,7 @@ void disable_timed_event(timed_event* event) {
  * enables a fd event
  * @param event the event to enable
  */
-void enable_fd_event(fd_event* event) {
+void enable_fd_event(fd_event *event) {
     event->enabled = 1;
 }
 
@@ -189,7 +186,7 @@ void enable_fd_event(fd_event* event) {
  * enables a fd event
  * @param event the event to enable
  */
-void disable_fd_event(fd_event* event) {
+void disable_fd_event(fd_event *event) {
     event->enabled = 0;
 }
 
@@ -200,15 +197,14 @@ void disable_fd_event(fd_event* event) {
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void add_timed_event(event_system* ev_sys, timed_event* event) {
+void add_timed_event(event_system *ev_sys, timed_event *event) {
     // simple linked list add
     if (ev_sys->timed_events.last) {
         event->prev = ev_sys->timed_events.last;
         event->next = NULL;
         ev_sys->timed_events.last->next = event;
         ev_sys->timed_events.last = event;
-    }
-    else {
+    } else {
         ev_sys->timed_events.first = event;
         ev_sys->timed_events.last = event;
         event->next = NULL;
@@ -222,7 +218,7 @@ void add_timed_event(event_system* ev_sys, timed_event* event) {
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_timed_event(event_system* ev_sys, timed_event* event) {
+void remove_timed_event(event_system *ev_sys, timed_event *event) {
     // simple linked list remove
     if (ev_sys->timed_events.first == event) {
         ev_sys->timed_events.first = ev_sys->timed_events.first->next;
@@ -242,15 +238,14 @@ void remove_timed_event(event_system* ev_sys, timed_event* event) {
  * @param event the event to add
  * @param options set how the event should be triggered. (EV_READABLE | EV_WRITEABLE | EV_CHANGE)
  */
-void add_fd_event(event_system* ev_sys, fd_event* event, int options) {
+void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     // simple linked list add
     if (ev_sys->fd_events.last) {
         event->prev = ev_sys->fd_events.last;
         event->next = NULL;
         ev_sys->fd_events.last->next = event;
         ev_sys->fd_events.last = event;
-    }
-    else {
+    } else {
         ev_sys->fd_events.first = event;
         ev_sys->fd_events.last = event;
         event->next = NULL;
@@ -266,7 +261,7 @@ void add_fd_event(event_system* ev_sys, fd_event* event, int options) {
  * @param ev_sys the event will be added to this event system
  * @param event the event to add
  */
-void remove_fd_event(event_system* ev_sys, fd_event* event) {
+void remove_fd_event(event_system *ev_sys, fd_event *event) {
     if (ev_sys->fd_events.first == event) {
         ev_sys->fd_events.first = ev_sys->fd_events.first->next;
     }

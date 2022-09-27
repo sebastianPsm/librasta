@@ -1,8 +1,8 @@
 #include <rasta/rasta_lib.h>
 
 #include <memory.h>
-#include <stdbool.h>
 #include <rasta/rasta_new.h>
+#include <stdbool.h>
 
 void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, struct RastaConfigInfo config, struct logger_t *logger) {
     memset(user_configuration, 0, sizeof(rasta_lib_configuration_t));

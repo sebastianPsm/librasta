@@ -1,14 +1,14 @@
 #include <rasta/rastaredundancy_new.h>
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
-#include <rasta/rmemory.h>
 #include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 rasta_redundancy_channel rasta_red_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
-                                        unsigned long id){
+                                        unsigned long id) {
     rasta_redundancy_channel channel;
 
     channel.associated_id = id;
@@ -33,7 +33,7 @@ rasta_redundancy_channel rasta_red_init(struct logger_t logger, struct RastaConf
     channel.hashing_context.hash_length = config.sending.md4_type;
     channel.hashing_context.algorithm = config.sending.sr_hash_algorithm;
 
-    if (channel.hashing_context.algorithm == RASTA_ALGO_MD4){
+    if (channel.hashing_context.algorithm == RASTA_ALGO_MD4) {
         // use MD4 IV as key
         rasta_md4_set_key(&channel.hashing_context, config.sending.md4_a, config.sending.md4_b,
                           config.sending.md4_c, config.sending.md4_d);
@@ -56,17 +56,16 @@ rasta_redundancy_channel rasta_red_init(struct logger_t logger, struct RastaConf
     return channel;
 }
 
-
 /**
  * delivers a message in the defer queue to next layer i.e. adds it to the receive buffer
  * see 6.6.4.4.6 for more details
  * @param connection the connection data which is used
  */
-void deliverDeferQueue(rasta_redundancy_channel * channel){
+void deliverDeferQueue(rasta_redundancy_channel *channel) {
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red deliver deferq", "f_deliverDeferQueue called");
 
     // check if message with seq_pdu == seq_rx in defer queue
-    while (deferqueue_contains(&channel->defer_q, channel->seq_rx)){
+    while (deferqueue_contains(&channel->defer_q, channel->seq_rx)) {
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red deliver deferq", "deferq contains seq_pdu=%lu",
                    channel->seq_rx);
 
@@ -75,10 +74,10 @@ void deliverDeferQueue(rasta_redundancy_channel * channel){
         struct RastaByteArray innerPackerBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
         innerPackerBytes = rastaModuleToBytes(deferqueue_get(&channel->defer_q, channel->seq_rx).data,
-                &channel->hashing_context);
+                                              &channel->hashing_context);
 
         // add to queue
-        struct RastaByteArray * to_fifo = rmalloc(sizeof(struct RastaByteArray));
+        struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
         allocateRastaByteArray(to_fifo, innerPackerBytes.length);
         rmemcpy(to_fifo->bytes, innerPackerBytes.bytes, innerPackerBytes.length);
 
@@ -95,16 +94,16 @@ void deliverDeferQueue(rasta_redundancy_channel * channel){
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red deliver deferq", "remove message from deferq");
 
         // increase seq_rx
-        channel->seq_rx = channel->seq_rx +1;
+        channel->seq_rx = channel->seq_rx + 1;
     }
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red deliver deferq", "deferq doesn't contain seq_pdu=%lu",
                channel->seq_rx);
 }
 
-void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedundancyPacket packet, int channel_id){
-    logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "Channel %d: ptr=%p", channel_id, (void*) channel);
+void rasta_red_f_receive(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id) {
+    logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "Channel %d: ptr=%p", channel_id, (void *)channel);
 
-    if(!packet.checksum_correct){
+    if (!packet.checksum_correct) {
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "Channel 0: Packet checksum incorrect on channel %d", channel_id);
 
         // checksum incorrect, exit function
@@ -124,21 +123,21 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
     }
 
     // check seq_pdu
-    if (packet.sequence_number < channel->seq_rx){
+    if (packet.sequence_number < channel->seq_rx) {
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu < seq_rx", channel_id);
         // message has been received by other transport channel
         // -> calculate delay by looking for the received ts in diagnostics queue
 
         unsigned long ts = deferqueue_get_ts(&channel->diagnostics_packet_buffer, packet.sequence_number);
-        if(ts != 0){
+        if (ts != 0) {
             // seq_pdu was in queue, received time is ts
             unsigned long delay = current_ts() - ts;
 
             // if delay > T_SEQ, message is late
-            if (delay > channel->configuration_parameters.t_seq){
+            if (delay > channel->configuration_parameters.t_seq) {
                 // channel is late, increase missed counter
                 channel->connected_channels[channel_id].diagnostics_data.n_missed++;
-            } else{
+            } else {
                 // update t_drift and t_drift2
                 channel->connected_channels[channel_id].diagnostics_data.t_drift += delay;
                 channel->connected_channels[channel_id].diagnostics_data.t_drift2 += (delay * delay);
@@ -147,12 +146,12 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
 
         // discard message
         return;
-    } else if (packet.sequence_number == channel->seq_rx){
+    } else if (packet.sequence_number == channel->seq_rx) {
         channel->seq_rx++;
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: correct seq. nr. delivering to next layer",
                    channel_id);
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu=%lu, seq_rx=%lu",
-            channel_id, (long unsigned int) packet.sequence_number, channel->seq_rx - 1);
+                   channel_id, (long unsigned int)packet.sequence_number, channel->seq_rx - 1);
         // received packet as first transport channel -> add with ts to diagnostics buffer
         if (!deferqueue_add(&channel->diagnostics_packet_buffer, packet, current_ts())) {
             logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because defer queue was full");
@@ -165,7 +164,7 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
         innerPackerBytes = rastaModuleToBytesNoChecksum(packet.data, &channel->hashing_context);
 
         // add to queue
-        struct RastaByteArray * to_fifo = rmalloc(sizeof(struct RastaByteArray));
+        struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
         allocateRastaByteArray(to_fifo, innerPackerBytes.length);
         rmemcpy(to_fifo->bytes, innerPackerBytes.bytes, innerPackerBytes.length);
         if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
@@ -183,27 +182,25 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
 
         // deliver message to upper layer
         deliverDeferQueue(channel);
-    } else if (channel->seq_rx < packet.sequence_number
-               && packet.sequence_number <= (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)){
-        logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_rx < seq_pdu && seq_pdu <= (seq_rx + 10 * MAX_DEFERQUEUE_SIZE)"
-                , channel_id);
+    } else if (channel->seq_rx < packet.sequence_number && packet.sequence_number <= (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)) {
+        logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_rx < seq_pdu && seq_pdu <= (seq_rx + 10 * MAX_DEFERQUEUE_SIZE)", channel_id);
 
         // check if message is in defer queue
-        if (deferqueue_contains(&channel->defer_q, packet.sequence_number)){
+        if (deferqueue_contains(&channel->defer_q, packet.sequence_number)) {
             logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: packet already in deferq",
                        channel_id);
 
             // discard message
             // possibly statistic analysis
             return;
-        } else{
+        } else {
             // check if queue is full
-            if (deferqueue_isfull(&channel->defer_q)){
+            if (deferqueue_isfull(&channel->defer_q)) {
                 logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: deferq full", channel_id);
 
                 // full -> discard message
                 return;
-            } else{
+            } else {
                 logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: adding message to deferq",
                            channel_id);
 
@@ -213,16 +210,15 @@ void rasta_red_f_receive(rasta_redundancy_channel * channel, struct RastaRedunda
                 }
             }
         }
-    } else if (packet.sequence_number > (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)){
-        logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu > seq_rx + 10 * MAX_DEFERQUEUE_SIZE"
-                , channel_id);
+    } else if (packet.sequence_number > (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)) {
+        logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu > seq_rx + 10 * MAX_DEFERQUEUE_SIZE", channel_id);
 
         // discard message
         return;
     }
 }
 
-void rasta_red_f_deferTmo(rasta_redundancy_channel * channel){
+void rasta_red_f_deferTmo(rasta_redundancy_channel *channel) {
     // find smallest seq_pdu in defer queue
     int smallest_index = deferqueue_smallest_seqnr(&channel->defer_q);
 
@@ -238,8 +234,7 @@ void rasta_red_add_transport_channel(
 #ifdef USE_TCP
     struct rasta_transport_state transport_state,
 #endif
-    char *ip, uint16_t port)
-{
+    char *ip, uint16_t port) {
     rasta_transport_channel transport_channel;
 
 #ifdef USE_TCP
@@ -257,7 +252,7 @@ void rasta_red_add_transport_channel(
     channel->connected_channel_count++;
 }
 
-void rasta_red_cleanup(rasta_redundancy_channel * channel){
+void rasta_red_cleanup(rasta_redundancy_channel *channel) {
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "destroying defer queues");
     // destroy the defer queue
     deferqueue_destroy(&channel->defer_q);

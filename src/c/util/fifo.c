@@ -3,8 +3,8 @@
 #include <rasta/fifo.h>
 #include <rasta/rmemory.h>
 
-fifo_t * fifo_init(unsigned int max_size) {
-    fifo_t * fifo = rmalloc(sizeof(fifo_t));
+fifo_t *fifo_init(unsigned int max_size) {
+    fifo_t *fifo = rmalloc(sizeof(fifo_t));
 
     fifo->size = 0;
     fifo->max_size = max_size;
@@ -14,15 +14,15 @@ fifo_t * fifo_init(unsigned int max_size) {
     return fifo;
 }
 
-void * fifo_pop(fifo_t * fifo){
-    void * res= NULL;
+void *fifo_pop(fifo_t *fifo) {
+    void *res = NULL;
 
-    if (fifo->size > 0 && fifo->head != NULL && fifo->tail != NULL){
-        struct fifo_element * element = fifo->head;
+    if (fifo->size > 0 && fifo->head != NULL && fifo->tail != NULL) {
+        struct fifo_element *element = fifo->head;
         res = element->data;
         fifo->head = fifo->head->next;
 
-        if (fifo->size == 1){
+        if (fifo->size == 1) {
             fifo->tail = NULL;
         }
 
@@ -33,20 +33,20 @@ void * fifo_pop(fifo_t * fifo){
     return res;
 }
 
-int fifo_push(fifo_t * fifo, void * element){
-    if (element == NULL){
+int fifo_push(fifo_t *fifo, void *element) {
+    if (element == NULL) {
         return 0;
     }
 
-    if (fifo->size == fifo->max_size){
+    if (fifo->size == fifo->max_size) {
         return 0;
     }
 
-    struct fifo_element * new_entry = rmalloc(sizeof(struct fifo_element));
+    struct fifo_element *new_entry = rmalloc(sizeof(struct fifo_element));
     new_entry->data = element;
     new_entry->next = NULL;
 
-    if (fifo->size == 0){
+    if (fifo->size == 0) {
         fifo->head = new_entry;
         fifo->tail = fifo->head;
     } else {
@@ -58,13 +58,13 @@ int fifo_push(fifo_t * fifo, void * element){
     return 1;
 }
 
-unsigned int fifo_get_size(fifo_t * fifo){
+unsigned int fifo_get_size(fifo_t *fifo) {
     unsigned int size = fifo->size;
 
     return size;
 }
 
-void fifo_destroy(fifo_t * fifo){
+void fifo_destroy(fifo_t *fifo) {
     for (unsigned int i = 0; i < fifo->size; ++i) {
         fifo_pop(fifo);
     }

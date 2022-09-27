@@ -1,36 +1,36 @@
 #include "sci.h"
 
 #include <memory.h>
-#include <rmemory.h>
 #include <rastafactory.h>
+#include <rmemory.h>
 
-void sci_set_sender(sci_telegram * telegram, char * sender_name){
+void sci_set_sender(sci_telegram *telegram, char *sender_name) {
     size_t name_len = strlen(sender_name);
     // we will set the sender field in the telegram to all underscores and just copy the name_len bytes to the beginning
     rmemset(telegram->sender, SCI_NAME_PADDING_CHAR, SCI_NAME_LENGTH);
     rmemcpy(telegram->sender, sender_name, (unsigned int)name_len);
 }
 
-void sci_set_receiver(sci_telegram * telegram, char * receiver_name){
+void sci_set_receiver(sci_telegram *telegram, char *receiver_name) {
     size_t name_len = strlen(receiver_name);
     // we will set the receiver field in the telegram to all underscores and just copy the name_len bytes to the beginning
     rmemset(telegram->receiver, SCI_NAME_PADDING_CHAR, SCI_NAME_LENGTH);
     rmemcpy(telegram->receiver, receiver_name, (unsigned int)name_len);
 }
 
-char * sci_get_name_string(char * name_field){
-    char * name_str = rmalloc(SCI_NAME_LENGTH + 1);
+char *sci_get_name_string(char *name_field) {
+    char *name_str = rmalloc(SCI_NAME_LENGTH + 1);
     rmemset(name_str, 0x00, SCI_NAME_LENGTH + 1);
     rmemcpy(name_str, name_field, SCI_NAME_LENGTH);
 
     return name_str;
 }
 
-void sci_set_message_type(sci_telegram * telegram, unsigned short message_type){
+void sci_set_message_type(sci_telegram *telegram, unsigned short message_type) {
     hostShortTole(message_type, telegram->message_type);
 }
 
-struct RastaByteArray sci_encode_telegram(sci_telegram * telegram){
+struct RastaByteArray sci_encode_telegram(sci_telegram *telegram) {
     struct RastaByteArray encoded_telegram;
     allocateRastaByteArray(&encoded_telegram, SCI_TELEGRAM_LENGTH_WITHOUT_PAYLOAD + telegram->payload.used_bytes);
 
@@ -46,7 +46,7 @@ struct RastaByteArray sci_encode_telegram(sci_telegram * telegram){
     // pack the receiver
     rmemcpy(&encoded_telegram.bytes[23], telegram->receiver, SCI_NAME_LENGTH);
 
-    if (telegram->payload.used_bytes > 0){
+    if (telegram->payload.used_bytes > 0) {
         // pack the payload
         rmemcpy(&encoded_telegram.bytes[43], telegram->payload.data, telegram->payload.used_bytes);
     }
@@ -54,17 +54,16 @@ struct RastaByteArray sci_encode_telegram(sci_telegram * telegram){
     return encoded_telegram;
 }
 
-sci_telegram * sci_decode_telegram(struct RastaByteArray data){
-    if(data.length > SCI_MAX_TELEGRAM_LENGTH || data.length < SCI_TELEGRAM_LENGTH_WITHOUT_PAYLOAD){
+sci_telegram *sci_decode_telegram(struct RastaByteArray data) {
+    if (data.length > SCI_MAX_TELEGRAM_LENGTH || data.length < SCI_TELEGRAM_LENGTH_WITHOUT_PAYLOAD) {
         // size does not match
         return NULL;
     }
 
-    sci_telegram * telegram = rmalloc(sizeof(sci_telegram));
-
+    sci_telegram *telegram = rmalloc(sizeof(sci_telegram));
 
     // check if a valid protocol was provided
-    if (!(data.bytes[0] == SCI_PROTOCOL_P || data.bytes[0] == SCI_PROTOCOL_LS)){
+    if (!(data.bytes[0] == SCI_PROTOCOL_P || data.bytes[0] == SCI_PROTOCOL_LS)) {
         // invalid protocol
         return NULL;
     }
@@ -77,7 +76,7 @@ sci_telegram * sci_decode_telegram(struct RastaByteArray data){
 
     // copy the payload
     unsigned int payload_size = data.length - SCI_TELEGRAM_LENGTH_WITHOUT_PAYLOAD;
-    if (payload_size > 0){
+    if (payload_size > 0) {
         // the telegram contains a payload
         sci_payload payload;
         payload.used_bytes = payload_size;
@@ -89,6 +88,6 @@ sci_telegram * sci_decode_telegram(struct RastaByteArray data){
     return telegram;
 }
 
-unsigned short sci_get_message_type(sci_telegram * telegram){
+unsigned short sci_get_message_type(sci_telegram *telegram) {
     return leShortToHost(telegram->message_type);
 }

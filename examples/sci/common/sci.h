@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include <rastautil.h>
@@ -42,7 +42,7 @@ typedef struct {
      * The amount of bytes in the data that are used
      */
     unsigned int used_bytes;
-}sci_payload;
+} sci_payload;
 
 typedef enum {
     /**
@@ -54,13 +54,13 @@ typedef enum {
      * Protocol type byte for the SCI-LS protocol
      */
     SCI_PROTOCOL_LS = 0x30
-}protocol_type;
+} protocol_type;
 
 typedef enum {
     UNKNOWN_SCI_NAME = 0x01,
     INVALID_SCI_NAME = 0x02,
     SUCCESS = 0x00
-}sci_return_code;
+} sci_return_code;
 
 typedef struct {
     /**
@@ -74,16 +74,16 @@ typedef struct {
     /**
      * The SCI name of the telegrams origin. Note that the ID is padded with underscores (0x5F)
      */
-    char sender [20];
+    char sender[20];
     /**
      * The SCI name of the telegrams receiver. Note that the ID is padded with underscores (0x5F)
      */
-    char receiver [20];
+    char receiver[20];
     /**
      * The payload of the telegram.
      */
     sci_payload payload;
-}sci_telegram;
+} sci_telegram;
 
 /**
  * Enumeration with the allowed results for a BTP version check
@@ -99,27 +99,27 @@ typedef enum {
  * @param telegram the telegram whose sender is set
  * @param sender_name the name of the sender entity without padding
  */
-void sci_set_sender(sci_telegram * telegram, char * sender_name);
+void sci_set_sender(sci_telegram *telegram, char *sender_name);
 /**
  * Sets the receiver ID in the telegram and performs padding.
  * @param telegram the telegram whose receiver is set
  * @param receiver_name the name of the receiver entity without padding
  */
-void sci_set_receiver(sci_telegram * telegram, char * receiver_name);
+void sci_set_receiver(sci_telegram *telegram, char *receiver_name);
 
 /**
  * Sets the message type in the telegram. Note that the byte order is reversed.
  * @param telegram the telegram whose message type is set
  * @param message_type the message type of the telegram
  */
-void sci_set_message_type(sci_telegram * telegram, unsigned short message_type);
+void sci_set_message_type(sci_telegram *telegram, unsigned short message_type);
 
 /**
  * Gets the message type of the telegram
  * @param telegram the telegram
  * @return the message type as ushort
  */
-unsigned short sci_get_message_type(sci_telegram * telegram);
+unsigned short sci_get_message_type(sci_telegram *telegram);
 
 /**
  * Converts the sender or receiver name into a string, i.e. makes it null-terminated.
@@ -127,14 +127,14 @@ unsigned short sci_get_message_type(sci_telegram * telegram);
  * @param name_field the field to be converted (sender or receiver of a telegram)
  * @return a null-terminated string which contains the SCI name
  */
-char * sci_get_name_string(char * name_field);
+char *sci_get_name_string(char *name_field);
 
 /**
  * Encodes the given telegram into an byte array.
  * @param telegram the telegram that will be encoded
  * @return the byte array that represent the SCI telegram
  */
-struct RastaByteArray sci_encode_telegram(sci_telegram * telegram);
+struct RastaByteArray sci_encode_telegram(sci_telegram *telegram);
 
 /**
  * Tries to decode a SCI telegram from a byte array. If the given byte array cannot be parsed, i.e. it is not a valid
@@ -142,7 +142,7 @@ struct RastaByteArray sci_encode_telegram(sci_telegram * telegram);
  * @param data the byte array that will be parsed
  * @return the parsed telegram, or if the byte array does not contain a valid telegram NULL
  */
-sci_telegram * sci_decode_telegram(struct RastaByteArray data);
+sci_telegram *sci_decode_telegram(struct RastaByteArray data);
 
 #ifdef __cplusplus
 }

@@ -1,10 +1,9 @@
 #pragma once
 
-#include "rastautil.h"
-#include "rastamd4.h"
 #include "rastablake2.h"
+#include "rastamd4.h"
 #include "rastasiphash24.h"
-
+#include "rastautil.h"
 
 /**
  * Algorithms that can be used for the RaSTA SR layer checksum
@@ -40,9 +39,9 @@ typedef enum {
      * 16 byte checksum
      */
     RASTA_CHECKSUM_16B = 2
-}rasta_checksum_type;
+} rasta_checksum_type;
 
-typedef struct rasta_hashing_ctx{
+typedef struct rasta_hashing_ctx {
     /**
      * The hashing algorithm
      */
@@ -55,7 +54,7 @@ typedef struct rasta_hashing_ctx{
      * The key / iv for the hashing algorithm
      */
     struct RastaByteArray key;
-}rasta_hashing_context_t;
+} rasta_hashing_context_t;
 
 /**
  * Calculates a checksum over the given data using the parameters in the hashing context
@@ -63,7 +62,7 @@ typedef struct rasta_hashing_ctx{
  * @param context the hashing context that contains the neccessary parameters for hashing the data
  * @param hash the resulting hash
  */
-void rasta_calculate_hash(struct RastaByteArray data, rasta_hashing_context_t * context,  unsigned char * hash);
+void rasta_calculate_hash(struct RastaByteArray data, rasta_hashing_context_t *context, unsigned char *hash);
 
 /**
  * Sets the key of the hashing context based the the MD4 initial value
@@ -73,7 +72,7 @@ void rasta_calculate_hash(struct RastaByteArray data, rasta_hashing_context_t * 
  * @param c C part of the initial MD4 value
  * @param d D part of the initial MD4 value
  */
-void rasta_md4_set_key(rasta_hashing_context_t * context, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
+void rasta_md4_set_key(rasta_hashing_context_t *context, MD4_u32plus a, MD4_u32plus b, MD4_u32plus c, MD4_u32plus d);
 /**
  * Sets a variable-length key for use with the different hash functions
  * @param context context for the key

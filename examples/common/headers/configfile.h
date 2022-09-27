@@ -1,13 +1,12 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-#include <rasta/config.h>
 #include "dictionary.h"
-
+#include <rasta/config.h>
 
 /**
  * The config key for the value of the initial sequence number of the SR layer
@@ -19,7 +18,7 @@ extern "C" {  // only need to export C interface if
 #define RASTA_CONFIG_KEY_LOGGER_MAX_LEVEL "LOGGER_MAX_LEVEL"
 #define RASTA_CONFIG_KEY_ACCEPTED_VERSIONS "RASTA_ACCEPTED_VERSIONS"
 
-void load_configfile(struct RastaConfigInfo *config, struct logger_t *logger, const char* config_file_path);
+void load_configfile(struct RastaConfigInfo *config, struct logger_t *logger, const char *config_file_path);
 
 /**
  * represents a rasta config
@@ -60,7 +59,7 @@ struct RastaConfig config_load(const char filename[256]);
  * @param key
  * @return
  */
-struct DictionaryEntry config_get(struct RastaConfig * cfg, const char* key);
+struct DictionaryEntry config_get(struct RastaConfig *cfg, const char *key);
 
 /**
  * frees the config

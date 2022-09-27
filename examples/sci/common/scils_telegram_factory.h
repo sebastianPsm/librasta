@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 #include "sci.h"
@@ -82,7 +82,7 @@ typedef enum {
     SCILS_ZS3_INDEX_13 = 0x0D,
     SCILS_ZS3_INDEX_14 = 0x0E,
     SCILS_ZS3_INDEX_15 = 0x0F,
-    SCILS_ZS3_OFF =  0xFF
+    SCILS_ZS3_OFF = 0xFF
 } scils_zs3;
 
 /**
@@ -172,7 +172,7 @@ typedef struct {
     scils_dark_switching dark_switching;
     uint8_t nationally_specified_information[9];
 
-}scils_signal_aspect;
+} scils_signal_aspect;
 
 /**
  * Returns an initialized SCI-LS signal aspect configuration. Brightness is set to DAY, dark switching to DARK, all other
@@ -180,7 +180,7 @@ typedef struct {
  * freeing it.
  * @return a signal aspect with default values
  */
-scils_signal_aspect * scils_signal_aspect_defaults();
+scils_signal_aspect *scils_signal_aspect_defaults();
 
 /**
  * Creates a SCI-LS show signal aspect telegram.
@@ -189,7 +189,7 @@ scils_signal_aspect * scils_signal_aspect_defaults();
  * @param signal_aspect the signal aspect configuration
  * @return a show signal aspect telegram
  */
-sci_telegram * scils_create_show_signal_aspect(char * sender, char * receiver, scils_signal_aspect signal_aspect);
+sci_telegram *scils_create_show_signal_aspect(char *sender, char *receiver, scils_signal_aspect signal_aspect);
 
 /**
  * Creates a SCI-LS change brightness telegram.
@@ -198,7 +198,7 @@ sci_telegram * scils_create_show_signal_aspect(char * sender, char * receiver, s
  * @param brightness
  * @return a change brightness telegram
  */
-sci_telegram * scils_create_change_brightness(char * sender, char * receiver, scils_brightness brightness);
+sci_telegram *scils_create_change_brightness(char *sender, char *receiver, scils_brightness brightness);
 
 /**
  * Creates a SCI-LS signal aspect status telegram.
@@ -207,7 +207,7 @@ sci_telegram * scils_create_change_brightness(char * sender, char * receiver, sc
  * @param signal_aspect the signal aspect
  * @return a signal aspect status telegram
  */
-sci_telegram * scils_create_signal_aspect_status(char * sender, char * receiver, scils_signal_aspect signal_aspect);
+sci_telegram *scils_create_signal_aspect_status(char *sender, char *receiver, scils_signal_aspect signal_aspect);
 
 /**
  * Creates a SCI-LS brightness status telegram.
@@ -216,7 +216,7 @@ sci_telegram * scils_create_signal_aspect_status(char * sender, char * receiver,
  * @param brightness
  * @return a brightness status telegram
  */
-sci_telegram * scils_create_brightness_status(char * sender, char * receiver, scils_brightness brightness);
+sci_telegram *scils_create_brightness_status(char *sender, char *receiver, scils_brightness brightness);
 
 /**
  * Tries to parse the payload of a show signal aspect telegram. The values will be written to the corresponding pointers.
@@ -224,7 +224,7 @@ sci_telegram * scils_create_brightness_status(char * sender, char * receiver, sc
  * @param signal_aspect value: the signal aspect to display
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scils_parse_show_signal_aspect_payload(sci_telegram * telegram, scils_signal_aspect * signal_aspect);
+sci_parse_result scils_parse_show_signal_aspect_payload(sci_telegram *telegram, scils_signal_aspect *signal_aspect);
 
 /**
  * Tries to parse the payload of a signal aspect status telegram. The values will be written to the corresponding pointers.
@@ -232,7 +232,7 @@ sci_parse_result scils_parse_show_signal_aspect_payload(sci_telegram * telegram,
  * @param signal_aspect value: the displayed signal aspect
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scils_parse_signal_aspect_status_payload(sci_telegram * telegram, scils_signal_aspect * signal_aspect);
+sci_parse_result scils_parse_signal_aspect_status_payload(sci_telegram *telegram, scils_signal_aspect *signal_aspect);
 
 /**
  * Tries to parse the payload of a change brightness telegram. The values will be written to the corresponding pointers.
@@ -240,7 +240,7 @@ sci_parse_result scils_parse_signal_aspect_status_payload(sci_telegram * telegra
  * @param brightness value
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scils_parse_change_brightness_payload(sci_telegram * telegram, scils_brightness * brightness);
+sci_parse_result scils_parse_change_brightness_payload(sci_telegram *telegram, scils_brightness *brightness);
 
 /**
  * Tries to parse the payload of a brightness status telegram. The values will be written to the corresponding pointers.
@@ -248,7 +248,7 @@ sci_parse_result scils_parse_change_brightness_payload(sci_telegram * telegram, 
  * @param brightness value
  * @return 0 if success, error code otherwise
  */
-sci_parse_result scils_parse_brightness_status_payload(sci_telegram * telegram, scils_brightness * brightness);
+sci_parse_result scils_parse_brightness_status_payload(sci_telegram *telegram, scils_brightness *brightness);
 
 #ifdef __cplusplus
 }

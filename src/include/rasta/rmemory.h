@@ -1,8 +1,8 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
 /**
@@ -10,8 +10,7 @@ extern "C" {  // only need to export C interface if
  * @param size the size of the memory
  * @return pointer to memory
  */
-void * rmalloc(unsigned int size);
-
+void *rmalloc(unsigned int size);
 
 /**
  * reallocates memory for element with size
@@ -19,12 +18,12 @@ void * rmalloc(unsigned int size);
  * @param size
  * @return
  */
-void * rrealloc(void* element, unsigned int size);
+void *rrealloc(void *element, unsigned int size);
 /**
  * frees an allocated memory
  * @param element pointer to the memory
  */
-void rfree(void * element);
+void rfree(void *element);
 
 /**
  * Copies the first n characters from src to dest
@@ -33,8 +32,7 @@ void rfree(void * element);
  * @param n
  * @return
  */
-void* rmemcpy(void *dest, const void *src, unsigned int n);
-
+void *rmemcpy(void *dest, const void *src, unsigned int n);
 
 /**
  * sets tje first n characters in dest to ch
@@ -43,14 +41,14 @@ void* rmemcpy(void *dest, const void *src, unsigned int n);
  * @param n
  * @return
  */
-void* rmemset(void *dest, int ch, unsigned int n);
+void *rmemset(void *dest, int ch, unsigned int n);
 
 /**
  * Copies the C string pointed by source into the array pointed by destination, including the terminating null character (and stopping at that point).
  * @param dest
  * @param src
  */
-void rstrcpy(char * dest, const char * src);
+void rstrcpy(char *dest, const char *src);
 
 /**
  * Appends a copy of the source string to the destination string.
@@ -58,7 +56,7 @@ void rstrcpy(char * dest, const char * src);
  * @param dest
  * @param src
  */
-void rstrcat(char * dest, const char * src);
+void rstrcat(char *dest, const char *src);
 
 /**
  * Compares the first len bytes of values a and b
@@ -67,7 +65,7 @@ void rstrcat(char * dest, const char * src);
  * @param len number of bytes to compare
  * @return < 0 if if a < b, > 0 if a > b or 0 if a == b
  */
-int rmemcmp(const  void * a, const void * b, unsigned int len);
+int rmemcmp(const void *a, const void *b, unsigned int len);
 
 #ifdef __cplusplus
 }

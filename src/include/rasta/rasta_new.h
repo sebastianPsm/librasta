@@ -1,14 +1,14 @@
 #pragma once
 
 #ifdef __cplusplus
-extern "C" {  // only need to export C interface if
-              // used by C++ source code
+extern "C" { // only need to export C interface if
+             // used by C++ source code
 #endif
 
-//TODO: check
+// TODO: check
 //#include <errno.h>
-#include "rastahandle.h"
 #include "event_system.h"
+#include "rastahandle.h"
 
 /**
  * size of ring buffer where data is hold for retransmissions
@@ -43,41 +43,41 @@ typedef enum {
     /**
      * Disconnection because of user request
      */
-            RASTA_DISC_REASON_USERREQUEST =0,
+    RASTA_DISC_REASON_USERREQUEST = 0,
     /**
      * Disconnection because of receiving an unexpected type of packet
      */
-            RASTA_DISC_REASON_UNEXPECTEDTYPE =2,
+    RASTA_DISC_REASON_UNEXPECTEDTYPE = 2,
     /**
      * Disconnection because of an error in the sequence number check
      */
-            RASTA_DISC_REASON_SEQNERROR=3,
+    RASTA_DISC_REASON_SEQNERROR = 3,
     /**
      * Disconnection because of a timeout
      */
-            RASTA_DISC_REASON_TIMEOUT=4,
+    RASTA_DISC_REASON_TIMEOUT = 4,
     /**
      * Disconnection because of the call of the service was not allowed
      */
-            RASTA_DISC_REASON_SERVICENOTALLOWED=5,
+    RASTA_DISC_REASON_SERVICENOTALLOWED = 5,
     /**
      * Disconnection because of the version was not accepted
      */
-            RASTA_DISC_REASON_INCOMPATIBLEVERSION=6,
+    RASTA_DISC_REASON_INCOMPATIBLEVERSION = 6,
     /**
      * Disconnection because retransmission failed
      */
-            RASTA_DISC_REASON_RETRFAILED=7,
+    RASTA_DISC_REASON_RETRFAILED = 7,
     /**
      * Disconnection because an error in the protocol flow
      */
-            RASTA_DISC_REASON_PROTOCOLERROR=8
+    RASTA_DISC_REASON_PROTOCOLERROR = 8
 } rasta_disconnect_reason;
 
 typedef struct {
     unsigned long id;
     struct RastaByteArray appMessage;
-}rastaApplicationMessage;
+} rastaApplicationMessage;
 
 /**
  * initializes the rasta handle and starts all threads
@@ -87,7 +87,7 @@ typedef struct {
  * @param listenports
  * @param port_count
  */
-void sr_init_handle(struct rasta_handle* handle, struct RastaConfigInfo config, struct logger_t *logger);
+void sr_init_handle(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger);
 
 void sr_listen(struct rasta_handle *h);
 
@@ -106,7 +106,6 @@ void sr_connect(struct rasta_handle *handle, unsigned long id, struct RastaIPDat
  */
 void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages);
 
-
 /**
  * get data from message buffer
  * this is used in the onReceive Event to get the received message
@@ -114,14 +113,14 @@ void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessag
  * @param connection
  * @return the applicationmessage, where id is the sender rasta id and appMessage is the received data
  */
-rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rasta_connection * connection);
+rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rasta_connection *connection);
 
 /**
  * closes the connection to the connection
  * @param h
  * @param con
  */
-void sr_disconnect(struct rasta_handle *h, struct rasta_connection* con);
+void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con);
 
 /**
  * used to end all threads an free assigned ressources
@@ -130,7 +129,7 @@ void sr_disconnect(struct rasta_handle *h, struct rasta_connection* con);
  */
 void sr_cleanup(struct rasta_handle *h);
 
-void sr_begin(struct rasta_handle * h, event_system* event_system, int wait_for_handshake, int listen);
+void sr_begin(struct rasta_handle *h, event_system *event_system, int wait_for_handshake, int listen);
 
 #ifdef __cplusplus
 }
