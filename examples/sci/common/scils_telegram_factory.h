@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCILS_TELEGRAM_FACTORY_H
-#define LST_SIMULATOR_SCILS_TELEGRAM_FACTORY_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {  // only need to export C interface if
@@ -254,5 +253,3 @@ sci_parse_result scils_parse_brightness_status_payload(sci_telegram * telegram, 
 #ifdef __cplusplus
 }
 #endif
-
-#endif //LST_SIMULATOR_SCILS_TELEGRAM_FACTORY_H

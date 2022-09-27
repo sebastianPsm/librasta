@@ -3,9 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <rasta_lib.h>
-#include <rmemory.h>
-#include <fifo.h>
+
+#include <rasta/rasta_lib.h>
+#include <rasta/rmemory.h>
+#include <rasta/fifo.h>
+#include <rasta/logging.h>
+
+#include "configfile.h"
 
 #define CONFIG_PATH_S "rasta_server_local.cfg"
 #define CONFIG_PATH_C1 "rasta_client1_local.cfg"
@@ -84,30 +88,24 @@ void onConnectionStateChange(struct rasta_notification_result *result) {
         case RASTA_CONNECTION_UP:
             printf("CONNECTION_UP\n");
             //send data to server
-            if (result->connection.my_id == ID_S1) { //Client 1
+            if (result->connection.my_id == ID_S1) { // Client 1
                 struct RastaMessageData messageData1;
                 allocateRastaMessageData(&messageData1, 1);
 
-                // messageData1.data_array[0] = msg1;
-                // messageData1.data_array[1] = msg2;
                 addRastaString(&messageData1, 0, "Message from Sender 1");
 
-                //send data to server
+                // send data to server
                 sr_send(result->handle,ID_R, messageData1);
 
                 //freeRastaMessageData(&messageData1);
-            } else if (result->connection.my_id == ID_S2) { //Client 2
+            } else if (result->connection.my_id == ID_S2) { // Client 2
                 struct RastaMessageData messageData1;
                 allocateRastaMessageData(&messageData1, 1);
 
-                // messageData1.data_array[0] = msg1;
-                // messageData1.data_array[1] = msg2;
                 addRastaString(&messageData1, 0, "Message from Sender 2");
 
                 //send data to server
                 sr_send(result->handle,ID_R, messageData1);
-
-                //freeRastaMessageData(&messageData1);
             }
             else if (result->connection.my_id == ID_R) {
                 if (result->connection.remote_id == ID_S1) client1 = 0;
@@ -239,7 +237,10 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
-        rasta_lib_init_configuration(rc, CONFIG_PATH_S);
+        struct RastaConfigInfo config;
+        struct logger_t logger;
+        load_configfile(&config, &logger, CONFIG_PATH_S);
+        rasta_lib_init_configuration(rc, config, &logger);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
@@ -263,7 +264,10 @@ int main(int argc, char *argv[]) {
     }
     else if (strcmp(argv[1], "s1") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_S1);
-        rasta_lib_init_configuration(rc, CONFIG_PATH_C1);
+        struct RastaConfigInfo config;
+        struct logger_t logger;
+        load_configfile(&config, &logger, CONFIG_PATH_C1);
+        rasta_lib_init_configuration(rc, config, &logger);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 
@@ -279,7 +283,10 @@ int main(int argc, char *argv[]) {
     }
     else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
-        rasta_lib_init_configuration(rc, CONFIG_PATH_C2);
+        struct RastaConfigInfo config;
+        struct logger_t logger;
+        load_configfile(&config, &logger, CONFIG_PATH_C2);
+        rasta_lib_init_configuration(rc, config, &logger);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
 

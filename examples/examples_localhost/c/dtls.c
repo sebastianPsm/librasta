@@ -16,6 +16,16 @@
 #define ID_S1 0x62
 #define ID_S2 0x63
 
+void prepare_certs(const char *config_path) {
+    struct RastaConfig config = config_load(config_path);
+    // do not overwrite existing certificates, might lead to failure in clients
+    if (access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
+        create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
+
+        printf("Generated Certificates");
+    }
+}
+
 void printHelpAndExit(void) {
     printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's1' or 's2' to start in sender mode.\n");
     exit(1);
@@ -207,16 +217,6 @@ void* on_con_start(rasta_lib_connection_t connection) {
 void on_con_end(rasta_lib_connection_t connection, void* memory) {
     (void) connection;
     free(memory);
-}
-
-void prepare_certs(const char *config_path) {
-    struct RastaConfig config = config_load(config_path);
-    // do not overwrite existing certificates, might lead to failure in clients
-    if (access(config.values.tls.ca_cert_path,F_OK) || access(config.values.tls.cert_path,F_OK) || access(config.values.tls.key_path,F_OK)){
-        create_certificates(config.values.tls.ca_cert_path,config.values.tls.cert_path,config.values.tls.key_path);
-
-        printf("Generated Certificates");
-    }
 }
 
 int main(int argc, char *argv[]) {

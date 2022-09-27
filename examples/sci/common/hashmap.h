@@ -6,8 +6,7 @@
  * Modified by Pete Warden to fix a serious performance problem, support strings as keys
  * and removed thread synchronization - http://petewarden.typepad.com
  */
-#ifndef __HASHMAP_H__
-#define __HASHMAP_H__
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {  // only need to export C interface if
@@ -86,5 +85,3 @@ extern int hashmap_length(map_t in);
 #ifdef __cplusplus
 }
 #endif
-
-#endif //__HASHMAP_H__

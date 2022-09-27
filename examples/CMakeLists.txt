@@ -3,10 +3,17 @@ if(PKG_CONFIG_FOUND)
     pkg_check_modules(CUnit IMPORTED_TARGET cunit)
 endif(PKG_CONFIG_FOUND)
 
+set(EXAMPLES_COMMON_SRC
+    common/c/logging.c
+    common/c/configfile.c
+    common/c/dictionary.c)
+
 if(BUILD_LOCAL_EXAMPLES)
 # rasta_example_new on localhost
 add_executable(rasta_example_local
+                ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/rasta.c)
+target_include_directories(rasta_example_local PRIVATE common/headers)
 set_target_properties(rasta_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(rasta_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(rasta_example_local rasta_udp)
@@ -67,8 +74,6 @@ endif(BUILD_LOCAL_EXAMPLES)
 
 
 if(BUILD_REMOTE_EXAMPLES)
-add_subdirectory(rasta_example_new)
-
 # Copy RaSTA configs to build directory
 configure_file(config/rasta_server.cfg rasta_server.cfg COPYONLY)
 configure_file(config/rasta_client1.cfg rasta_client1.cfg COPYONLY)

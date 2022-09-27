@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCITESTS_H
-#define LST_SIMULATOR_SCITESTS_H
+#pragma once
 
 void testEncode();
 void testDecode();
@@ -18,5 +17,3 @@ void testCreateStatusFinish();
 
 void testParseVersionRequest();
 void testParseVersionResponse();
-
-#endif //LST_SIMULATOR_SCITESTS_H

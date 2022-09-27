@@ -17,66 +17,59 @@ endif()
 # Target name
 set(target rasta)
 
-include_directories(rasta/headers)
-
 # RaSTA headers
-set(RASTA_HDRS
-    rasta/headers/config.h
-    rasta/headers/dictionary.h
-    rasta/headers/event_system.h
-    rasta/headers/fifo.h
-    rasta/headers/logging.h
-    rasta/headers/rasta_new.h
-    rasta/headers/rasta_red_multiplexer.h
-    rasta/headers/rastacrc.h
-    rasta/headers/rastadeferqueue.h
-    rasta/headers/rastafactory.h
-    rasta/headers/rastahandle.h
-    rasta/headers/rasta_lib.h
-    rasta/headers/rastamd4.h
-    rasta/headers/rastamodule.h
-    rasta/headers/rastaredundancy_new.h
-    rasta/headers/rastautil.h
-    rasta/headers/rmemory.h
-    rasta/headers/udp.h
-    rasta/headers/tcp.h
-    rasta/headers/rasta_transport_callbacks.h
-    rasta/headers/types.h
-    rasta/headers/bsd_utils.h
-    rasta/headers/ssl_utils.h
-    rasta/headers/rastablake2.h
-    rasta/headers/rastasiphash24.h
-    rasta/headers/rastahashing.h
-    rasta/headers/key_exchange.h
+set(headers
+    include/rasta/config.h
+    include/rasta/event_system.h
+    include/rasta/fifo.h
+    include/rasta/logging.h
+    include/rasta/rasta_new.h
+    include/rasta/rasta_red_multiplexer.h
+    include/rasta/rastacrc.h
+    include/rasta/rastadeferqueue.h
+    include/rasta/rastafactory.h
+    include/rasta/rastahandle.h
+    include/rasta/rasta_lib.h
+    include/rasta/rastamd4.h
+    include/rasta/rastamodule.h
+    include/rasta/rastaredundancy_new.h
+    include/rasta/rastautil.h
+    include/rasta/rmemory.h
+    include/rasta/udp.h
+    include/rasta/tcp.h
+    include/rasta/types.h
+    include/rasta/bsd_utils.h
+    include/rasta/ssl_utils.h
+    include/rasta/rastablake2.h
+    include/rasta/rastasiphash24.h
+    include/rasta/rastahashing.h
+    include/rasta/key_exchange.h
 )
 
-set(RASTA_SRCS
-    # RaSTA sources
-    rasta/c/config.c
-    rasta/c/dictionary.c
-    rasta/c/event_system.c
-    rasta/c/fifo.c
-    rasta/c/logging.c
-    rasta/c/rasta_new.c
-    rasta/c/rasta_red_multiplexer.c
-    rasta/c/rastacrc.c
-    rasta/c/rastadeferqueue.c
-    rasta/c/rastafactory.c
-    rasta/c/rastahandle.c
-    rasta/c/rastamd4.c
-    rasta/c/rastamodule.c
-    rasta/c/rasta_lib.c
-    rasta/c/rastaredundancy_new.c
-    rasta/c/rastautil.c
-    rasta/c/rmemory.c
-    rasta/c/udp.c
-    rasta/c/tcp.c
-    rasta/c/bsd_utils.c
-    rasta/c/ssl_utils.c
-    rasta/c/rastablake2.c
-    rasta/c/rastasiphash24.c
-    rasta/c/rastahashing.c
-    rasta/c/key_exchange.c)
+set(sources
+    c/bsd_utils.c
+    c/event_system.c
+    c/fifo.c
+    c/key_exchange.c
+    c/rasta_lib.c
+    c/rasta_new.c
+    c/rasta_red_multiplexer.c
+    c/rastablake2.c
+    c/rastacrc.c
+    c/rastadeferqueue.c
+    c/rastafactory.c
+    c/rastahandle.c
+    c/rastahashing.c
+    c/rastamd4.c
+    c/rastamodule.c
+    c/rastaredundancy_new.c
+    c/rastasiphash24.c
+    c/rastautil.c
+    c/rmemory.c
+    c/ssl_utils.c
+    c/tcp.c
+    c/udp.c
+)
 
 if(ENABLE_RASTA_TLS)
     set(RASTA_VARIANTS udp tcp dtls tls)
@@ -87,15 +80,10 @@ endif(ENABLE_RASTA_TLS)
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
     # Shared object for RaSTA protocol
-    add_library(${target}_${RASTA_VARIANT} SHARED ${RASTA_SRCS})
+    add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers})
 
     # Link system libraries for librasta
     target_link_libraries(${target}_${RASTA_VARIANT} rt pthread)
-
-    set_property(TARGET ${target}_${RASTA_VARIANT}
-        PROPERTY PUBLIC_HEADER
-        ${RASTA_HDRS}
-        ${SCI_HDRS})
 
     # if USE_OPENSSL parameter is passed to cmake or if architecture is ARM -> use openssl md4 implementation
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${USE_OPENSSL})
@@ -124,12 +112,10 @@ foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
     target_include_directories(${target}_${RASTA_VARIANT}
         PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers
-        ${CMAKE_CURRENT_SOURCE_DIR}/sci/headers
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 
         INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/rasta/headers>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/sci/headers>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     )
 
     #
@@ -174,12 +160,12 @@ foreach(RASTA_VARIANT ${RASTA_VARIANTS})
             PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 endforeach()
 
-target_compile_definitions(${target}_udp PUBLIC USE_UDP)
-target_compile_definitions(${target}_tcp PUBLIC USE_TCP)
+target_compile_definitions(${target}_udp PRIVATE USE_UDP)
+target_compile_definitions(${target}_tcp PRIVATE USE_TCP)
 
 if(ENABLE_RASTA_TLS)
-    target_compile_definitions(${target}_dtls PUBLIC USE_UDP ENABLE_TLS)
-    target_compile_definitions(${target}_tls PUBLIC USE_TCP ENABLE_TLS)
+    target_compile_definitions(${target}_dtls PRIVATE USE_UDP ENABLE_TLS)
+    target_compile_definitions(${target}_tls PRIVATE USE_TCP ENABLE_TLS)
 
     target_link_libraries(${target}_dtls wolfssl)
     target_link_libraries(${target}_tls wolfssl)

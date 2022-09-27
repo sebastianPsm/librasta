@@ -1,5 +1,4 @@
-#ifndef RASTA_SIPHASH24TEST_H
-#define RASTA_SIPHASH24TEST_H
+#pragma once
 
 #include <stdint.h>
 
@@ -846,4 +845,3 @@ const uint8_t vectors_hsip64[64][8] = {
         },
 };
 
-#endif //RASTA_SIPHASH24TEST_H

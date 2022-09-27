@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCIP_TELEGRAM_FACTORY_H
-#define LST_SIMULATOR_SCIP_TELEGRAM_FACTORY_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {  // only need to export C interface if
@@ -85,5 +84,3 @@ sci_parse_result scip_parse_location_status_payload(sci_telegram * telegram, sci
 #ifdef __cplusplus
 }
 #endif
-
-#endif //LST_SIMULATOR_SCIP_TELEGRAM_FACTORY_H

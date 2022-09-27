@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCILSTESTS_H
-#define LST_SIMULATOR_SCILSTESTS_H
+#pragma once
 
 void testSignalAspectDefaults();
 
@@ -12,5 +11,3 @@ void testParseShowSignalAspect();
 void testParseSignalAspectStatus();
 void testParseChangeBrightness();
 void testParseBrightnessStatus();
-
-#endif //LST_SIMULATOR_SCILSTESTS_H

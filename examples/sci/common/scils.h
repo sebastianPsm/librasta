@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCILS_H
-#define LST_SIMULATOR_SCILS_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {  // only need to export C interface if
@@ -266,5 +265,3 @@ void scils_register_sci_name(scils_t * ls, char * sci_name, unsigned long rasta_
 #ifdef __cplusplus
 }
 #endif
-
-#endif //LST_SIMULATOR_SCILS_H

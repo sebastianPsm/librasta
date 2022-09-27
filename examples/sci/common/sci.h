@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_SCI_H
-#define LST_SIMULATOR_SCI_H
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {  // only need to export C interface if
@@ -148,5 +147,3 @@ sci_telegram * sci_decode_telegram(struct RastaByteArray data);
 #ifdef __cplusplus
 }
 #endif
-
-#endif //LST_SIMULATOR_SCI_H

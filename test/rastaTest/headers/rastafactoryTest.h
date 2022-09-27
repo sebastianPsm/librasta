@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_RASTAFACTORYTEST_H
-#define LST_SIMULATOR_RASTAFACTORYTEST_H
+#pragma once
 
 /**
  * tests the correct creation of a redundancy layer PDU
@@ -31,4 +30,3 @@ void checkDisconnectionRequest();
  */
 void checkMessagePacket();
 
-#endif //LST_SIMULATOR_RASTAFACTORYTEST_H
