@@ -105,6 +105,10 @@ struct RastaConfigTLS {
      * Domain / common name to validate TLS certificates against (as client)
      */
     char tls_hostname[MAX_DOMAIN_LENGTH];
+    /**
+     * path to peer certificate for certificate pinning. Optional.
+     */
+    char peer_tls_cert_path[PATH_MAX];
 };
 
 

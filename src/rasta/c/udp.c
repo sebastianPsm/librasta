@@ -72,6 +72,9 @@ static void wolfssl_accept(struct RastaState *transport_state)
         fprintf(stderr, "WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
         exit(1);
     }
+
+    tls_pin_certificate(transport_state->ssl,transport_state->tls_config->peer_tls_cert_path);
+
     set_dtls_async(transport_state);
 }
 #endif

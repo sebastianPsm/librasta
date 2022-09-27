@@ -1,4 +1,4 @@
-
+#pragma once
 #ifndef TYPES_H
 #define TYPES_H
 #include "types.h"
@@ -36,3 +36,5 @@ void wolfssl_send_dtls(struct rasta_transport_state *transport_state, unsigned c
 ssize_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_t max_buffer_len);
 
 void wolfssl_cleanup(struct rasta_transport_state *transport_state);
+
+void tls_pin_certificate(WOLFSSL *ssl, const char *peer_tls_cert_path);

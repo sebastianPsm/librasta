@@ -29,6 +29,10 @@ set_target_properties(event_system_example_local PROPERTIES ${DEFAULT_PROJECT_OP
 target_compile_options(event_system_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(event_system_example_local rasta_udp)
 
+add_executable(pw2iv_sample
+        examples_localhost/c/pw2iv.c)
+target_compile_options(pw2iv_sample PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+
 if(ENABLE_RASTA_TLS)
         add_executable(dtls_example_local
                 examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)

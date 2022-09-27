@@ -226,6 +226,9 @@ void wolfssl_send_dtls(struct rasta_transport_state *transport_state, unsigned c
             fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
             exit(1);
         }
+
+        tls_pin_certificate(transport_state->ssl,transport_state->tls_config->peer_tls_cert_path);
+
         transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
         set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
     }
@@ -278,6 +281,48 @@ void wolfssl_cleanup(struct rasta_transport_state *transport_state)
     wolfSSL_shutdown(transport_state->ssl);
     wolfSSL_free(transport_state->ssl);
     wolfSSL_CTX_free(transport_state->ctx);
+}
+
+#define CHECK_NULL_AND_ASSIGN(type, varname,invocation) type *varname = invocation; if(!(varname)){fprintf(stderr, #invocation" failed!\n"); exit (1);}
+#define SHA256_BUFFER_LENGTH_BYTES 64
+
+void
+generate_certificate_digest(WOLFSSL_X509 *peer_cert,
+                            unsigned char *peer_digest_buffer,
+                            unsigned int *peer_digest_buffer_size) {
+    int ret;
+    int der_length;
+    CHECK_NULL_AND_ASSIGN(const unsigned char, der_buffer, wolfSSL_X509_get_der(peer_cert, &der_length));
+
+    ret = wolfSSL_X509_digest(peer_cert, wolfSSL_EVP_sha256(), peer_digest_buffer, peer_digest_buffer_size);
+
+    if(ret != SSL_SUCCESS){
+        fprintf(stderr, "Could not generate peer certificate sha256 digest!\n");
+        exit(1);
+    }
+}
+
+void tls_pin_certificate(WOLFSSL *ssl, const char *peer_tls_cert_path) {
+    if(peer_tls_cert_path[0]){
+        // public key pinning: check TLS public key of peer
+        unsigned char peer_digest_buffer[SHA256_BUFFER_LENGTH_BYTES], pinned_digest_buffer[SHA256_BUFFER_LENGTH_BYTES];
+        unsigned int peer_digest_buffer_size, pinned_digest_buffer_size;
+        CHECK_NULL_AND_ASSIGN(WOLFSSL_X509, peer_cert, wolfSSL_get_peer_certificate(ssl));
+        CHECK_NULL_AND_ASSIGN(WOLFSSL_X509, pinned_cert, wolfSSL_X509_load_certificate_file(peer_tls_cert_path,SSL_FILETYPE_PEM));
+        generate_certificate_digest(peer_cert, peer_digest_buffer, &peer_digest_buffer_size);
+        generate_certificate_digest(pinned_cert, pinned_digest_buffer, &pinned_digest_buffer_size);
+        if(peer_digest_buffer_size != pinned_digest_buffer_size){
+            fprintf(stderr, "Internal error - certificate digests do not have the same length\n (%d vs. %d bytes)!",peer_digest_buffer_size,pinned_digest_buffer_size);
+            exit(1);
+        }
+        if(memcmp(peer_digest_buffer,pinned_digest_buffer,pinned_digest_buffer_size) != 0){
+            struct logger_t sha_logger = logger_init(LOG_LEVEL_DEBUG,LOGGER_TYPE_CONSOLE);
+            fprintf(stderr, "Certificate Pinning error - peer certificate hash does not match!\n");
+            logger_hexdump(&sha_logger,LOG_LEVEL_DEBUG,peer_digest_buffer,peer_digest_buffer_size,"Peer certificate (digest)");
+            logger_hexdump(&sha_logger,LOG_LEVEL_DEBUG,pinned_digest_buffer,pinned_digest_buffer_size,"Pinned certificate (digest)");
+            exit(1);
+        }
+    }
 }
 
 #endif
