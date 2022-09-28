@@ -3,14 +3,15 @@
 //
 
 #include "wolfssl_certificate_helper.h"
-#include <fifo.h>
-#include <rasta_lib.h>
-#include <rmemory.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <rasta/fifo.h>
+#include <rasta/rasta_lib.h>
+#include <rasta/rmemory.h>
 
 #define CONFIG_PATH_S "rasta_server_local_kex.cfg"
 #define CONFIG_PATH_C1 "rasta_client1_local_kex.cfg"

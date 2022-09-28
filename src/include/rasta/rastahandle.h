@@ -566,6 +566,10 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result);
  */
 void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, struct logger_t *logger);
 
+void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con);
+void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con);
+int connection_exists(struct rasta_handle *h, unsigned long id);
+
 #ifdef __cplusplus
 }
 #endif

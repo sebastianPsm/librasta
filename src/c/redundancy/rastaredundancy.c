@@ -1,4 +1,4 @@
-#include <rasta/rastaredundancy_new.h>
+#include <rasta/rastaredundancy.h>
 
 #include <errno.h>
 #include <rasta/rastautil.h>

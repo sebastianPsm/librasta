@@ -13,7 +13,7 @@
 #include "rasta_red_multiplexer.h"
 #include <memory.h>
 #include <rasta_red_multiplexer.h>
-#include <rastaredundancy_new.h>
+#include <rastaredundancy.h>
 #include <rmemory.h>
 #include <signal.h>
 #include <stdint.h>

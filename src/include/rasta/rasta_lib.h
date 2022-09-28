@@ -6,7 +6,7 @@ extern "C" { // only need to export C interface if
 #endif
 
 #include "logging.h"
-#include "rasta_new.h"
+#include "rasta.h"
 #include "rastahandle.h"
 
 // The header, which the user will include later.

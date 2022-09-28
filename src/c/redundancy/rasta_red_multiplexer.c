@@ -9,7 +9,7 @@
 #include <rasta/event_system.h>
 #include <rasta/rasta_red_multiplexer.h>
 #include <rasta/rastahandle.h>
-#include <rasta/rastaredundancy_new.h>
+#include <rasta/rastaredundancy.h>
 #include <rasta/rmemory.h>
 #ifdef USE_UDP
 #include <rasta/udp.h>

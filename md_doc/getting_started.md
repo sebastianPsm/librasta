@@ -45,7 +45,7 @@ You learned to compile the sources and run the example programs, now it's time t
 In this section the various functions and some other things are listed and explained.
 
 #### Functions
-The complete functionality of the library can be used by including `rasta_new.h`.
+The complete functionality of the library can be used by including `rasta.h`.
 
 | Name                      | Description                                                                                                                                                                                                                            |
 | ------------------------- | ---------------------------------------------------------                                                                                                                                                                              |

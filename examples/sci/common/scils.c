@@ -1,7 +1,7 @@
 #include "scils.h"
 #include "sci.h"
 #include <memory.h>
-#include <rasta_new.h>
+#include <rasta.h>
 #include <rastafactory.h>
 #include <rmemory.h>
 

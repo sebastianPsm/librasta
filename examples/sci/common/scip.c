@@ -2,7 +2,7 @@
 #include "sci.h"
 #include "sci_telegram_factory.h"
 #include <memory.h>
-#include <rasta_new.h>
+#include <rasta.h>
 #include <rmemory.h>
 
 /**

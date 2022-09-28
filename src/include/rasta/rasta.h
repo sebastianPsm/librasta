@@ -26,53 +26,7 @@ extern "C" { // only need to export C interface if
  */
 #define MAX_PACKET_LEN 264
 
-/**
- * the RaSTA version that is implemented
- */
-#define RASTA_VERSION "0303"
-
 #define DIAGNOSTIC_INTERVAL_SIZE 500
-
-#define NS_PER_SEC 1000000000
-#define MS_PER_S 1000
-#define NS_PER_MS 1000000
-/**
- * Reasons for DiscReq as specified in 5.4.6
- */
-typedef enum {
-    /**
-     * Disconnection because of user request
-     */
-    RASTA_DISC_REASON_USERREQUEST = 0,
-    /**
-     * Disconnection because of receiving an unexpected type of packet
-     */
-    RASTA_DISC_REASON_UNEXPECTEDTYPE = 2,
-    /**
-     * Disconnection because of an error in the sequence number check
-     */
-    RASTA_DISC_REASON_SEQNERROR = 3,
-    /**
-     * Disconnection because of a timeout
-     */
-    RASTA_DISC_REASON_TIMEOUT = 4,
-    /**
-     * Disconnection because of the call of the service was not allowed
-     */
-    RASTA_DISC_REASON_SERVICENOTALLOWED = 5,
-    /**
-     * Disconnection because of the version was not accepted
-     */
-    RASTA_DISC_REASON_INCOMPATIBLEVERSION = 6,
-    /**
-     * Disconnection because retransmission failed
-     */
-    RASTA_DISC_REASON_RETRFAILED = 7,
-    /**
-     * Disconnection because an error in the protocol flow
-     */
-    RASTA_DISC_REASON_PROTOCOLERROR = 8
-} rasta_disconnect_reason;
 
 typedef struct {
     unsigned long id;

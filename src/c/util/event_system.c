@@ -3,7 +3,7 @@
 #include <sys/select.h>
 #include <time.h>
 
-#include <rasta/rasta_new.h>
+#include <rasta/rasta.h>
 
 uint64_t get_nanotime() {
     struct timespec t;

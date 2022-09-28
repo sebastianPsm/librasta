@@ -1,5 +1,5 @@
 #include <memory.h>
-#include <rasta_new.h>
+#include <rasta.h>
 #include <rmemory.h>
 #include <scip.h>
 #include <stdio.h>

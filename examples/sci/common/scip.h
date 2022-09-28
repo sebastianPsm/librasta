@@ -8,7 +8,7 @@ extern "C" { // only need to export C interface if
 #include "hashmap.h"
 #include "sci.h"
 #include "scip_telegram_factory.h"
-#include <rasta_new.h>
+#include <rasta.h>
 #include <rastahandle.h>
 
 /**

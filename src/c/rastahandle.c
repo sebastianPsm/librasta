@@ -226,3 +226,36 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, st
     h->heartbeat_handle->mux = &h->mux;
     h->heartbeat_handle->hashing_context = &h->hashing_context;
 }
+
+void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con) {
+    if (h->last_con) {
+        con->linkedlist_prev = h->last_con;
+        con->linkedlist_next = NULL;
+        h->last_con->linkedlist_next = con;
+    } else {
+        h->first_con = con;
+        h->last_con = con;
+        con->linkedlist_prev = NULL;
+        con->linkedlist_next = NULL;
+    }
+}
+
+void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con) {
+    if (h->first_con == con) {
+        h->first_con = con->linkedlist_next;
+    }
+    if (h->last_con == con) {
+        h->last_con = con->linkedlist_prev;
+    }
+    if (con->linkedlist_prev) con->linkedlist_prev->linkedlist_next = con->linkedlist_next;
+    if (con->linkedlist_next) con->linkedlist_next->linkedlist_prev = con->linkedlist_prev;
+}
+
+int connection_exists(struct rasta_handle *h, unsigned long id) {
+    for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next) {
+        // TODO: Error handling
+        if (con->remote_id == id)
+            return 1;
+    }
+    return 0;
+}

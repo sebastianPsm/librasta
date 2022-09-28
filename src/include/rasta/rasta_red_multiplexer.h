@@ -9,7 +9,7 @@ extern "C" { // only need to export C interface if
 
 #include <rasta/event_system.h>
 #include <rasta/rastamodule.h>
-#include <rasta/rastaredundancy_new.h>
+#include <rasta/rastaredundancy.h>
 #include <rasta/tcp.h>
 #include <rasta/udp.h>
 

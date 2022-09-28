@@ -1,5 +1,5 @@
 #include <memory.h>
-#include <rasta_new.h>
+#include <rasta.h>
 #include <rmemory.h>
 #include <scils.h>
 #include <scils_telegram_factory.h>

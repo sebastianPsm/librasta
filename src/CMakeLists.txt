@@ -23,7 +23,7 @@ set(headers
     include/rasta/event_system.h
     include/rasta/fifo.h
     include/rasta/logging.h
-    include/rasta/rasta_new.h
+    include/rasta/rasta.h
     include/rasta/rasta_red_multiplexer.h
     include/rasta/rastacrc.h
     include/rasta/rastadeferqueue.h
@@ -32,7 +32,7 @@ set(headers
     include/rasta/rasta_lib.h
     include/rasta/rastamd4.h
     include/rasta/rastamodule.h
-    include/rasta/rastaredundancy_new.h
+    include/rasta/rastaredundancy.h
     include/rasta/rastautil.h
     include/rasta/rmemory.h
     include/rasta/udp.h
@@ -47,16 +47,30 @@ set(headers
 )
 
 set(sources
-    c/rasta_new.c
     c/rastafactory.c
+    c/transport
     c/transport/rasta_transport_callbacks.h
     c/transport/tcp.c
     c/transport/udp.c
     c/transport/bsd_utils.c
     c/transport/ssl_utils.c
-    c/redundancy/rastaredundancy_new.c
+    c/retransmission
+    c/retransmission/handlers.c
+    c/retransmission/safety_retransmission.h
+    c/retransmission/messages.c
+    c/retransmission/messages.h
+    c/retransmission/safety_retransmission.c
+    c/retransmission/protocol.c
+    c/retransmission/handlers.h
+    c/retransmission/protocol.h
+    c/redundancy
     c/redundancy/rasta_red_multiplexer.c
+    c/redundancy/rastaredundancy.c
+    c/experimental
+    c/experimental/handlers.c
     c/experimental/key_exchange.c
+    c/experimental/handlers.h
+    c/util
     c/util/rastamodule.c
     c/util/rastacrc.c
     c/util/rastautil.c
@@ -69,6 +83,7 @@ set(sources
     c/util/rastasiphash24.c
     c/util/rastadeferqueue.c
     c/rasta_lib.c
+    c/rasta.c
     c/rastahandle.c
 )
 
