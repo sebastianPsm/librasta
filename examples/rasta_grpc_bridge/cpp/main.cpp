@@ -16,9 +16,11 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include <rasta_lib.h>
-#include <rasta.h>
-#include <rmemory.h>
+#include <rasta/rasta_lib.h>
+#include <rasta/rasta.h>
+#include <rasta/rmemory.h>
+
+#include "configfile.h"
 
 #include <rasta.grpc.pb.h>
 #include <rasta.pb.h>
@@ -70,7 +72,10 @@ void handle_connection_state_change(struct rasta_notification_result *result) {
 }
 
 void rasta_listen(rasta_lib_configuration_t rc, const char *config_file_path) {
-    rasta_lib_init_configuration(rc, config_file_path);
+    struct RastaConfigInfo config;
+    struct logger_t logger;
+    load_configfile(&config, &logger, config_file_path);
+    rasta_lib_init_configuration(rc, config, &logger);
     rc->h.user_handles->on_connection_start = on_con_start;
     rc->h.user_handles->on_disconnect = on_con_end;
 
@@ -118,7 +123,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
         }
     }
 
-    if ((existing_connection == NULL || existing_connection->current_state == RASTA_CONNECTION_CLOSED) && rc->h.config.values.general.rasta_id < channel->remote_id) {
+    if ((existing_connection == NULL || existing_connection->current_state == RASTA_CONNECTION_CLOSED) && rc->h.config.general.rasta_id < channel->remote_id) {
         // This is a client, initiate handshake
         rc->h.ev_sys = &rc->rasta_lib_event_system;
         sr_connect(&rc->h, channel->remote_id, channel->subchannels);
@@ -136,7 +141,7 @@ int rasta_accept(rasta_lib_configuration_t rc, struct RastaChannel *channel, str
     enable_fd_event(&fd_event);
 
     add_fd_event(&rc->rasta_lib_event_system, &fd_event, EV_READABLE);
-    if (rc->h.config.values.general.rasta_id < channel->remote_id) {
+    if (rc->h.config.general.rasta_id < channel->remote_id) {
         rasta_lib_start(rc, 2000, false);
     } else {
         // Wait for channel establishment indefinitely (server)
