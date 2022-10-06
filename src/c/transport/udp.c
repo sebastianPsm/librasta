@@ -12,7 +12,7 @@
 #include <rasta/udp.h>
 
 #ifdef ENABLE_TLS
-#include "ssl_utils.h"
+#include <rasta/ssl_utils.h>
 #endif
 
 #define MAX_WARNING_LENGTH_BYTES 128

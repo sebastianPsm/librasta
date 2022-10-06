@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #ifdef ENABLE_TLS
-#include "ssl_utils.h"
+#include <rasta/ssl_utils.h>
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
