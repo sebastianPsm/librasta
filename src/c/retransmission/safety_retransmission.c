@@ -1,9 +1,8 @@
 #include "safety_retransmission.h"
-#include <rasta/rasta.h>
-#include <rasta/rmemory.h>
-#include <rasta/rasta_lib.h>
 #include "protocol.h"
-
+#include <rasta/rasta.h>
+#include <rasta/rasta_lib.h>
+#include <rasta/rmemory.h>
 
 void updateTimeoutInterval(long confirmed_timestamp, struct rasta_connection *con, struct RastaConfigInfoSending cfg) {
     unsigned long t_local = cur_timestamp();
@@ -51,14 +50,14 @@ void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA add to buffer", "received %d application messages", received_data.count);
 
     for (unsigned int i = 0; i < received_data.count; ++i) {
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA add to buffer", "received msg: %s", received_data.data_array[i].bytes);
-
         rastaApplicationMessage *elem = rmalloc(sizeof(rastaApplicationMessage));
         elem->id = packet.sender_id;
         allocateRastaByteArray(&elem->appMessage, received_data.data_array[i].length);
 
         rmemcpy(elem->appMessage.bytes, received_data.data_array[i].bytes, received_data.data_array[i].length);
-        fifo_push(con->fifo_app_msg, elem);
+        if (!fifo_push(con->fifo_app_msg, elem)) {
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA add to buffer", "discarding data because fifo is full");
+        }
         // fire onReceive event
         fire_on_receive(sr_create_notification_result(h->handle, con));
 
@@ -76,7 +75,7 @@ void sr_remove_confirmed_messages(struct rasta_receive_handle *h, struct rasta_c
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA remove confirmed", "confirming messages with SN_PDU <= %lu", (long unsigned int)con->cs_r);
 
     struct RastaByteArray *elem;
-    while ((elem = fifo_pop(con->fifo_retr)) != NULL) {
+    while ((elem = fifo_pop(con->fifo_retransmission)) != NULL) {
         struct RastaPacket packet = bytesToRastaPacket(*elem, h->hashing_context);
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA remove confirmed", "removing packet with sn = %lu",
                    (long unsigned int)packet.sequence_number);
@@ -296,7 +295,7 @@ void sr_init_connection(struct rasta_connection *connection, unsigned long id, s
     connection->fifo_app_msg = fifo_init(cfg.send_max);
 
     // init retransmission fifo
-    connection->fifo_retr = fifo_init(MAX_QUEUE_SIZE);
+    connection->fifo_retransmission = fifo_init(MAX_QUEUE_SIZE);
 
     // create send queue
     connection->fifo_send = fifo_init(2 * cfg.max_packet);
@@ -316,12 +315,12 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
     struct RastaByteArray packets[MAX_QUEUE_SIZE];
 
     int buffer_n = 0; // how many valid elements are in the buffer
-    buffer_n = fifo_get_size(connection->fifo_retr);
+    buffer_n = fifo_get_size(connection->fifo_retransmission);
 
     // get all packets and store them in the buffer
     for (int j = 0; j < buffer_n; ++j) {
         struct RastaByteArray *element;
-        element = fifo_pop(connection->fifo_retr);
+        element = fifo_pop(connection->fifo_retransmission);
 
         allocateRastaByteArray(&packets[j], element->length);
         rmemcpy(packets[j].bytes, element->bytes, element->length);
@@ -354,8 +353,11 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
         allocateRastaByteArray(to_fifo, new_p.length);
         rmemcpy(to_fifo->bytes, new_p.bytes, new_p.length);
-        fifo_push(connection->fifo_retr, to_fifo);
-        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "added packet %d to queue", i);
+        if (fifo_push(connection->fifo_retransmission, to_fifo)) {
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "added packet %d to queue", i);
+        } else {
+            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "could not add packet to full queue");
+        }
 
         // send packet
         redundancy_mux_send(h->mux, data);
@@ -378,16 +380,13 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
     sendHeartbeat(h->mux, connection, 1);
 }
 
-unsigned int sr_retr_data_available(struct logger_t *logger, struct rasta_connection *connection) {
-    (void)logger;
-    return fifo_get_size(connection->fifo_retr);
+unsigned int sr_retransmission_queue_item_count( struct rasta_connection *connection) {
+    return fifo_get_size(connection->fifo_retransmission);
 }
 
-unsigned int sr_rasta_send_data_available(struct logger_t *logger, struct rasta_connection *connection) {
-    (void)logger;
+unsigned int sr_send_queue_item_count(struct rasta_connection *connection) {
     return fifo_get_size(connection->fifo_send);
 }
-
 
 void sr_init_handle(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger) {
 
@@ -442,6 +441,9 @@ void sr_listen(struct rasta_handle *h) {
 #endif
 }
 
+// HACK
+int data_send_event(void *carry_data);
+
 void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages) {
 
     struct rasta_connection *con;
@@ -470,7 +472,15 @@ void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessag
             struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
             allocateRastaByteArray(to_fifo, msg.length);
             rmemcpy(to_fifo->bytes, msg.bytes, msg.length);
-            fifo_push(con->fifo_send, to_fifo);
+
+            if (fifo_full(con->fifo_send)) {
+                // Flush, send queued messages now
+                data_send_event(h->send_handle);
+            }
+
+            if (!fifo_push(con->fifo_send, to_fifo)) {
+                logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA send", "could not insert message into send queue");
+            }
         }
 
         logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA send", "data in send queue");
@@ -557,7 +567,7 @@ void sr_cleanup(struct rasta_handle *h) {
         // free FIFOs
         fifo_destroy(connection->fifo_app_msg);
         fifo_destroy(connection->fifo_send);
-        fifo_destroy(connection->fifo_retr);
+        fifo_destroy(connection->fifo_retransmission);
     }
 
     // set notification pointers to NULL

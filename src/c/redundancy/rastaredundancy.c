@@ -159,19 +159,19 @@ void rasta_red_f_receive(rasta_redundancy_channel *channel, struct RastaRedundan
 
         // forward to next layer by pushing into receive FIFO
 
-        struct RastaByteArray innerPackerBytes;
+        struct RastaByteArray innerPacketBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
-        innerPackerBytes = rastaModuleToBytesNoChecksum(packet.data, &channel->hashing_context);
+        innerPacketBytes = rastaModuleToBytesNoChecksum(packet.data, &channel->hashing_context);
 
         // add to queue
         struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
-        allocateRastaByteArray(to_fifo, innerPackerBytes.length);
-        rmemcpy(to_fifo->bytes, innerPackerBytes.bytes, innerPackerBytes.length);
-        if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
+        allocateRastaByteArray(to_fifo, innerPacketBytes.length);
+        rmemcpy(to_fifo->bytes, innerPacketBytes.bytes, innerPacketBytes.length);
+        if (!fifo_push(channel->fifo_recv, to_fifo)) {
             logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because receive fifo was full");
         }
 
-        freeRastaByteArray(&innerPackerBytes);
+        freeRastaByteArray(&innerPacketBytes);
 
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: added message to buffer",
                    channel_id);

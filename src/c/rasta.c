@@ -71,7 +71,6 @@ void init_connection_events(struct rasta_handle *h, struct rasta_connection *con
 #endif
 }
 
-
 /**
  * send a Key Exchange Request to the specified host
  * @param connection the connection which should be used
@@ -352,13 +351,15 @@ int data_send_event(void *carry_data) {
             continue;
         }
 
-        unsigned int retr_data_count = sr_retr_data_available(h->logger, con);
-        if (retr_data_count <= h->config.max_packet) {
-            unsigned int msg_queue = sr_rasta_send_data_available(h->logger, con);
+        unsigned int retransmission_backlog_size = sr_retransmission_queue_item_count(con);
+        // Because of this condition, this method does not reliably free up space in the send queue.
+        // However, we need to pass on backpressure to the caller...
+        if (retransmission_backlog_size <= MAX_QUEUE_SIZE) {
+            unsigned int send_backlog_size = sr_send_queue_item_count(con);
 
-            if (msg_queue > 0) {
-                logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "Messages waiting to be send: %d",
-                           msg_queue);
+            if (send_backlog_size > 0) {
+                logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "Messages waiting to be sent: %d",
+                           send_backlog_size);
 
                 con->hb_stopped = 1;
                 con->is_sending = 1;
@@ -366,22 +367,21 @@ int data_send_event(void *carry_data) {
                 struct RastaMessageData app_messages;
                 struct RastaByteArray msg;
 
-                if (msg_queue >= h->config.max_packet) {
-                    msg_queue = h->config.max_packet;
+                if (send_backlog_size >= h->config.max_packet) {
+                    send_backlog_size = h->config.max_packet;
                 }
-                allocateRastaMessageData(&app_messages, msg_queue);
+                allocateRastaMessageData(&app_messages, send_backlog_size);
 
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler",
                            "Sending %d application messages from queue",
-                           msg_queue);
+                           send_backlog_size);
 
-                for (unsigned int i = 0; i < msg_queue; i++) {
+                for (unsigned int i = 0; i < send_backlog_size; i++) {
 
                     struct RastaByteArray *elem;
                     elem = fifo_pop(con->fifo_send);
                     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler",
-                               "Adding application message '%s' to data packet",
-                               elem->bytes);
+                               "Adding application message to data packet");
 
                     allocateRastaByteArray(&msg, elem->length);
                     msg.bytes = rmemcpy(msg.bytes, elem->bytes, elem->length);
@@ -399,7 +399,9 @@ int data_send_event(void *carry_data) {
                 struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
                 allocateRastaByteArray(to_fifo, packet.length);
                 rmemcpy(to_fifo->bytes, packet.bytes, packet.length);
-                fifo_push(con->fifo_retr, to_fifo);
+                if (!fifo_push(con->fifo_retransmission, to_fifo)) {
+                    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA send handler", "discarding packet because retransmission queue is full");
+                }
 
                 redundancy_mux_send(h->mux, data);
 
@@ -631,7 +633,6 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
     return con;
 }
 
-
 void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "Received heartbeat from %d", receivedPacket.sender_id);
 
@@ -839,6 +840,8 @@ void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *ch
 }
 #endif
 
+// This is the time that packets are deferred for creating multi-packet messages
+// See section 5.5.10
 #define IO_INTERVAL 10000
 void sr_begin_abstract(struct rasta_handle *h, event_system *event_system, int channel_timeout_ms, int listen) {
     timed_event send_event, receive_event;
@@ -882,7 +885,6 @@ void sr_begin_abstract(struct rasta_handle *h, event_system *event_system, int c
     remove_timed_event(event_system, &receive_event);
     remove_timed_event(event_system, &channel_timeout_event);
 }
-
 
 #ifdef USE_UDP
 void cleanup_channel_events_udp(event_system *event_system, fd_event *channel_events, int len) {

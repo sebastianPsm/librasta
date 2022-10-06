@@ -168,7 +168,7 @@ void wolfssl_start_client(struct rasta_transport_state *transport_state, const s
             exit(1);
         }
     } else {
-        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.");
+        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
     }
 
     wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);

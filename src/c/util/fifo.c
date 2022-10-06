@@ -64,6 +64,10 @@ unsigned int fifo_get_size(fifo_t *fifo) {
     return size;
 }
 
+int fifo_full(fifo_t *fifo) {
+    return fifo->size == fifo->max_size;
+}
+
 void fifo_destroy(fifo_t *fifo) {
     for (unsigned int i = 0; i < fifo->size; ++i) {
         fifo_pop(fifo);

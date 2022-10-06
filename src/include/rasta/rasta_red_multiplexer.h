@@ -242,7 +242,8 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
  */
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
-int receive_packet(redundancy_mux *mux, struct receive_event_data *data);
+struct rasta_receive_handle;
+int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data);
 
 ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender, RastaReceiveFunction receive_callback);
 

@@ -29,5 +29,5 @@ int sr_sn_range_valid(struct rasta_connection *con, struct RastaConfigInfoSendin
 int sr_cs_valid(struct rasta_connection *con, struct RastaPacket packet);
 int sr_message_authentic(struct rasta_connection *con, struct RastaPacket packet);
 int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struct RastaConfigInfoSending cfg, struct RastaPacket receivedPacket, char *location);
-unsigned int sr_retr_data_available(struct logger_t *logger, struct rasta_connection *connection);
-unsigned int sr_rasta_send_data_available(struct logger_t *logger, struct rasta_connection *connection);
+unsigned int sr_retransmission_queue_item_count(struct rasta_connection *connection);
+unsigned int sr_send_queue_item_count(struct rasta_connection *connection);

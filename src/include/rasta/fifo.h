@@ -76,6 +76,8 @@ int fifo_push(fifo_t *fifo, void *element);
  */
 unsigned int fifo_get_size(fifo_t *fifo);
 
+int fifo_full(fifo_t* fifo);
+
 #ifdef __cplusplus
 }
 #endif

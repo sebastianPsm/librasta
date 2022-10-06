@@ -10,11 +10,12 @@
 #include <unistd.h>
 
 #ifdef ENABLE_TLS
-#include <rasta/ssl_utils.h>
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
 #include <wolfssl/wolfio.h>
+
+#include <rasta/ssl_utils.h>
 #endif
 
 #ifdef ENABLE_TLS
@@ -234,7 +235,7 @@ void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint
             exit(1);
         }
     } else {
-        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.");
+        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
     }
     /* Attach wolfSSL to the socket */
     if (wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor) != WOLFSSL_SUCCESS) {

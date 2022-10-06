@@ -260,7 +260,7 @@ struct rasta_connection {
     /**
      * the pdu fifo for retransmission purposes
      */
-    fifo_t *fifo_retr;
+    fifo_t *fifo_retransmission;
 
     /**
      *   the error counters as specified in 5.5.5
