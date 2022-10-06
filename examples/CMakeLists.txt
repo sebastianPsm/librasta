@@ -31,19 +31,24 @@ target_compile_options(pw2iv_sample PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 
 if(ENABLE_RASTA_TLS)
         add_executable(dtls_example_local
+                ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/dtls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
+        target_include_directories(dtls_example_local PRIVATE common/headers)
         set_target_properties(dtls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(dtls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
         target_link_libraries(dtls_example_local rasta_dtls wolfssl)
         add_executable(tls_example_local
+                ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/tls.c examples_localhost/c/wolfssl_certificate_helper.c examples_localhost/c/wolfssl_certificate_helper.h)
+        target_include_directories(tls_example_local PRIVATE common/headers)
         set_target_properties(tls_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(tls_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
         target_link_libraries(tls_example_local rasta_tls wolfssl)
 endif()
 
 if(ENABLE_RASTA_OPAQUE)
-        add_executable(kex_example_local examples_localhost/c/kex.c)
+        add_executable(kex_example_local ${EXAMPLES_COMMON_SRC} examples_localhost/c/kex.c)
+        target_include_directories(kex_example_local PRIVATE common/headers)
         set_target_properties(kex_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(kex_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
         target_link_libraries(kex_example_local rasta_udp sodium)
