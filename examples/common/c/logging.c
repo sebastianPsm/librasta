@@ -91,7 +91,7 @@ char *get_log_message_string(log_level max_log_level, log_level level, char *loc
         rstrcpy(level_str, "ERROR");
         break;
     case LOG_LEVEL_INFO:
-        rstrcpy(level_str, "INFO");
+        rstrcpy(level_str, "INFO ");
         break;
     default:
         perror("invalid log level\n");

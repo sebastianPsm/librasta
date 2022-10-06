@@ -10,7 +10,7 @@ RUN git clone https://github.com/wolfssl/wolfssl . && git checkout v4.6.0-stable
  && ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra \
  && make && make install
 
-ENV LD_LIBRARY_PATH=/usr/local/lib
+ENV LD_LIBRARY_PATH=/usr/local/lib:.
 
 WORKDIR /app
 COPY build .
