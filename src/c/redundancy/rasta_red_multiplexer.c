@@ -178,13 +178,13 @@ int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct r
         struct RastaRedundancyPacket receivedPacket = handle_received_data(mux, buffer + read_offset, currentPacketSize);
         update_redundancy_channels(mux, data, receivedPacket, &sender, redundancy_channel_extension_callback);
 
-        // Check that deferqueue can take new elements before calling rasta_red_f_receive
+        // Check that deferqueue can take new elements before calling red_f_receiveData
         rasta_redundancy_channel *channel = redundancy_mux_get_channel(mux, receivedPacket.data.sender_id);
         if (deferqueue_isfull(&channel->defer_q) || fifo_full(channel->fifo_recv)) {
             on_readable_event(h);
         }
 
-        rasta_red_f_receive(channel, receivedPacket, data->channel_index);
+        red_f_receiveData(channel, receivedPacket, data->channel_index);
 
         len_remaining -= currentPacketSize;
         read_offset += currentPacketSize;
@@ -287,7 +287,8 @@ void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *
     // no associated channel found -> received message from new partner
     logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux receive", "received pdu from unknown entity with id=0x%lX",
                (long unsigned int)receivedPacket.data.sender_id);
-    rasta_redundancy_channel new_channel = rasta_red_init(mux->logger, mux->config, mux->port_count, receivedPacket.data.sender_id);
+    rasta_redundancy_channel new_channel;
+    red_f_init(mux->logger, mux->config, mux->port_count, receivedPacket.data.sender_id, &new_channel);
     new_channel.associated_id = receivedPacket.data.sender_id;
     // add transport channel to redundancy channel
     new_channel.connected_channels[0].ip_address = connected_channel.ip_address;
@@ -602,7 +603,7 @@ void redundancy_mux_close(redundancy_mux *mux) {
     // close the redundancy channels
     for (unsigned int j = 0; j < mux->channel_count; ++j) {
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "cleanup connected channel %d/%d", j + 1, mux->channel_count);
-        rasta_red_cleanup(&mux->connected_channels[j]);
+        red_f_cleanup(&mux->connected_channels[j]);
     }
     rfree(mux->connected_channels);
 }
@@ -761,7 +762,8 @@ void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *hos
 #endif
 
 void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels) {
-    rasta_redundancy_channel channel = rasta_red_init(mux->logger, mux->config, mux->port_count, id);
+    rasta_redundancy_channel channel;
+    red_f_init(mux->logger, mux->config, mux->port_count, id, &channel);
 
     // add transport channels
     for (unsigned int i = 0; i < mux->port_count; ++i) {

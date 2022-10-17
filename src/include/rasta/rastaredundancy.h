@@ -5,48 +5,21 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
+#include <stdint.h>
+
 #include "config.h"
 #include "fifo.h"
 #include "logging.h"
 #include "rastacrc.h"
 #include "rastadeferqueue.h"
 #include "udp.h"
-#include <stdint.h>
+#include "transport.h"
 
 /**
  * maximum size of messages in the defer queue in bytes
  */
 #define MAX_DEFER_QUEUE_MSG_SIZE 1000
 
-/**
- * representation of the transport channel diagnostic data
- */
-typedef struct {
-    /**
-     * time (in ms since 1.1.1970) when the current diagnose window was started
-     */
-    unsigned long start_time;
-
-    /**
-     * amount of missed or late messages (late means more than T_SEQ later than on fastest channel)
-     */
-    int n_missed;
-
-    /**
-     * average delay, as described in 6.6.3.2 (2)
-     */
-    unsigned long t_drift;
-
-    /**
-     * quadratic delay, as described in 6.6.3.2 (2)
-     */
-    unsigned long t_drift2;
-
-    /**
-     * amount of packets that are received within the current diagnose window
-     */
-    int received_packets;
-} rasta_redundancy_diagnostics_data;
 
 /**
  * representation of the tls_state of a redundancy channel as defined in 6.6.4.1
@@ -62,36 +35,6 @@ typedef enum {
      */
     RASTA_RED_CLOSED
 } rasta_redundancy_state;
-
-/**
- * representation of a RaSTA redundancy layer transport channel
- */
-typedef struct {
-    /**
-     * IPv4 address in format a.b.c.d
-     */
-    char *ip_address;
-
-#ifdef USE_TCP
-    /**
-     * filedescriptor
-     * */
-    int fd;
-#ifdef ENABLE_TLS
-    WOLFSSL *ssl;
-#endif
-#endif
-
-    /**
-     * port number
-     */
-    uint16_t port;
-
-    /**
-     * data used for transport channel diagnostics as in 6.6.3.2
-     */
-    rasta_redundancy_diagnostics_data diagnostics_data;
-} rasta_transport_channel;
 
 /**
  * representation of a RaSTA redundancy channel
@@ -143,6 +86,8 @@ typedef struct {
      */
     rasta_transport_channel *connected_channels;
 
+
+
     /**
      * the amount of discovered partner transport channels
      */
@@ -182,8 +127,8 @@ typedef struct {
  * @param id the RaSTA ID that is associated with this redundancy channel
  * @return an initialized redundancy channel
  */
-rasta_redundancy_channel rasta_red_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
-                                        unsigned long id);
+void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
+                unsigned long id, rasta_redundancy_channel *channel);
 
 /**
  * the f_receive function of the redundancy layer
@@ -191,13 +136,13 @@ rasta_redundancy_channel rasta_red_init(struct logger_t logger, struct RastaConf
  * @param packet the packet that has been received over UDP
  * @param channel_id the index of the transport channel, the @p packet has been received
  */
-void rasta_red_f_receive(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
 
 /**
  * the f_deferTmo function of the redundancy layer
  * @param channel the redundancy channel that is used
  */
-void rasta_red_f_deferTmo(rasta_redundancy_channel *channel);
+void red_f_deferTmo(rasta_redundancy_channel *channel);
 
 /**
  * blocks until the tls_state is closed and all notification threads terminate
@@ -221,7 +166,7 @@ void rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
  * frees memory for the @p channel
  * @param channel the channel that is freed
  */
-void rasta_red_cleanup(rasta_redundancy_channel *channel);
+void red_f_cleanup(rasta_redundancy_channel *channel);
 
 #ifdef __cplusplus
 }

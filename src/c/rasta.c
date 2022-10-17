@@ -318,7 +318,7 @@ int event_connection_expired(void *carry_data) {
 
     disable_timed_event(&connection->send_heartbeat_event);
     disable_timed_event(&connection->timeout_event);
-    return 0;
+    return 1;
 }
 
 int heartbeat_send_event(void *carry_data) {
