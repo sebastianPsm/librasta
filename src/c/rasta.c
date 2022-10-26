@@ -714,6 +714,10 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
                 connection->ts_r = receivedPacket.timestamp;
 
                 connection->cts_r = receivedPacket.confirmed_timestamp;
+
+                // cs_r updated, remove confirmed messages
+                sr_remove_confirmed_messages(h, connection);
+
                 if (connection->current_state == RASTA_CONNECTION_RETRRUN) {
                     connection->current_state = RASTA_CONNECTION_UP;
                     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "State changed from RetrRun to Up");
