@@ -247,8 +247,14 @@ void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint
     wolfSSL_KeepArrays(transport_state->ssl);
 #ifdef WOLFSSL_SET_TLS13_SECRET_CB_EXISTS
     /* optional logging for wireshark */
-    wolfSSL_set_tls13_secret_cb(transport_state->ssl, Tls13SecretCallback,
-                                (void *)WOLFSSL_SSLKEYLOGFILE_OUTPUT);
+    char* sslkeylogfile_path = getenv("TLS_SECRET_LOGFILE_PATH");
+    if (sslkeylogfile_path == NULL) {
+        wolfSSL_set_tls13_secret_cb(transport_state->ssl, Tls13SecretCallback,
+                                    (void *)WOLFSSL_SSLKEYLOGFILE_OUTPUT);
+    } else {
+        wolfSSL_set_tls13_secret_cb(transport_state->ssl, Tls13SecretCallback,
+                                    sslkeylogfile_path);
+    }
 #endif
     /* Connect to wolfSSL on the server side */
     if (wolfSSL_connect(transport_state->ssl) != WOLFSSL_SUCCESS) {
