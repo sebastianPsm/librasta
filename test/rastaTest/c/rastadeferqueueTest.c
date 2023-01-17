@@ -1,5 +1,5 @@
 #include "../headers/rastadeferqueueTest.h"
-#include "rastadeferqueue.h"
+#include <rasta/rastadeferqueue.h>
 #include <CUnit/Basic.h>
 
 void test_deferqueue_init() {

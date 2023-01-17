@@ -8,8 +8,8 @@ extern "C" { // only need to export C interface if
 #include "hashmap.h"
 #include "sci.h"
 #include "scip_telegram_factory.h"
-#include <rasta.h>
-#include <rastahandle.h>
+#include <rasta/rasta.h>
+#include <rasta/rastahandle.h>
 
 /**
  * define struct as type here to allow usage in notification pointers

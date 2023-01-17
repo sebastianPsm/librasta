@@ -8,8 +8,8 @@
 #include <time.h>
 
 #include "../headers/rastamd4Test.h"
-#include <rastamd4.h>
-#include <rmemory.h>
+#include <rasta/rastamd4.h>
+#include <rasta/rmemory.h>
 
 void testMD4function() {
 

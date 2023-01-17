@@ -1,6 +1,6 @@
 #include "sci_telegram_factory.h"
 #include "sci.h"
-#include <rmemory.h>
+#include <rasta/rmemory.h>
 
 sci_telegram *sci_create_base_telegram(protocol_type protocolType, char *sender, char *receiver, unsigned short message_type) {
     sci_telegram *telegram = rmalloc(sizeof(sci_telegram));

@@ -1,7 +1,7 @@
 #include <CUnit/CUnit.h>
 #include <scipTests.h>
 
-#include <rmemory.h>
+#include <rasta/rmemory.h>
 #include <sci.h>
 #include <scip_telegram_factory.h>
 

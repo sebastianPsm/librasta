@@ -20,7 +20,9 @@ target_link_libraries(rasta_example_local rasta_udp)
 
 
 add_executable(event_system_example_local
+                ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/event_test.c)
+target_include_directories(event_system_example_local PRIVATE common/headers)
 set_target_properties(event_system_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(event_system_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(event_system_example_local rasta_udp)
@@ -95,6 +97,7 @@ add_subdirectory(rasta_grpc_bridge)
 endif(BUILD_RASTA_GRPC_BRIDGE)
 
 set(SCI_COMMON
+    ${EXAMPLES_COMMON_SRC}
     sci/common/hashmap.h
     sci/common/hashmap.c
     sci/common/sci_telegram_factory.c
@@ -113,14 +116,14 @@ set(SCI_COMMON
 
 # scip_example
 add_executable(scip_example ${SCI_COMMON} sci/scip/main.c)
-target_include_directories(scip_example PRIVATE sci/common)
+target_include_directories(scip_example PRIVATE sci/common common/headers)
 set_target_properties(scip_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(scip_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(scip_example rasta_udp)
 
 # scils_example
 add_executable(scils_example ${SCI_COMMON} sci/scils/main.c)
-target_include_directories(scils_example PRIVATE sci/common)
+target_include_directories(scils_example PRIVATE sci/common common/headers)
 set_target_properties(scils_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(scils_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(scils_example rasta_udp)
@@ -135,7 +138,7 @@ add_executable(sciTest
     sci/scitest/c/scilsTests.c
     sci/scitest/c/scipTests.c
     sci/scitest/c/sciTests.c)
-target_include_directories(sciTest PRIVATE sci/common sci/scitest/headers)
+target_include_directories(sciTest PRIVATE sci/common sci/scitest/headers common/headers)
 target_link_libraries(sciTest rasta_udp PkgConfig::CUnit)
 target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
 add_test(NAME test_sciTest COMMAND sciTest)

@@ -1,8 +1,8 @@
 #include "sci.h"
 
 #include <memory.h>
-#include <rastafactory.h>
-#include <rmemory.h>
+#include <rasta/rastafactory.h>
+#include <rasta/rmemory.h>
 
 void sci_set_sender(sci_telegram *telegram, char *sender_name) {
     size_t name_len = strlen(sender_name);

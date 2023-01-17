@@ -1,9 +1,9 @@
 #include "scils.h"
 #include "sci.h"
 #include <memory.h>
-#include <rasta.h>
-#include <rastafactory.h>
-#include <rmemory.h>
+#include <rasta/rasta.h>
+#include <rasta/rastafactory.h>
+#include <rasta/rmemory.h>
 
 /**
  * Tries to send a SCI telegram to the receiver using the underlying RaSTA instance

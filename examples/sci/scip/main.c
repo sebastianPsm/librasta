@@ -1,12 +1,15 @@
 #include <memory.h>
-#include <rasta.h>
-#include <rmemory.h>
+#include <rasta/rasta.h>
+#include <rasta/rmemory.h>
+#include <rasta/rasta_lib.h>
 #include <scip.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define CONFIG_PATH_S "../../../rasta_server.cfg"
-#define CONFIG_PATH_C "../../../rasta_client1.cfg"
+#include "configfile.h"
+
+#define CONFIG_PATH_S "rasta_server_local.cfg"
+#define CONFIG_PATH_C "rasta_client1_local.cfg"
 
 #define ID_S 0x61
 #define ID_C 0x62
@@ -56,53 +59,120 @@ void onLocationStatus(scip_t *p, char *sender, scip_point_location location) {
     printf("Received location status from %s. Point is at position 0x%02X.\n", sci_get_name_string(sender), location);
 }
 
+struct connect_event_data {
+    struct rasta_handle *h;
+    struct RastaIPData *ip_data_arr;
+    fd_event *connect_event;
+    fd_event *schwarzenegger;
+};
+
+int connect_on_stdin(void *carry_data) {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+
+    printf("->   Connection request sent to 0x%lX\n", (unsigned long)ID_S);
+    struct connect_event_data *data = carry_data;
+    sr_connect(data->h, ID_S, data->ip_data_arr);
+    enable_fd_event(data->schwarzenegger);
+    disable_fd_event(data->connect_event);
+    return 0;
+}
+
+int terminator(void *h) {
+    printf("terminating\n");
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF)
+        ;
+    sr_cleanup(h);
+    return 1;
+}
+
+void *on_con_start(rasta_lib_connection_t connection) {
+    (void)connection;
+    return malloc(sizeof(rasta_lib_connection_t));
+}
+
+void on_con_end(rasta_lib_connection_t connection, void *memory) {
+    (void)connection;
+    free(memory);
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
-    struct rasta_handle h;
+    rasta_lib_configuration_t rc = {0};
 
     struct RastaIPData toServer[2];
 
-#ifdef EXAMPLE_IP_OVERRIDE
-    strcpy(toServer[0].ip, getenv("SERVER_CH1"));
-    strcpy(toServer[1].ip, getenv("SERVER_CH2"));
-#else
-    strcpy(toServer[0].ip, "10.0.0.100");
-    strcpy(toServer[1].ip, "10.0.0.101");
-#endif
+    strcpy(toServer[0].ip, "127.0.0.1");
+    strcpy(toServer[1].ip, "127.0.0.1");
     toServer[0].port = 8888;
     toServer[1].port = 8889;
+
+    fd_event termination_event, connect_on_stdin_event;
+    struct connect_event_data connect_on_stdin_event_data = {
+        .h = &rc->h,
+        .ip_data_arr = toServer,
+        .schwarzenegger = &termination_event,
+        .connect_event = &connect_on_stdin_event};
+
+    termination_event.callback = terminator;
+    termination_event.carry_data = &rc->h;
+    termination_event.fd = STDIN_FILENO;
+
+    connect_on_stdin_event.callback = connect_on_stdin;
+    connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
+    connect_on_stdin_event.fd = STDIN_FILENO;
 
     printf("Server at %s:%d and %s:%d\n", toServer[0].ip, toServer[0].port, toServer[1].ip, toServer[1].port);
 
     if (strcmp(argv[1], "s") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_S);
 
-        getchar();
-        sr_init_handle(&h, CONFIG_PATH_S);
-        h.notifications.on_receive = onReceive;
-        h.notifications.on_handshake_complete = onHandshakeComplete;
-        scip = scip_init(&h, SCI_NAME_S);
+        struct RastaConfigInfo config;
+        struct logger_t logger;
+        load_configfile(&config, &logger, CONFIG_PATH_S);
+        rasta_lib_init_configuration(rc, config, &logger);
+        rc->h.user_handles->on_connection_start = on_con_start;
+        rc->h.user_handles->on_disconnect = on_con_end;
+        rc->h.notifications.on_receive = onReceive;
+        rc->h.notifications.on_handshake_complete = onHandshakeComplete;
+
+        scip = scip_init(&rc->h, SCI_NAME_S);
         scip->notifications.on_change_location_received = onChangeLocation;
+
+        enable_fd_event(&termination_event);
+        disable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
     } else if (strcmp(argv[1], "c") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_C);
 
-        sr_init_handle(&h, CONFIG_PATH_C);
-        h.notifications.on_receive = onReceive;
-        h.notifications.on_handshake_complete = onHandshakeComplete;
-        printf("->   Press Enter to connect\n");
-        getchar();
-        sr_connect(&h, ID_S, toServer);
+        struct RastaConfigInfo config;
+        struct logger_t logger;
+        load_configfile(&config, &logger, CONFIG_PATH_C);
+        rasta_lib_init_configuration(rc, config, &logger);
+        rc->h.user_handles->on_connection_start = on_con_start;
+        rc->h.user_handles->on_disconnect = on_con_end;
+        rc->h.notifications.on_receive = onReceive;
+        rc->h.notifications.on_handshake_complete = onHandshakeComplete;
 
-        scip = scip_init(&h, SCI_NAME_C);
+        scip = scip_init(&rc->h, SCI_NAME_C);
         scip->notifications.on_location_status_received = onLocationStatus;
-
         scip_register_sci_name(scip, SCI_NAME_S, ID_S);
+
+        printf("->   Press Enter to connect\n");
+        disable_fd_event(&termination_event);
+        enable_fd_event(&connect_on_stdin_event);
+        add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
+        add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
+        rasta_lib_start(rc, 0, false);
     }
 
     getchar();
 
     scip_cleanup(scip);
-    sr_cleanup(&h);
+    return 0;
 }

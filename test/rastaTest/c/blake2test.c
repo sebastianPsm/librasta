@@ -1,7 +1,7 @@
 #include "../headers/blake2test.h"
 #include <CUnit/Basic.h>
-#include <rastablake2.h>
-#include <rmemory.h>
+#include <rasta/rastablake2.h>
+#include <rasta/rmemory.h>
 
 unsigned char *hexstr_to_char(const char *hexstr) {
     size_t len = strlen(hexstr);

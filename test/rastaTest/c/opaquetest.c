@@ -2,8 +2,8 @@
 // Created by erica on 04/07/2022.
 //
 #include <CUnit/Basic.h>
-#include <key_exchange.h>
-#include <logging.h>
+#include <rasta/key_exchange.h>
+#include <rasta/logging.h>
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>

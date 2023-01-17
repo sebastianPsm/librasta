@@ -1,6 +1,6 @@
 #include "../headers/rastafactoryTest.h"
 #include "CUnit/Basic.h"
-#include "rastafactory.h"
+#include <rasta/rastafactory.h>
 
 void checkConnectionPacket() {
     rasta_hashing_context_t context;

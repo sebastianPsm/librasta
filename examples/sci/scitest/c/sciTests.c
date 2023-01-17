@@ -1,7 +1,7 @@
 #include <CUnit/CUnit.h>
 #include <sciTests.h>
 
-#include <rmemory.h>
+#include <rasta/rmemory.h>
 #include <sci.h>
 #include <sci_telegram_factory.h>
 

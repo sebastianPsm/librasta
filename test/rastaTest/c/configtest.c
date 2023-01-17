@@ -3,7 +3,7 @@
 //
 
 #include "../headers/configtest.h"
-#include "config.h"
+#include "configfile.h"
 #include <CUnit/Basic.h>
 #include <stdio.h>
 #include <string.h>

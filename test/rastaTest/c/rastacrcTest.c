@@ -1,4 +1,4 @@
-#include "rastacrc.h"
+#include <rasta/rastacrc.h>
 #include <CUnit/Basic.h>
 
 #define TEST_VAL "123456789"

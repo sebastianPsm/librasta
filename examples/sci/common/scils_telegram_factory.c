@@ -1,7 +1,7 @@
 #include "scils_telegram_factory.h"
 #include "sci.h"
 #include "sci_telegram_factory.h"
-#include <rmemory.h>
+#include <rasta/rmemory.h>
 #include <string.h>
 
 scils_signal_aspect *scils_signal_aspect_defaults() {

@@ -3,7 +3,7 @@
 //
 
 #include "../headers/rastamoduleTest.h"
-#include "rastamodule.h"
+#include <rasta/rastamodule.h>
 
 #include "CUnit/Basic.h"
 

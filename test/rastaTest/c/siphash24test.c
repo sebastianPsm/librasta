@@ -1,7 +1,7 @@
 #include "../headers/siphash24test.h"
 #include <CUnit/Basic.h>
-#include <rastasiphash24.h>
-#include <rmemory.h>
+#include <rasta/rastasiphash24.h>
+#include <rasta/rmemory.h>
 
 size_t lengths[4] = {8, 16, 4, 8};
 

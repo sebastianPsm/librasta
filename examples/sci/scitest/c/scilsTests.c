@@ -3,7 +3,7 @@
 
 #include "sci.h"
 #include "scils_telegram_factory.h"
-#include <rmemory.h>
+#include <rasta/rmemory.h>
 
 void testSignalAspectDefaults() {
     scils_signal_aspect *signal_aspect = scils_signal_aspect_defaults();

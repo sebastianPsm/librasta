@@ -5,6 +5,9 @@ if(PKG_CONFIG_FOUND)
 endif(PKG_CONFIG_FOUND)
 
 add_executable(rastaTest
+    ../examples/common/c/logging.c
+    ../examples/common/c/configfile.c
+    ../examples/common/c/dictionary.c
     rastaTest/headers/blake2test.h
     rastaTest/headers/configtest.h
     rastaTest/headers/dictionarytest.h
@@ -31,7 +34,7 @@ add_executable(rastaTest
     rastaTest/c/siphash24test.c
     rastaTest/c/opaquetest.c
     rastaTest/headers/opaquetest.h)
-target_include_directories(rastaTest PRIVATE rastaTest/headers)
+target_include_directories(rastaTest PRIVATE rastaTest/headers ../examples/common/headers)
 target_link_libraries(rastaTest rasta_udp PkgConfig::CUnit)
 target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
 
