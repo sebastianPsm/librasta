@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-  pull_request:
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -21,25 +20,28 @@ jobs:
     - name: Install CUnit
       run: sudo apt-get install libcunit1 libcunit1-doc libcunit1-dev
 
+    - name: Install gRPC
+      run: sudo apt-get install libgrpc-dev
+
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
-    - name: Install gRPC
-      run: |
-        sudo apt-get install build-essential autoconf libtool
-        cd /tmp
-        git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
-        cd grpc
-        mkdir -p cmake/build && cd cmake/build
-        cmake ../.. -DgRPC_INSTALL=ON
-        make -j8 && sudo make install
-        cd / && rm -rf /tmp/grpc
+    # - name: Install gRPC
+    #   run: |
+    #     sudo apt-get install build-essential autoconf libtool
+    #     cd /tmp
+    #     git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+    #     cd grpc
+    #     mkdir -p cmake/build && cd cmake/build
+    #     cmake ../.. -DgRPC_INSTALL=ON
+    #     make -j8 && sudo make install
+    #     cd / && rm -rf /tmp/grpc
 
     - name: Install WolfSSL
       run: |
         sudo apt-get install libtool autogen automake
         cd /tmp
-        git clone --recurse-submodules -b v4.6.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl
+        git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl
         cd wolfssl
         ./autogen.sh
         ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra
