@@ -20,8 +20,8 @@ jobs:
     - name: Install CUnit
       run: sudo apt-get install libcunit1 libcunit1-doc libcunit1-dev
 
-    - name: Install gRPC
-      run: sudo apt-get install libgrpc-dev
+    - name: Install gRPC and protobuf
+      run: sudo apt-get install libgrpc-dev libprotobuf-dev
 
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
