@@ -20,22 +20,19 @@ jobs:
     - name: Install CUnit
       run: sudo apt-get install libcunit1 libcunit1-doc libcunit1-dev
 
-    - name: Install gRPC and protobuf
-      run: sudo apt-get install libgrpc-dev libprotobuf-dev
-
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
-    # - name: Install gRPC
-    #   run: |
-    #     sudo apt-get install build-essential autoconf libtool
-    #     cd /tmp
-    #     git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
-    #     cd grpc
-    #     mkdir -p cmake/build && cd cmake/build
-    #     cmake ../.. -DgRPC_INSTALL=ON
-    #     make -j8 && sudo make install
-    #     cd / && rm -rf /tmp/grpc
+    - name: Install gRPC
+      run: |
+        sudo apt-get install build-essential autoconf libtool
+        cd /tmp
+        git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+        cd grpc
+        mkdir -p cmake/build && cd cmake/build
+        cmake ../.. -DgRPC_INSTALL=ON
+        make -j8 && sudo make install
+        cd / && rm -rf /tmp/grpc
 
     - name: Install WolfSSL
       run: |
