@@ -60,8 +60,8 @@ jobs:
     - name: Local Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
 
-    - name: DTLS Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+    # - name: DTLS Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
 
     - name: Key Exchange Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh

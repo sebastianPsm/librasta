@@ -249,6 +249,8 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
+        prepare_certs(CONFIG_PATH_S);
+
         struct RastaConfigInfo config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
@@ -257,7 +259,6 @@ int main(int argc, char *argv[]) {
         rc->h.user_handles->on_disconnect = on_con_end;
 
         printf("->   Press Enter to listen\n");
-        fflush(stdout);
         int c;
         while ((c = getchar()) != '\n' && c != EOF)
             ;
