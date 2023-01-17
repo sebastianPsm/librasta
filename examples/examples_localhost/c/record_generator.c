@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <key_exchange.h>
+#include <rasta/key_exchange.h>
 #include <string.h>
 
 #define MAX_PASSWORD_LENGTH 128
