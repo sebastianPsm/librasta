@@ -26,19 +26,23 @@ int key_exchange_prepare_credential_request(struct key_exchange_state *kex_state
                                             struct logger_t *logger) {
     const size_t password_length = strlen(psk);
     int ret;
-    kex_state->client_secret = malloc(password_length + OPAQUE_USER_SESSION_SECRET_LEN);
-    if (!kex_state->client_secret) {
+    uint8_t *client_secret = malloc(password_length + OPAQUE_USER_SESSION_SECRET_LEN);
+    if (!client_secret) {
         logger_log(logger, LOG_LEVEL_ERROR, "key_exchange:key_exchange_prepare_credential_request",
                    "Could not allocate %lu bytes for client secret!", password_length + OPAQUE_USER_SESSION_SECRET_LEN);
         return 1;
     }
+    // Work around GCC warning which complains about passing the (const) pointer to mlock although
+    // the data behind it is not yet initialized. We treat this warning as an error.
+    client_secret[0] = 0;
     // make sure the data cannot be stolen from swap partition
-    ret = mlock(kex_state->client_secret, password_length + OPAQUE_USER_SESSION_SECRET_LEN);
+    ret = mlock(client_secret, password_length + OPAQUE_USER_SESSION_SECRET_LEN);
     if (ret) {
         logger_log(logger, LOG_LEVEL_ERROR, "key_exchange:key_exchange_prepare_credential_request",
                    "Could not lock client pages!");
         return ret;
     }
+    kex_state->client_secret = client_secret;
     kex_state->password_length = password_length;
 
     return opaque_CreateCredentialRequest((const uint8_t *)psk, password_length, kex_state->client_secret,
