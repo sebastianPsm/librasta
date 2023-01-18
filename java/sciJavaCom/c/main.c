@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <rasta_new.h>
-#include <scip.h>
-#include <scils.h>
+#include "scip.h"
+#include "scils.h"
 #include <memory.h>
-#include <scils_telegram_factory.h>
+#include "scils_telegram_factory.h"
 #include <rmemory.h>
 
 #define CONFIG_PATH "../../../rasta_wrapper.cfg"

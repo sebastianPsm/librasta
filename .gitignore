@@ -27,5 +27,4 @@ doc/
 .cmake
 Makefile
 */bin/*
-test/
 *.tcl

@@ -1,8 +1,3 @@
-//
-// Created by erica on 04/07/2022.
-//
+#pragma once
 
-#ifndef RASTA_OPAQUETEST_H
-#define RASTA_OPAQUETEST_H
 void opaque_wrapper_test();
-#endif //RASTA_OPAQUETEST_H

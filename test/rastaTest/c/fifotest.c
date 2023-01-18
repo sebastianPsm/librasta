@@ -1,11 +1,11 @@
-#include <CUnit/Basic.h>
-#include <fifo.h>
-#include <rmemory.h>
-#include <rastautil.h>
 #include "fifotest.h"
+#include <CUnit/Basic.h>
+#include <rasta/fifo.h>
+#include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
 
-void test_push(){
-    fifo_t * fifo = fifo_init(3);
+void test_push() {
+    fifo_t *fifo = fifo_init(3);
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 0);
     CU_ASSERT_EQUAL(fifo->head, NULL);
     CU_ASSERT_EQUAL(fifo->tail, NULL);
@@ -22,7 +22,7 @@ void test_push(){
     CU_ASSERT_EQUAL(fifo->head->next, NULL);
     CU_ASSERT_EQUAL(fifo->tail->next, NULL);
 
-    char * test_str = rmalloc(10);
+    char *test_str = rmalloc(10);
     rmemcpy(test_str, "Hello", 6);
 
     fifo_push(fifo, test_str);
@@ -32,7 +32,7 @@ void test_push(){
     CU_ASSERT_EQUAL(fifo->tail->data, test_str);
     CU_ASSERT_EQUAL(fifo->head->next->data, test_str);
 
-    struct fifo_element * struct_elem  = rmalloc(sizeof(struct fifo_element));
+    struct fifo_element *struct_elem = rmalloc(sizeof(struct fifo_element));
     fifo_push(fifo, struct_elem);
 
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 3);
@@ -50,8 +50,8 @@ void test_push(){
     rfree(struct_elem);
 }
 
-void test_pop(){
-    fifo_t * fifo = fifo_init(3);
+void test_pop() {
+    fifo_t *fifo = fifo_init(3);
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 0);
     CU_ASSERT_EQUAL(fifo->head, NULL);
     CU_ASSERT_EQUAL(fifo->tail, NULL);
@@ -60,12 +60,12 @@ void test_pop(){
 
     fifo_push(fifo, &elem);
 
-    char * test_str = rmalloc(10);
+    char *test_str = rmalloc(10);
     rmemcpy(test_str, "Hello", 6);
 
     fifo_push(fifo, test_str);
 
-    struct fifo_element * struct_elem  = rmalloc(sizeof(struct fifo_element));
+    struct fifo_element *struct_elem = rmalloc(sizeof(struct fifo_element));
     fifo_push(fifo, struct_elem);
 
     int res = *(int *)fifo_pop(fifo);
@@ -77,7 +77,7 @@ void test_pop(){
     CU_ASSERT_EQUAL(fifo->head->next, fifo->tail);
     CU_ASSERT_EQUAL(fifo->tail->next, NULL);
 
-    char * res_str = (char *)fifo_pop(fifo);
+    char *res_str = (char *)fifo_pop(fifo);
 
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 1);
     CU_ASSERT_EQUAL(res_str, test_str);
@@ -86,14 +86,14 @@ void test_pop(){
     CU_ASSERT_EQUAL(fifo->head->next, NULL);
     CU_ASSERT_EQUAL(fifo->tail->next, NULL);
 
-    struct fifo_element * res_struct = (struct fifo_element *)fifo_pop(fifo);
+    struct fifo_element *res_struct = (struct fifo_element *)fifo_pop(fifo);
 
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 0);
     CU_ASSERT_EQUAL(res_struct, struct_elem);
     CU_ASSERT_EQUAL(fifo->head, NULL);
     CU_ASSERT_EQUAL(fifo->tail, NULL);
 
-    void * emtpy_pop_res = fifo_pop(fifo);
+    void *emtpy_pop_res = fifo_pop(fifo);
     CU_ASSERT_EQUAL(emtpy_pop_res, NULL);
 
     fifo_destroy(fifo);

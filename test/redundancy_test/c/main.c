@@ -10,14 +10,14 @@
  * with "./redundancy_test c1"
  */
 
-#include <stdint.h>
-#include <memory.h>
-#include <stdio.h>
-#include <rasta_red_multiplexer.h>
-#include <rmemory.h>
-#include <unistd.h>
-#include <rastaredundancy_new.h>
 #include "rasta_red_multiplexer.h"
+#include <memory.h>
+#include <rasta_red_multiplexer.h>
+#include <rastaredundancy.h>
+#include <rmemory.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #define SERVER_TC1_HOST "10.0.0.100"
 #define SERVER_TC2_HOST "10.0.0.101"
@@ -26,11 +26,11 @@
 #define CLIENT_1_ID 0xB
 #define CLIENT_2_ID 0xC
 
-void on_new_connection(redundancy_mux * mux, unsigned long id){
+void on_new_connection(redundancy_mux *mux, unsigned long id) {
     printf("New entity with ID=0x%lX\n", id);
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
     rasta_hashing_context_t hashing_context;
     hashing_context.algorithm = RASTA_ALGO_MD4;
     hashing_context.hash_length = RASTA_CHECKSUM_8B;
@@ -44,26 +44,25 @@ int main(int argc, char *argv[]){
     configInfoRedundancy.n_deferqueue_size = 2;
     info.redundancy = configInfoRedundancy;
 
-    struct RastaIPData * listenPortsServer = rmalloc(2 * sizeof(struct RastaIPData));
+    struct RastaIPData *listenPortsServer = rmalloc(2 * sizeof(struct RastaIPData));
     rmemcpy(listenPortsServer[0].ip, "10.0.0.100", 16);
     listenPortsServer[0].port = 8888;
     rmemcpy(listenPortsServer[1].ip, "10.0.0.101", 16);
     listenPortsServer[1].port = 8889;
 
-    struct RastaIPData * listenPortsClient1 = rmalloc(2 * sizeof(struct RastaIPData));
+    struct RastaIPData *listenPortsClient1 = rmalloc(2 * sizeof(struct RastaIPData));
     rmemcpy(listenPortsClient1[0].ip, "10.0.0.200", 16);
     listenPortsClient1[0].port = 5555;
     rmemcpy(listenPortsClient1[1].ip, "10.0.0.201", 16);
     listenPortsClient1[1].port = 5556;
 
-    struct RastaIPData *  listenPortsClient2 = rmalloc(2 * sizeof(struct RastaIPData));
+    struct RastaIPData *listenPortsClient2 = rmalloc(2 * sizeof(struct RastaIPData));
     rmemcpy(listenPortsClient2[0].ip, "10.0.0.1", 16);
     listenPortsClient2[0].port = 5557;
     rmemcpy(listenPortsClient2[1].ip, "10.0.0.2", 16);
     listenPortsClient2[1].port = 5558;
 
-
-    struct RastaIPData * serverConnection = rmalloc(2 * sizeof(struct RastaIPData));
+    struct RastaIPData *serverConnection = rmalloc(2 * sizeof(struct RastaIPData));
     rmemcpy(serverConnection[0].ip, SERVER_TC1_HOST, 16);
     rmemcpy(serverConnection[1].ip, SERVER_TC2_HOST, 16);
     serverConnection[0].port = 8888;
@@ -72,8 +71,8 @@ int main(int argc, char *argv[]){
     struct logger_t logger = logger_init(LOG_LEVEL_NONE, LOGGER_TYPE_CONSOLE);
     redundancy_mux mux;
 
-    if (strcmp(argv[1], "c1") == 0){
-        printf("Client 1 (ID=0x%X)\n",CLIENT_1_ID);
+    if (strcmp(argv[1], "c1") == 0) {
+        printf("Client 1 (ID=0x%X)\n", CLIENT_1_ID);
 
         // set client id
         info.general.rasta_id = CLIENT_1_ID;
@@ -100,7 +99,7 @@ int main(int argc, char *argv[]){
         printf("Data sent, exiting...\n");
         redundancy_mux_close(&mux);
         printf("Connection closed\n");
-    } else if (strcmp(argv[1], "c2") == 0){
+    } else if (strcmp(argv[1], "c2") == 0) {
         printf("Client 2 (ID=0x%X)\n", CLIENT_2_ID);
 
         // set client id
@@ -115,7 +114,7 @@ int main(int argc, char *argv[]){
         printf("Initializing client 2...\n");
         mux = redundancy_mux_init_(logger, info);
 
-        //redundancy_mux_set_config_id(&mux, SERVER_ID);
+        // redundancy_mux_set_config_id(&mux, SERVER_ID);
         redundancy_mux_add_channel(&mux, SERVER_ID, serverConnection);
 
         printf("Init Client 2 done\n");
@@ -141,8 +140,7 @@ int main(int argc, char *argv[]){
         redundancy_mux_close(&mux);
 
         printf("Connection closed\n");
-    }
-    else{
+    } else {
         printf("Server mode (ID=0x%X)\n", SERVER_ID);
 
         // set server id

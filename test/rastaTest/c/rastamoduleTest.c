@@ -3,21 +3,21 @@
 //
 
 #include "../headers/rastamoduleTest.h"
-#include "rastamodule.h"
+#include <rasta/rastamodule.h>
 
 #include "CUnit/Basic.h"
 
-void testConversion(){
+void testConversion() {
     rasta_hashing_context_t context;
     context.algorithm = RASTA_ALGO_MD4;
     rasta_md4_set_key(&context, 1, 2, 3, 4);
 
-    //check
-    for (int i = 0; i <=2; i++) {
+    // check
+    for (int i = 0; i <= 2; i++) {
         context.hash_length = i;
 
         struct RastaPacket r;
-        r.length = 30 + i*8;
+        r.length = 30 + i * 8;
         r.type = RASTA_TYPE_CONNRESP;
         r.sender_id = 12345;
         r.receiver_id = 54321;
@@ -54,33 +54,31 @@ void testConversion(){
             CU_ASSERT_EQUAL(r.data.bytes[n], s.data.bytes[n]);
         }
 
-        //check if checksum is correct
+        // check if checksum is correct
         CU_ASSERT_EQUAL(s.checksum_correct, 1);
 
-
-
-        //manipulate data
+        // manipulate data
         data.bytes[8] = 0x43;
         s = bytesToRastaPacket(data, &context);
 
-        if (i != 0) CU_ASSERT_EQUAL(s.checksum_correct, 0) else CU_ASSERT_EQUAL(s.checksum_correct, 1);
+        if (i != 0)
+            CU_ASSERT_EQUAL(s.checksum_correct, 0)
+        else
+            CU_ASSERT_EQUAL(s.checksum_correct, 1);
 
-
-        //check data failure
+        // check data failure
         r.length = 2;
         s = bytesToRastaPacket(rastaModuleToBytes(r, &context), &context);
 
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_PACKAGE_LENGTH_INVALID);
     }
-
-
 }
 
 void testRedundancyConversionWithCrcChecksumCorrect() {
     rasta_hashing_context_t context;
     context.algorithm = RASTA_ALGO_MD4;
     context.hash_length = RASTA_CHECKSUM_8B;
-    rasta_md4_set_key(&context, 0, 0, 0 ,0);
+    rasta_md4_set_key(&context, 0, 0, 0, 0);
 
     struct RastaRedundancyPacket packet_to_test;
     struct RastaPacket r;
@@ -92,7 +90,7 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
     r.confirmed_sequence_number = 7531;
     r.timestamp = 2468;
     r.confirmed_timestamp = 8642;
-    allocateRastaByteArray(&r.data,2);
+    allocateRastaByteArray(&r.data, 2);
 
     r.data.bytes[0] = 0x11;
     r.data.bytes[1] = 0x22;
@@ -117,14 +115,13 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
 
     // internal package
     CU_ASSERT_EQUAL(convertedFromBytes.data.length, r.length);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.type,r.type);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.sender_id,r.sender_id);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.receiver_id,r.receiver_id);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.sequence_number,r.sequence_number);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_sequence_number,r.confirmed_sequence_number);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.timestamp,r.timestamp);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_timestamp,r.confirmed_timestamp);
-
+    CU_ASSERT_EQUAL(convertedFromBytes.data.type, r.type);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.sender_id, r.sender_id);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.receiver_id, r.receiver_id);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.sequence_number, r.sequence_number);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_sequence_number, r.confirmed_sequence_number);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.timestamp, r.timestamp);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_timestamp, r.confirmed_timestamp);
 
     CU_ASSERT_EQUAL(convertedFromBytes.data.data.length, r.data.length);
 
@@ -132,15 +129,15 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
         CU_ASSERT_EQUAL(convertedFromBytes.data.data.bytes[i], r.data.bytes[i]);
     }
 
-    //check if internal packet checksum is correct
-    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct,1);
+    // check if internal packet checksum is correct
+    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct, 1);
 }
 
 void testRedundancyConversionWithoutChecksum() {
     rasta_hashing_context_t context;
     context.algorithm = RASTA_ALGO_MD4;
     context.hash_length = RASTA_CHECKSUM_8B;
-    rasta_md4_set_key(&context, 0, 0, 0 ,0);
+    rasta_md4_set_key(&context, 0, 0, 0, 0);
 
     struct RastaRedundancyPacket packet_to_test;
     struct RastaPacket r;
@@ -152,7 +149,7 @@ void testRedundancyConversionWithoutChecksum() {
     r.confirmed_sequence_number = 7531;
     r.timestamp = 2468;
     r.confirmed_timestamp = 8642;
-    allocateRastaByteArray(&r.data,2);
+    allocateRastaByteArray(&r.data, 2);
 
     r.data.bytes[0] = 0x11;
     r.data.bytes[1] = 0x22;
@@ -176,13 +173,13 @@ void testRedundancyConversionWithoutChecksum() {
 
     // internal package
     CU_ASSERT_EQUAL(convertedFromBytes.data.length, r.length);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.type,r.type);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.sender_id,r.sender_id);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.receiver_id,r.receiver_id);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.sequence_number,r.sequence_number);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_sequence_number,r.confirmed_sequence_number);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.timestamp,r.timestamp);
-    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_timestamp,r.confirmed_timestamp);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.type, r.type);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.sender_id, r.sender_id);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.receiver_id, r.receiver_id);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.sequence_number, r.sequence_number);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_sequence_number, r.confirmed_sequence_number);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.timestamp, r.timestamp);
+    CU_ASSERT_EQUAL(convertedFromBytes.data.confirmed_timestamp, r.confirmed_timestamp);
 
     CU_ASSERT_EQUAL(convertedFromBytes.data.data.length, r.data.length);
 
@@ -190,15 +187,15 @@ void testRedundancyConversionWithoutChecksum() {
         CU_ASSERT_EQUAL(convertedFromBytes.data.data.bytes[i], r.data.bytes[i]);
     }
 
-    //check if internal packet checksum is correct
-    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct,1);
+    // check if internal packet checksum is correct
+    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct, 1);
 }
 
 void testRedundancyConversionIncorrectChecksum() {
     rasta_hashing_context_t context;
     context.algorithm = RASTA_ALGO_MD4;
     context.hash_length = RASTA_CHECKSUM_8B;
-    rasta_md4_set_key(&context, 0, 0, 0 ,0);
+    rasta_md4_set_key(&context, 0, 0, 0, 0);
 
     struct RastaRedundancyPacket packet_to_test;
     struct RastaPacket r;
@@ -210,7 +207,7 @@ void testRedundancyConversionIncorrectChecksum() {
     r.confirmed_sequence_number = 7531;
     r.timestamp = 2468;
     r.confirmed_timestamp = 8642;
-    allocateRastaByteArray(&r.data,2);
+    allocateRastaByteArray(&r.data, 2);
 
     r.data.bytes[0] = 0x11;
     r.data.bytes[1] = 0x22;
@@ -230,7 +227,6 @@ void testRedundancyConversionIncorrectChecksum() {
     struct RastaRedundancyPacket convertedFromBytes;
     convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context);
 
-    //check if internal packet checksum is incorrect
-    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct,0);
+    // check if internal packet checksum is incorrect
+    CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct, 0);
 }
-

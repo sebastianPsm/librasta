@@ -1,9 +1,4 @@
-//
-// Created by tobia on 28.11.2017.
-//
-
-#ifndef LST_SIMULATOR_RASTAMODULETEST_H
-#define LST_SIMULATOR_RASTAMODULETEST_H
+#pragma once
 
 void testConversion();
 
@@ -21,5 +16,3 @@ void testRedundancyConversionWithoutChecksum();
  * test if the checksum is marked incorrect after a manipulation of the data
  */
 void testRedundancyConversionIncorrectChecksum();
-
-#endif //LST_SIMULATOR_RASTAMODULETEST_H

@@ -1,21 +1,46 @@
-#!/bin/sh
-# needs to be run from top-level directory, i.e. ./examples/example_scripts/example_kex.sh
-cd build/examples || exit 1
-../rasta_example_local s1 > client.log 2>&1 &
-CLIENT_PID=$!
-../rasta_example_local r > server.log 2>&1
-SERVER_EXIT_CODE=$?
+#! /bin/bash
 
-# give client chance to terminate
+# needs to be run from top-level directory, i.e. ./examples/example_scripts/example_local.sh
+cd build/examples || exit 1
+
+function run_example_local() {
+    MODE=$1
+
+    # Set up fifo to be able to pass in commands
+    rm -f /tmp/$MODE-input
+    mkfifo /tmp/$MODE-input
+    # Keep the fifo open
+    cat > /tmp/$MODE-input &
+
+    tail -f /tmp/$MODE-input | ../rasta_example_local $MODE &
+}
+
+run_example_local r
+SERVER_PID=$!
+
+# Listen
+echo "" > /tmp/r-input
+sleep 1
+
+
+echo "Connecting to server..."
+
+run_example_local s1
+CLIENT_PID=$!
+
+# Connect
+echo "" > /tmp/s1-input
 sleep 5
 
-kill $CLIENT_PID 2>/dev/null
+# Disconnect
+echo "" > /tmp/s1-input
+wait $CLIENT_PID || break
+sleep 1
 
-echo "---- Client Log ----"
-cat client.log
-echo "---- Server Log ----"
-cat server.log
+# Terminate
+echo "" > /tmp/r-input
+sleep 1
 
-rm server.log client.log 2>/dev/null
 
-exit $SERVER_EXIT_CODE
+wait $CLIENT_PID && wait $SERVER_PID && exit 0
+exit 1

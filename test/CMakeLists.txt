@@ -5,6 +5,9 @@ if(PKG_CONFIG_FOUND)
 endif(PKG_CONFIG_FOUND)
 
 add_executable(rastaTest
+    ../examples/common/c/logging.c
+    ../examples/common/c/configfile.c
+    ../examples/common/c/dictionary.c
     rastaTest/headers/blake2test.h
     rastaTest/headers/configtest.h
     rastaTest/headers/dictionarytest.h
@@ -31,27 +34,11 @@ add_executable(rastaTest
     rastaTest/c/siphash24test.c
     rastaTest/c/opaquetest.c
     rastaTest/headers/opaquetest.h)
-target_include_directories(rastaTest PRIVATE rastaTest/headers)
-target_link_libraries(rastaTest rasta PkgConfig::CUnit)
+target_include_directories(rastaTest PRIVATE rastaTest/headers ../examples/common/headers)
+target_link_libraries(rastaTest rasta_udp PkgConfig::CUnit)
 target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
 
-add_dependencies(rastaTest rasta)
+add_dependencies(rastaTest rasta_udp)
 
 add_test(NAME test_rastaTest
          COMMAND rastaTest)
-
-add_executable(sciTest
-    sciTest/headers/registerTests.h
-    sciTest/headers/scilsTests.h
-    sciTest/headers/scipTests.h
-    sciTest/headers/sciTests.h
-    sciTest/c/registerTests.c
-    sciTest/c/scilsTests.c
-    sciTest/c/scipTests.c
-    sciTest/c/sciTests.c)
-target_include_directories(sciTest PRIVATE sciTest/headers)
-target_link_libraries(sciTest rasta PkgConfig::CUnit)
-target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
-
-add_test(NAME test_sciTest
-         COMMAND sciTest)

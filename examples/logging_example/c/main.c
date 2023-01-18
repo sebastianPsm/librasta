@@ -2,11 +2,11 @@
  * This example demonstrates the use of the logging module.
  */
 
+#include "logging.h"
 #include <stdio.h>
 #include <unistd.h>
-#include "logging.h"
 
-int main(int argc, char *argv[])  {
+int main(int argc, char *argv[]) {
     printf("Start console logging test.\n");
     // create a console logger that will only print log levels INFO and ERROR
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
@@ -15,8 +15,8 @@ int main(int argc, char *argv[])  {
     logger_log(&logger, LOG_LEVEL_ERROR, "MAIN_EX", "This should be printed %s", "too");
     logger_log(&logger, LOG_LEVEL_DEBUG, "MAIN_EX", "This shouldn't be printed as DEBUG>INFO");
 
-    logger_log_if(&logger, (2*2) == 4, LOG_LEVEL_INFO, "MAIN_EX", "This should be printed, as cond=1");
-    logger_log_if(&logger, (2*3) == 4, LOG_LEVEL_INFO, "MAIN_EX", "This shouldn't be printed, as cond=0");
+    logger_log_if(&logger, (2 * 2) == 4, LOG_LEVEL_INFO, "MAIN_EX", "This should be printed, as cond=1");
+    logger_log_if(&logger, (2 * 3) == 4, LOG_LEVEL_INFO, "MAIN_EX", "This shouldn't be printed, as cond=0");
 
     sleep(1);
     logger_destroy(&logger);
@@ -31,7 +31,8 @@ int main(int argc, char *argv[])  {
 
     logger_log(&logger, LOG_LEVEL_INFO, "MAIN_EX_FILE", "This should be printed");
     logger_log(&logger, LOG_LEVEL_ERROR, "MAIN_EX_FILE", "This should be printed too");
-    logger_log(&logger, LOG_LEVEL_DEBUG, "MAIN_EX_FILE", "This should be printed as well");;
+    logger_log(&logger, LOG_LEVEL_DEBUG, "MAIN_EX_FILE", "This should be printed as well");
+    ;
 
     sleep(1);
     logger_destroy(&logger);

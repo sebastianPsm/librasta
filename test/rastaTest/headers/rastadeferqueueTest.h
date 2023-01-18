@@ -1,5 +1,4 @@
-#ifndef LST_SIMULATOR_RASTADEFERQUEUETEST_H
-#define LST_SIMULATOR_RASTADEFERQUEUETEST_H
+#pragma once
 
 /**
  * test if the initialization is working
@@ -70,7 +69,3 @@ void test_deferqueue_get_ts();
  * test if the retrieval of timestamp is working as expected when the seq nr is not in the queue
  */
 void test_deferqueue_get_ts_doesnt_contain();
-
-
-
-#endif //LST_SIMULATOR_RASTADEFERQUEUETEST_H

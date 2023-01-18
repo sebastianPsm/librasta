@@ -10,25 +10,25 @@
  * with "./redundancy_test c1"
  */
 
-#include <stdint.h>
-#include <memory.h>
-#include <stdio.h>
-#include <rasta_red_multiplexer.h>
-#include <rmemory.h>
-#include <unistd.h>
-#include <rastaredundancy_new.h>
-#include <signal.h>
 #include "rasta_red_multiplexer.h"
+#include <memory.h>
+#include <rasta_red_multiplexer.h>
+#include <rastaredundancy.h>
+#include <rmemory.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
 #define SERVER_HOST "127.0.0.1"
 
 #define SERVER_ID 0xA
 #define CLIENT_ID 0xB
 
-void on_new_connection(redundancy_mux * mux, unsigned long id){
+void on_new_connection(redundancy_mux *mux, unsigned long id) {
     printf("New entity with ID=0x%lX\n", id);
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
     rasta_hashing_context_t hashing_context;
     hashing_context.algorithm = RASTA_ALGO_MD4;
     hashing_context.hash_length = RASTA_CHECKSUM_8B;
@@ -48,8 +48,8 @@ int main(int argc, char *argv[]){
     struct logger_t logger = logger_init(LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
     redundancy_mux mux;
 
-    if (strcmp(argv[1], "c") == 0){
-        printf("Client 1 (ID=0x%X)\n",CLIENT_ID);
+    if (strcmp(argv[1], "c") == 0) {
+        printf("Client 1 (ID=0x%X)\n", CLIENT_ID);
 
         // set client id
         info.general.rasta_id = CLIENT_ID;
@@ -73,9 +73,8 @@ int main(int argc, char *argv[]){
         redundancy_mux_open(&mux);
         printf("Connection open\n");
 
-
         unsigned long current_seq = 0;
-        while (1){
+        while (1) {
             struct RastaPacket hb = createHeartbeat(SERVER_ID, CLIENT_ID, current_seq, current_seq, current_seq, current_seq, &hashing_context);
             current_seq++;
             redundancy_mux_send(&mux, hb);
@@ -89,7 +88,7 @@ int main(int argc, char *argv[]){
         printf("Data sent, exiting...\n");
         redundancy_mux_close(&mux);
         printf("Connection closed\n");
-    } else{
+    } else {
         printf("Server mode (ID=0x%X)\n", SERVER_ID);
 
         // set server id
@@ -108,7 +107,7 @@ int main(int argc, char *argv[]){
         printf("Connection open\n");
         printf("Waiting for message from Client 1\n");
 
-        while (1){
+        while (1) {
             struct RastaPacket received = redundancy_mux_retrieve(&mux, CLIENT_ID);
             printf("Received HB %lu\n", received.sequence_number);
             received.sender_id = SERVER_ID;

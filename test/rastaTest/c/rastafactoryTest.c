@@ -1,6 +1,6 @@
 #include "../headers/rastafactoryTest.h"
 #include "CUnit/Basic.h"
-#include "rastafactory.h"
+#include <rasta/rastafactory.h>
 
 void checkConnectionPacket() {
     rasta_hashing_context_t context;
@@ -8,17 +8,16 @@ void checkConnectionPacket() {
     rasta_md4_set_key(&context, 0, 0, 0, 0);
 
     for (int sum = 0; sum < 3; sum++) {
-        //preperation
+        // preperation
         context.hash_length = sum;
         unsigned char ver[4];
         for (int i = 0; i < 4; i++) {
-            ver[i] = (unsigned char) i;
+            ver[i] = (unsigned char)i;
         }
-        
-        
+
         struct RastaPacket r = createConnectionRequest(1, 2, 3, 5, 7, ver, &context);
 
-        //check standart values
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 42 + context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -28,7 +27,7 @@ void checkConnectionPacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 0);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_CONNREQ);
 
-        //check specific data
+        // check specific data
         struct RastaConnectionData con = extractRastaConnectionData(r);
         CU_ASSERT_EQUAL(con.send_max, 7);
 
@@ -36,9 +35,9 @@ void checkConnectionPacket() {
             CU_ASSERT_EQUAL(con.version[i], i);
         }
 
-        r = createConnectionResponse(1,2,3,4,5,6,7,ver, &context);
+        r = createConnectionResponse(1, 2, 3, 4, 5, 6, 7, ver, &context);
 
-        //check standart values
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 42 + context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -57,7 +56,7 @@ void checkConnectionPacket() {
 
         r.data.length -= 1;
         con = extractRastaConnectionData(r);
-        CU_ASSERT_EQUAL(getRastafactoryLastError(),RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
+        CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
 
@@ -67,13 +66,12 @@ void checkNormalPacket() {
     hashing_context.hash_length = RASTA_CHECKSUM_8B;
     rasta_md4_set_key(&hashing_context, 0, 0, 0, 0);
 
-
     struct RastaPacket r;
     for (int sum = 0; sum < 3; sum++) {
         hashing_context.hash_length = sum;
 
-        r = createRetransmissionRequest(1,2,3,4,5,6, &hashing_context);
-        //check standart values
+        r = createRetransmissionRequest(1, 2, 3, 4, 5, 6, &hashing_context);
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 28 + hashing_context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -83,8 +81,8 @@ void checkNormalPacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_RETRREQ);
 
-        r = createRetransmissionResponse(1,2,3,4,5,6, &hashing_context);
-        //check standart values
+        r = createRetransmissionResponse(1, 2, 3, 4, 5, 6, &hashing_context);
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 28 + hashing_context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -94,8 +92,8 @@ void checkNormalPacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_RETRRESP);
 
-        r = createHeartbeat(1,2,3,4,5,6, &hashing_context);
-        //check standart values
+        r = createHeartbeat(1, 2, 3, 4, 5, 6, &hashing_context);
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 28 + hashing_context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -120,7 +118,7 @@ void checkDisconnectionRequest() {
         struct RastaDisconnectionData data;
         data.reason = 7;
         data.details = 8;
-        r = createDisconnectionRequest(1,2,3,4,5,6, data, &hashing_context);
+        r = createDisconnectionRequest(1, 2, 3, 4, 5, 6, data, &hashing_context);
         CU_ASSERT_EQUAL(r.length, 32 + hashing_context.hash_length * 8);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -130,15 +128,14 @@ void checkDisconnectionRequest() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DISCREQ);
 
-        //check special values
+        // check special values
         data = extractRastaDisconnectionData(r);
         CU_ASSERT_EQUAL(data.reason, 7);
         CU_ASSERT_EQUAL(data.details, 8);
 
         r.data.length -= 1;
         data = extractRastaDisconnectionData(r);
-        CU_ASSERT_EQUAL(getRastafactoryLastError(),RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
-
+        CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
 
@@ -148,33 +145,31 @@ void checkMessagePacket() {
     hashing_context.hash_length = RASTA_CHECKSUM_8B;
     rasta_md4_set_key(&hashing_context, 0, 0, 0, 0);
 
-    //these are presets, feel free to change them
+    // these are presets, feel free to change them
     struct RastaMessageData data;
-    //2*2 -> 2 times length field
-    //2+2 the length of the data part
-    unsigned short message_length = 2*2+2+2;
-    allocateRastaMessageData(&data,2);
-    allocateRastaByteArray(&data.data_array[0],2);
-    allocateRastaByteArray(&data.data_array[1],2);
+    // 2*2 -> 2 times length field
+    // 2+2 the length of the data part
+    unsigned short message_length = 2 * 2 + 2 + 2;
+    allocateRastaMessageData(&data, 2);
+    allocateRastaByteArray(&data.data_array[0], 2);
+    allocateRastaByteArray(&data.data_array[1], 2);
 
-    CU_ASSERT_EQUAL(data.count,2);
-    CU_ASSERT_EQUAL(data.data_array[0].length,2);
-    CU_ASSERT_EQUAL(data.data_array[1].length,2);
-
+    CU_ASSERT_EQUAL(data.count, 2);
+    CU_ASSERT_EQUAL(data.data_array[0].length, 2);
+    CU_ASSERT_EQUAL(data.data_array[1].length, 2);
 
     data.data_array[0].bytes[0] = 1;
     data.data_array[0].bytes[1] = 2;
     data.data_array[1].bytes[0] = 3;
     data.data_array[1].bytes[1] = 4;
 
-
     struct RastaPacket r;
     struct RastaMessageData m;
     for (int sum = 0; sum < 3; sum++) {
         hashing_context.hash_length = sum;
-        //check normal message data
-        r = createDataMessage(1,2,3,4,5,6,data, &hashing_context);
-        //check standart values
+        // check normal message data
+        r = createDataMessage(1, 2, 3, 4, 5, 6, data, &hashing_context);
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 28 + hashing_context.hash_length * 8 + message_length);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -184,23 +179,22 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DATA);
 
-        //check messagedata
+        // check messagedata
         m = extractMessageData(r);
-        CU_ASSERT_EQUAL(m.count,2);
-        CU_ASSERT_EQUAL(m.data_array[0].length,2);
-        CU_ASSERT_EQUAL(m.data_array[1].length,2);
+        CU_ASSERT_EQUAL(m.count, 2);
+        CU_ASSERT_EQUAL(m.data_array[0].length, 2);
+        CU_ASSERT_EQUAL(m.data_array[1].length, 2);
 
-        CU_ASSERT_EQUAL(m.data_array[0].bytes[0],1);
-        CU_ASSERT_EQUAL(m.data_array[0].bytes[1],2);
-        CU_ASSERT_EQUAL(m.data_array[1].bytes[0],3);
-        CU_ASSERT_EQUAL(m.data_array[1].bytes[1],4);
+        CU_ASSERT_EQUAL(m.data_array[0].bytes[0], 1);
+        CU_ASSERT_EQUAL(m.data_array[0].bytes[1], 2);
+        CU_ASSERT_EQUAL(m.data_array[1].bytes[0], 3);
+        CU_ASSERT_EQUAL(m.data_array[1].bytes[1], 4);
 
         freeRastaMessageData(&m);
 
-
-        //check retransmitted message data
-        r = createRetransmittedDataMessage(1,2,3,4,5,6,data, &hashing_context);
-        //check standart values
+        // check retransmitted message data
+        r = createRetransmittedDataMessage(1, 2, 3, 4, 5, 6, data, &hashing_context);
+        // check standart values
         CU_ASSERT_EQUAL(r.length, 28 + hashing_context.hash_length * 8 + message_length);
         CU_ASSERT_EQUAL(r.receiver_id, 1);
         CU_ASSERT_EQUAL(r.sender_id, 2);
@@ -210,16 +204,16 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_RETRDATA);
 
-        //check messagedata
+        // check messagedata
         m = extractMessageData(r);
-        CU_ASSERT_EQUAL(m.count,2);
-        CU_ASSERT_EQUAL(m.data_array[0].length,2);
-        CU_ASSERT_EQUAL(m.data_array[1].length,2);
+        CU_ASSERT_EQUAL(m.count, 2);
+        CU_ASSERT_EQUAL(m.data_array[0].length, 2);
+        CU_ASSERT_EQUAL(m.data_array[1].length, 2);
 
-        CU_ASSERT_EQUAL(m.data_array[0].bytes[0],1);
-        CU_ASSERT_EQUAL(m.data_array[0].bytes[1],2);
-        CU_ASSERT_EQUAL(m.data_array[1].bytes[0],3);
-        CU_ASSERT_EQUAL(m.data_array[1].bytes[1],4);
+        CU_ASSERT_EQUAL(m.data_array[0].bytes[0], 1);
+        CU_ASSERT_EQUAL(m.data_array[0].bytes[1], 2);
+        CU_ASSERT_EQUAL(m.data_array[1].bytes[0], 3);
+        CU_ASSERT_EQUAL(m.data_array[1].bytes[1], 4);
 
         freeRastaMessageData(&m);
     }
