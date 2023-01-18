@@ -2,6 +2,16 @@
 
 C library implementation of the Rail Safe Transport Application (RaSTA) protocol.
 
+This implementation of the RaSTA protocol supports Datagram TLS (DTLS), see [TLS HowTo](md_doc/dtls.md). 
+
+The project is built with cmake. 
+It provides different variants of librasta as an output, depending on which transport layer is required:
+
+- librasta_udp
+- librasta_tcp
+- librasta_dtls (if `ENABLE_RASTA_TLS` is enabled)
+- librasta_tls (if `ENABLE_RASTA_TLS` is enabled)
+
 ## Deployment
 ### Unit tests
 see [CUnit HowTo](md_doc/cunit.md)  
@@ -26,14 +36,9 @@ see [Docker HowTo](md_doc/docker.md)
 * [CMake](https://cmake.org/)  - Compilation on Raspberry Pi / ARM
 
 
-## Extensions
-This implementation of the RaSTA protocol supports Datagram TLS (DTLS), see [TLS HowTo](md_doc/dtls.md).  
+## Extensions 
 
-Orthogonally, this implementation of the RaSTA protocol also supports an additional key exchange phase after the initial handshake.
+Orthogonally to DTLS/TLS, this implementation of the RaSTA protocol also supports an additional key exchange phase after the initial handshake.
 During this phase, using the OPAQUE password authenticated key exchange protocol and a user-supplied pre-shared key, a session key with high randomness is exchanged between the peers.
 Also, it is verified that both peers have knowledge of the PSK.
 For more details, see [OPAQUE HowTo](md_doc/opaque.md).
-
-## Contact
-
-This repository is maintained by Simon Giesel and the HPI
