@@ -23,16 +23,9 @@ jobs:
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
-    - name: Install gRPC
-      run: |
-        sudo apt-get install build-essential autoconf libtool
-        cd /tmp
-        git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
-        cd grpc
-        mkdir -p cmake/build && cd cmake/build
-        cmake ../.. -DgRPC_INSTALL=ON
-        make -j8 && sudo make install
-        cd / && rm -rf /tmp/grpc
+    - uses: eWaterCycle/setup-grpc@v5
+      with:
+        grpc-version: 1.47.3
 
     - name: Install WolfSSL
       run: |
