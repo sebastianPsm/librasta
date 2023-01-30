@@ -1,4 +1,4 @@
-#include "../headers/rastafactoryTest.h"
+#include "../headers/rastafactory_test.h"
 #include "CUnit/Basic.h"
 #include <rasta/rastafactory.h>
 

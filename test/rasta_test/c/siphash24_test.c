@@ -1,4 +1,4 @@
-#include "../headers/siphash24test.h"
+#include "../headers/siphash24_test.h"
 #include <CUnit/Basic.h>
 #include <rasta/rastasiphash24.h>
 #include <rasta/rmemory.h>

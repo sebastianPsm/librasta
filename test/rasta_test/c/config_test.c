@@ -2,7 +2,7 @@
 // Created by tobia on 15.01.2018.
 //
 
-#include "../headers/configtest.h"
+#include "../headers/config_test.h"
 #include "configfile.h"
 #include <CUnit/Basic.h>
 #include <stdio.h>

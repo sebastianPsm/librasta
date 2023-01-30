@@ -2,17 +2,17 @@
 #include <CUnit/Basic.h>
 
 // INCLUDE TESTS
-#include "blake2test.h"
-#include "configtest.h"
-#include "dictionarytest.h"
-#include "fifotest.h"
-#include "opaquetest.h"
-#include "rastacrcTest.h"
-#include "rastadeferqueueTest.h"
-#include "rastafactoryTest.h"
-#include "rastalisttest.h"
-#include "rastamd4Test.h"
-#include "rastamoduleTest.h"
+#include "blake2_test.h"
+#include "config_test.h"
+#include "dictionary_test.h"
+#include "fifo_test.h"
+#include "opaque_test.h"
+#include "rastacrc_test.h"
+#include "rastadeferqueue_test.h"
+#include "rastafactory_test.h"
+#include "rastalist_test.h"
+#include "rastamd4_test.h"
+#include "rastamodule_test.h"
 
 int suite_init(void) {
     return 0;
