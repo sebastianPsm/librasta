@@ -1,4 +1,4 @@
-#include "fifotest.h"
+#include "fifo_test.h"
 #include <CUnit/Basic.h>
 #include <rasta/fifo.h>
 #include <rasta/rastautil.h>

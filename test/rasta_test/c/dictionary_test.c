@@ -2,7 +2,7 @@
 // Created by tobia on 13.01.2018.
 //
 
-#include "../headers/dictionarytest.h"
+#include "../headers/dictionary_test.h"
 #include "dictionary.h"
 #include <CUnit/Basic.h>
 #include <stdio.h>

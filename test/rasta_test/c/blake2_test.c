@@ -1,4 +1,4 @@
-#include "../headers/blake2test.h"
+#include "../headers/blake2_test.h"
 #include <CUnit/Basic.h>
 #include <rasta/rastablake2.h>
 #include <rasta/rmemory.h>

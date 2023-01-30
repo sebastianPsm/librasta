@@ -2,7 +2,7 @@
 // Created by tobia on 28.11.2017.
 //
 
-#include "../headers/rastamoduleTest.h"
+#include "../headers/rastamodule_test.h"
 #include <rasta/rastamodule.h>
 
 #include "CUnit/Basic.h"

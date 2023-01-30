@@ -4,41 +4,44 @@ if(PKG_CONFIG_FOUND)
     pkg_check_modules(CUnit IMPORTED_TARGET cunit)
 endif(PKG_CONFIG_FOUND)
 
-add_executable(rastaTest
+add_executable(rasta_test
     ../examples/common/c/logging.c
     ../examples/common/c/configfile.c
     ../examples/common/c/dictionary.c
-    rastaTest/headers/blake2test.h
-    rastaTest/headers/configtest.h
-    rastaTest/headers/dictionarytest.h
-    rastaTest/headers/fifotest.h
-    rastaTest/headers/rastacrcTest.h
-    rastaTest/headers/rastadeferqueueTest.h
-    rastaTest/headers/rastafactoryTest.h
-    rastaTest/headers/rastalisttest.h
-    rastaTest/headers/rastamd4Test.h
-    rastaTest/headers/rastamoduleTest.h
-    rastaTest/headers/registerTests.h
-    rastaTest/headers/siphash24test.h
-    rastaTest/c/blake2test.c
-    rastaTest/c/configtest.c
-    rastaTest/c/dictionarytest.c
-    rastaTest/c/fifotest.c
-    rastaTest/c/rastacrcTest.c
-    rastaTest/c/rastadeferqueueTest.c
-    rastaTest/c/rastafactoryTest.c
-    rastaTest/c/rastalisttest.c
-    rastaTest/c/rastamd4Test.c
-    rastaTest/c/rastamoduleTest.c
-    rastaTest/c/registerTests.c
-    rastaTest/c/siphash24test.c
-    rastaTest/c/opaquetest.c
-    rastaTest/headers/opaquetest.h)
-target_include_directories(rastaTest PRIVATE rastaTest/headers ../examples/common/headers)
-target_link_libraries(rastaTest rasta_udp PkgConfig::CUnit)
-target_compile_definitions(rastaTest PRIVATE WITH_CMAKE)
+    rasta_test/headers/blake2_test.h
+    rasta_test/headers/config_test.h
+    rasta_test/headers/dictionary_test.h
+    rasta_test/headers/fifo_test.h
+    rasta_test/headers/rastacrc_test.h
+    rasta_test/headers/rastadeferqueue_test.h
+    rasta_test/headers/rastafactory_test.h
+    rasta_test/headers/rastalist_test.h
+    rasta_test/headers/rastamd4_test.h
+    rasta_test/headers/rastamodule_test.h
+    rasta_test/headers/register_tests.h
+    rasta_test/headers/siphash24_test.h
+    rasta_test/headers/opaque_test.h
+    rasta_test/headers/safety_retransmission_test.h
+    rasta_test/c/blake2_test.c
+    rasta_test/c/config_test.c
+    rasta_test/c/dictionary_test.c
+    rasta_test/c/fifo_test.c
+    rasta_test/c/rastacrc_test.c
+    rasta_test/c/rastadeferqueue_test.c
+    rasta_test/c/rastafactory_test.c
+    rasta_test/c/rastalist_test.c
+    rasta_test/c/rastamd4_test.c
+    rasta_test/c/rastamodule_test.c
+    rasta_test/c/register_tests.c
+    rasta_test/c/siphash24_test.c
+    rasta_test/c/opaque_test.c
+    rasta_test/c/safety_retransmission_test.c
+)
+target_include_directories(rasta_test PRIVATE rasta_test/headers ../examples/common/headers)
+target_link_libraries(rasta_test rasta_udp PkgConfig::CUnit)
+target_compile_definitions(rasta_test PRIVATE WITH_CMAKE)
 
-add_dependencies(rastaTest rasta_udp)
+add_dependencies(rasta_test rasta_udp)
 
-add_test(NAME test_rastaTest
-         COMMAND rastaTest)
+add_test(NAME test_rasta_test
+         COMMAND rasta_test)
