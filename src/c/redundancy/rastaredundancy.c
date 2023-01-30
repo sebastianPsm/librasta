@@ -1,11 +1,12 @@
 #include <rasta/rastaredundancy.h>
 
 #include <errno.h>
-#include <rasta/rastautil.h>
-#include <rasta/rmemory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
+#include "../transport/rasta_transport_callbacks.h"
 
 void _deliver_message_to_upper_layer(rasta_redundancy_channel *channel, struct RastaByteArray *message) {
     // add to queue
@@ -271,6 +272,7 @@ void rasta_red_add_transport_channel(
 
     transport_channel.port = port;
     transport_channel.ip_address = rmalloc(sizeof(char) * 15);
+    transport_channel.send_callback = send_callback;
     rmemcpy(transport_channel.ip_address, ip, 15);
 
     channel->connected_channels[channel->connected_channel_count] = transport_channel;

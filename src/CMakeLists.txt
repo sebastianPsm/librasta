@@ -50,6 +50,7 @@ set(sources
     c/rastafactory.c
     c/transport
     c/transport/rasta_transport_callbacks.h
+    c/transport/rasta_transport_callbacks.c
     c/transport/tcp.c
     c/transport/udp.c
     c/transport/bsd_utils.c
