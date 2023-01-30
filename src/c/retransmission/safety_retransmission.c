@@ -331,7 +331,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
 
     // re-open fifo in write mode
     // now retransmit each packet in the buffer with new sequence numbers
-    for (int i = 0; i <= buffer_n; i++) {
+    for (int i = 0; i < buffer_n; i++) {
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "retransmit packet %d", i);
 
         // retrieve retransmission data to
@@ -356,7 +356,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         if (fifo_push(connection->fifo_retransmission, to_fifo)) {
             logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "added packet %d to queue", i);
         } else {
-            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "could not add packet to full queue");
+            logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA retransmission", "could not add packet to full queue");
         }
 
         // send packet

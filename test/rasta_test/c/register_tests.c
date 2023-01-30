@@ -13,6 +13,7 @@
 #include "rastalist_test.h"
 #include "rastamd4_test.h"
 #include "rastamodule_test.h"
+#include "safety_retransmission_test.h"
 
 int suite_init(void) {
     return 0;
@@ -82,6 +83,10 @@ void cunit_register() {
 
     // Tests for BLAKE2 hashes
     CU_add_test(pSuiteMath, "testBlake2Hash", testBlake2Hash);
+
+    // Tests for Safety and Retransmission layer
+    CU_add_test(pSuiteMath, "test_sr_retransmit_data_shouldSendFinalHeartbeat", test_sr_retransmit_data_shouldSendFinalHeartbeat);
+    CU_add_test(pSuiteMath, "test_sr_retransmit_data_shouldRetransmitPackage", test_sr_retransmit_data_shouldRetransmitPackage);
 
     // Tests for OPAQUE
 #ifdef ENABLE_OPAQUE

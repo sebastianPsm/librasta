@@ -1,5 +1,8 @@
 #pragma once
 
+typedef struct redundancy_mux redundancy_mux;
+
+#include <rasta/rastautil.h>
 
 /**
  * representation of the transport channel diagnostic data
@@ -34,7 +37,7 @@ typedef struct {
 /**
  * representation of a RaSTA redundancy layer transport channel
  */
-typedef struct {
+typedef struct rasta_transport_channel {
     /**
      * IPv4 address in format a.b.c.d
      */
@@ -59,4 +62,6 @@ typedef struct {
      * data used for transport channel diagnostics as in 6.6.3.2
      */
     rasta_redundancy_diagnostics_data diagnostics_data;
+
+    void (*send_callback)(redundancy_mux *mux, struct RastaByteArray data_to_send, struct rasta_transport_channel *channel, unsigned int channel_index);
 } rasta_transport_channel;

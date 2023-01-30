@@ -69,9 +69,11 @@ int fifo_full(fifo_t *fifo) {
 }
 
 void fifo_destroy(fifo_t *fifo) {
-    for (unsigned int i = 0; i < fifo->size; ++i) {
-        fifo_pop(fifo);
-    }
+    if (fifo != NULL) {
+        for (unsigned int i = 0; i < fifo->size; ++i) {
+            fifo_pop(fifo);
+        }
 
-    rfree(fifo);
+        rfree(fifo);
+    }
 }
