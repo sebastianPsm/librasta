@@ -1,10 +1,10 @@
 #ifdef USE_TCP
 
 #ifdef ENABLE_TLS
-void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel channel, unsigned int channel_index) {
+void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
     UNUSED(mux);
     UNUSED(channel_index);
-    tls_send(channel.ssl, data_to_send.bytes, data_to_send.length);
+    tls_send(channel->ssl, data_to_send.bytes, data_to_send.length);
 }
 
 int receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
@@ -18,9 +18,9 @@ void redundancy_channel_extension_callback(rasta_transport_channel *channel, str
 }
 
 #else
-void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel channel, unsigned int channel_index) {
+void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
     UNUSED(channel_index);
-    tcp_send(&mux->transport_states[channel_index], data_to_send.bytes, data_to_send.length, channel.ip_address, channel.port);
+    tcp_send(&mux->transport_states[channel_index], data_to_send.bytes, data_to_send.length, channel->ip_address, channel->port);
 }
 
 int receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
