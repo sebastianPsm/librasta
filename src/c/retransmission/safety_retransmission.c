@@ -316,6 +316,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
 
     int buffer_n = 0; // how many valid elements are in the buffer
     buffer_n = fifo_get_size(connection->fifo_retransmission);
+    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "found %d unconfirmed packets", buffer_n);
 
     // get all packets and store them in the buffer
     for (int j = 0; j < buffer_n; ++j) {
@@ -332,20 +333,20 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
     // re-open fifo in write mode
     // now retransmit each packet in the buffer with new sequence numbers
     for (int i = 0; i < buffer_n; i++) {
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "retransmit packet %d", i);
+        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "retransmit packet %d", i);
 
         // retrieve retransmission data to
         struct RastaPacket old_p = bytesToRastaPacket(packets[i], h->hashing_context);
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "convert packet %d to packet structure", i);
+        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "convert packet %d to packet structure", i);
 
         struct RastaMessageData app_messages = extractMessageData(old_p);
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "extract data from packet %d ", i);
+        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "extract data from packet %d ", i);
 
         // create new packet for retransmission
         struct RastaPacket data = createRetransmittedDataMessage(connection->remote_id, connection->my_id, connection->sn_t,
-                                                                 connection->cs_t, cur_timestamp(), connection->cts_r,
+                                                                 connection->cs_t, cur_timestamp(), connection->ts_r,
                                                                  app_messages, h->hashing_context);
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "created retransmission packet %d ", i);
+        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "created retransmission packet %d ", i);
 
         struct RastaByteArray new_p = rastaModuleToBytes(data, h->hashing_context);
 
@@ -361,7 +362,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
 
         // send packet
         redundancy_mux_send(h->mux, data);
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA retransmission", "retransmitted packet with old sn=%lu",
+        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "retransmitted packet with old sn=%lu",
                    (long unsigned int)old_p.sequence_number);
 
         // increase sn_t
