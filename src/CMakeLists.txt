@@ -39,7 +39,6 @@ set(headers
     include/rasta/tcp.h
     include/rasta/types.h
     include/rasta/bsd_utils.h
-    include/rasta/ssl_utils.h
     include/rasta/rastablake2.h
     include/rasta/rastasiphash24.h
     include/rasta/rastahashing.h
@@ -54,7 +53,6 @@ set(sources
     c/transport/tcp.c
     c/transport/udp.c
     c/transport/bsd_utils.c
-    c/transport/ssl_utils.c
     c/retransmission
     c/retransmission/handlers.c
     c/retransmission/safety_retransmission.h
@@ -97,7 +95,14 @@ endif(ENABLE_RASTA_TLS)
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
     # Shared object for RaSTA protocol
-    add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers})
+    if(RASTA_VARIANT MATCHES "tls")
+        add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers}
+            include/rasta/ssl_utils.h
+            c/transport/ssl_utils.c
+        )
+    else()
+        add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers})
+    endif()
 
     # Link system libraries for librasta
     target_link_libraries(${target}_${RASTA_VARIANT} rt pthread)

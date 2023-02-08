@@ -3,8 +3,6 @@
 #include <stdbool.h>
 #include <wolfssl/error-ssl.h>
 
-#ifdef ENABLE_TLS
-
 // #define DEBUG_WOLFSSL
 void wolfssl_initialize_if_necessary() {
     static bool wolfssl_initialized = false;
@@ -286,5 +284,3 @@ void tls_pin_certificate(WOLFSSL *ssl, const char *peer_tls_cert_path) {
         }
     }
 }
-
-#endif
