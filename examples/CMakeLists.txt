@@ -17,6 +17,14 @@ set_target_properties(rasta_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
 target_compile_options(rasta_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 target_link_libraries(rasta_example_local rasta_udp)
 
+add_executable(rasta_example_tcp
+                ${EXAMPLES_COMMON_SRC}
+                examples_localhost/c/rasta.c)
+target_include_directories(rasta_example_tcp PRIVATE common/headers)
+set_target_properties(rasta_example_tcp PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+target_compile_options(rasta_example_tcp PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+target_link_libraries(rasta_example_tcp rasta_tcp)
+
 
 add_executable(event_system_example_local
                 ${EXAMPLES_COMMON_SRC}
