@@ -305,7 +305,7 @@ int event_connection_expired(void *carry_data) {
         return 0;
     }
 
-    // connection is valid, check current tls_state
+    // connection is valid, check current state
     if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRREQ || connection->current_state == RASTA_CONNECTION_RETRRUN) {
 
         // fire heartbeat timeout event
@@ -331,7 +331,7 @@ int heartbeat_send_event(void *carry_data) {
         return 0;
     }
 
-    // connection is valid, check current tls_state
+    // connection is valid, check current state
     if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRREQ || connection->current_state == RASTA_CONNECTION_RETRRUN) {
         sendHeartbeat(h->mux, connection, 0);
 
@@ -539,7 +539,7 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
             return connection;
         }
     } else {
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Connection is in invalid tls_state (%d) send DisconnectionRequest", connection->current_state);
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Connection is in invalid state (%d) send DisconnectionRequest", connection->current_state);
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
     return connection;
@@ -558,7 +558,7 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
     if (con->current_state == RASTA_CONNECTION_START) {
         if (con->role == RASTA_ROLE_CLIENT) {
             // handle normal conresp
-            logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Current tls_state is in order");
+            logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Current state is in order");
 
             // correct type of packet received -> version check
             struct RastaConnectionData connectionData = extractRastaConnectionData(receivedPacket);
@@ -581,7 +581,7 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
 
                 // printf("RECEIVED CS_PDU=%lu (Type=%d)\n", receivedPacket.sequence_number, receivedPacket.type);
 
-                // update tls_state, ready to send data
+                // update state, ready to send data
                 con->current_state = RASTA_CONNECTION_UP;
 
                 // send hb
@@ -594,7 +594,7 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
                 }
 #endif
 
-                // fire connection tls_state changed event
+                // fire connection state changed event
                 fire_on_connection_state_change(sr_create_notification_result(h->handle, con));
                 // fire handshake complete event
                 fire_on_handshake_complete(sr_create_notification_result(h->handle, con));
@@ -627,7 +627,7 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
         }
     } else if (con->current_state == RASTA_CONNECTION_RETRREQ || con->current_state == RASTA_CONNECTION_RETRRUN || con->current_state == RASTA_CONNECTION_UP) {
         sr_close_connection(con, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Received ConnectionResponse in wrong tls_state - semd DisconnectionRequest");
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionResponse", "Received ConnectionResponse in wrong state - semd DisconnectionRequest");
         return con;
     }
     return con;
@@ -676,7 +676,7 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
 
             connection->hb_locked = 0;
 
-            // fire connection tls_state changed event
+            // fire connection state changed event
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
             // fire handshake complete event
             fire_on_handshake_complete(sr_create_notification_result(h->handle, connection));
@@ -733,13 +733,13 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "SN not in SEQ");
 
         if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN) {
-            // ignore message, send RetrReq and goto tls_state RetrReq
+            // ignore message, send RetrReq and goto state RetrReq
             // TODO:send retransmission
             // send_retrreq(con);
             connection->current_state = RASTA_CONNECTION_RETRREQ;
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "Send retransmission");
 
-            // fire connection tls_state changed event
+            // fire connection state changed event
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
         }
     }
@@ -780,7 +780,7 @@ void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaI
     // increase sequence number
     new_con.sn_t++;
 
-    // update tls_state
+    // update state
     new_con.current_state = RASTA_CONNECTION_START;
 
     void *memory = h->user_handles->on_connection_start(&new_con);
@@ -795,7 +795,7 @@ void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaI
 
     freeRastaByteArray(&conreq.data);
 
-    // fire connection tls_state changed event
+    // fire connection state changed event
     fire_on_connection_state_change(sr_create_notification_result(h, con));
 
     init_connection_events(h, con);

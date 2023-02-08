@@ -245,7 +245,7 @@ void sr_close_connection(struct rasta_connection *connection, struct rasta_handl
 
         redundancy_mux_remove_channel(&handle->mux, connection->remote_id);
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(handle, connection));
     } else {
         // need to send DiscReq
@@ -256,7 +256,7 @@ void sr_close_connection(struct rasta_connection *connection, struct rasta_handl
 
         redundancy_mux_remove_channel(&handle->mux, connection->remote_id);
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(handle, connection));
     }
 }
@@ -486,10 +486,10 @@ void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessag
         logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA send", "data in send queue");
 
     } else if (con->current_state == RASTA_CONNECTION_CLOSED || con->current_state == RASTA_CONNECTION_DOWN) {
-        // nothing to do besides changing tls_state to closed
+        // nothing to do besides changing state to closed
         con->current_state = RASTA_CONNECTION_CLOSED;
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h, con));
     } else {
         logger_log(&h->logger, LOG_LEVEL_ERROR, "RaSTA send", "service not allowed");
@@ -498,7 +498,7 @@ void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessag
         sendDisconnectionRequest(&h->mux, con, RASTA_DISC_REASON_SERVICENOTALLOWED, 0);
         con->current_state = RASTA_CONNECTION_CLOSED;
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h, con));
 
         // leave with error code 1

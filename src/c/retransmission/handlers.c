@@ -13,7 +13,7 @@ void handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *con
 
     // struct RastaDisconnectionData disconnectionData = extractRastaDisconnectionData(receivedPacket);
 
-    // fire connection tls_state changed event
+    // fire connection state changed event
     fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     // fire disconnection request received event
     struct RastaDisconnectionData data = extractRastaDisconnectionData(receivedPacket);
@@ -87,7 +87,7 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
             // send RetrReq
             sendRetransmissionRequest(h->mux, connection);
 
-            // change tls_state to RetrReq
+            // change state to RetrReq
             connection->current_state = RASTA_CONNECTION_RETRREQ;
 
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
@@ -136,14 +136,14 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
         sr_retransmit_data(h, connection);
 
         if (connection->current_state == RASTA_CONNECTION_UP) {
-            // change tls_state to up
+            // change state to up
             connection->current_state = RASTA_CONNECTION_UP;
         } else if (connection->current_state == RASTA_CONNECTION_RETRREQ) {
-            // change tls_state to RetrReq
+            // change state to RetrReq
             connection->current_state = RASTA_CONNECTION_RETRREQ;
         }
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     } else {
         // sn_in_seq == false
@@ -157,10 +157,10 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA receive", "send RetrRes");
 
         sr_retransmit_data(h, connection);
-        // change tls_state to RetrReq
+        // change state to RetrReq
         connection->current_state = RASTA_CONNECTION_RETRREQ;
 
-        // fire connection tls_state changed event
+        // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     }
 }
@@ -176,7 +176,7 @@ void handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *co
         // check cts_in_seq
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA receive", "RetrResp: CTS in Seq");
 
-        // change to retransmission tls_state
+        // change to retransmission state
         connection->current_state = RASTA_CONNECTION_RETRRUN;
 
         // set values according to 5.6.2 [3]
@@ -187,7 +187,7 @@ void handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *co
 
         connection->cts_r = receivedPacket.confirmed_timestamp;
     } else {
-        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA receive", "received packet type retr_resp, but not in tls_state retr_req");
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA receive", "received packet type retr_resp, but not in state retr_req");
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
 }
@@ -229,7 +229,7 @@ void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *co
             sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
         } else if (connection->current_state == RASTA_CONNECTION_RETRRUN) {
             // send RetrReq
-            logger_log(h->logger, LOG_LEVEL_DEBUG, "Process RetrData", "changing to tls_state RetrReq");
+            logger_log(h->logger, LOG_LEVEL_DEBUG, "Process RetrData", "changing to state RetrReq");
             sendRetransmissionRequest(h->mux, connection);
             connection->current_state = RASTA_CONNECTION_RETRREQ;
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
