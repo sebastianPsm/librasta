@@ -9,13 +9,13 @@ set(EXAMPLES_COMMON_SRC
 
 if(BUILD_LOCAL_EXAMPLES)
 # rasta_example_new on localhost
-add_executable(rasta_example_local
+add_executable(rasta_example_udp
                 ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/rasta.c)
-target_include_directories(rasta_example_local PRIVATE common/headers)
-set_target_properties(rasta_example_local PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
-target_compile_options(rasta_example_local PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(rasta_example_local rasta_udp)
+target_include_directories(rasta_example_udp PRIVATE common/headers)
+set_target_properties(rasta_example_udp PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+target_compile_options(rasta_example_udp PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+target_link_libraries(rasta_example_udp rasta_udp)
 
 add_executable(rasta_example_tcp
                 ${EXAMPLES_COMMON_SRC}

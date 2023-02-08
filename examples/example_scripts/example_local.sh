@@ -12,7 +12,7 @@ function run_example_local() {
     # Keep the fifo open
     cat > /tmp/$MODE-input &
 
-    tail -f /tmp/$MODE-input | ../rasta_example_local $MODE &
+    tail -f /tmp/$MODE-input | ../rasta_example_udp $MODE &
 }
 
 run_example_local r

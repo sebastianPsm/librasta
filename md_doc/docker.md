@@ -12,7 +12,7 @@ Each of them with configuration for running on localhost and on different networ
 For the configuration the can be executed on systems in a network, the IPs for the server and client(s) can be specified
 to the Docker build command using `--build-arg`. The following build args are supported. All of them are of type String.
 
-| Build Arg Name | Description                                                                                      | 
+| Build Arg Name | Description                                                                                      |
 |----------------|--------------------------------------------------------------------------------------------------|
 | SERVER_CH1     | IP address of the the first redundancy channel of the server                                     |
 | SERVER_CH2     | IP address of the the second redundancy channel of the server                                    |
@@ -21,7 +21,7 @@ to the Docker build command using `--build-arg`. The following build args are su
 | CLIENT2_CH1    | IP address of the the first redundancy channel of client 2 (only used in RaSTA example)          |
 | CLIENT2_CH2    | IP address of the the second redundancy channel of client 2 (only used in RaSTA example)         |
 
-In the container the binaries are located in `/opt/rasta-c/build/bin/exe/examples`  
+In the container the binaries are located in `/opt/rasta-c/build/bin/exe/examples`
 In the container the configs are located in `/opt/rasta-c/build/`
 
 ### Running the Examples
@@ -31,8 +31,8 @@ They can be executed manually once a container is created, e.g.
 ```shell script
 >>> docker run -it [IMAGE NAME] /bin/sh
 / # cd /opt/rasta-c/build/bin/exe/examples
-/ # ./rasta_example_localhost r
-``` 
+/ # ./rasta_example_udp r
+```
 
 #### Helper Script
 Instead of building the image and running the examples manually , the `rasta-docker.sh` script can be used.
