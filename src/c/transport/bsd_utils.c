@@ -93,20 +93,6 @@ void bsd_bind_device(int file_descriptor, uint16_t port, char *ip) {
     }
 }
 
-size_t bsd_receive(int file_descriptor, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender) {
-    ssize_t recv_len;
-    struct sockaddr_in empty_sockaddr_in;
-    socklen_t sender_len = sizeof(empty_sockaddr_in);
-
-    // wait for incoming data
-    if ((recv_len = recvfrom(file_descriptor, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) < 0) {
-        perror("an error occured while trying to receive data");
-        exit(1);
-    }
-
-    return (size_t)recv_len;
-}
-
 void bsd_send(int file_descriptor, unsigned char *message, size_t message_len, char *host, uint16_t port) {
     struct sockaddr_in receiver = host_port_to_sockaddr(host, port);
 

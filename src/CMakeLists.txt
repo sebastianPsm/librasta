@@ -49,10 +49,6 @@ set(headers
 set(sources
     c/logging.c
     c/rastafactory.c
-    c/transport/rasta_transport_callbacks.h
-    c/transport/rasta_transport_callbacks.c
-    c/transport/tcp.c
-    c/transport/udp.c
     c/transport/bsd_utils.c
     c/retransmission/handlers.c
     c/retransmission/safety_retransmission.h
@@ -92,8 +88,10 @@ endif(ENABLE_RASTA_TLS)
 
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
+    set(variant_sources ${sources} c/transport/${RASTA_VARIANT}.c)
+
     # Shared object for RaSTA protocol
-    add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers})
+    add_library(${target}_${RASTA_VARIANT} SHARED ${variant_sources} ${headers})
 
     # Link system libraries for librasta
     target_link_libraries(${target}_${RASTA_VARIANT} pthread)

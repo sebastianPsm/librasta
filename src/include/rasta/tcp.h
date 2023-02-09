@@ -55,7 +55,7 @@ ssize_t tls_receive(WOLFSSL *ssl, unsigned char *received_message, size_t max_bu
  * @param sender information about the sender of the data will be stored here
  * @return the amount of received bytes
  */
-size_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
+ssize_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
 #endif
 
 /**

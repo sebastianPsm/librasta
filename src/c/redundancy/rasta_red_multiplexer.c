@@ -16,7 +16,7 @@
 #ifdef USE_TCP
 #include <rasta/tcp.h>
 #endif
-#include "../transport/rasta_transport_callbacks.h"
+#include "../transport/transport.h"
 #include <rasta/rastautil.h>
 
 /* --- Notifications --- */
@@ -157,18 +157,26 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 
 /* --------------------- */
 
-// HACK
+// TODO: Sort out these method dependencies
 int on_readable_event(void *handle);
 int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data) {
     unsigned char *buffer = rmalloc(sizeof(unsigned char) * MAX_DEFER_QUEUE_MSG_SIZE);
     struct sockaddr_in sender = {0};
-    ssize_t len = abstract_receive_packet(mux, data, buffer, &sender, receive_callback);
+
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
+
+    ssize_t len = receive_callback(mux, data, buffer, &sender);
+
     if (len == 0) {
         return 0;
     }
+
     if (len < 0) {
-        return -1;
+        transport_reconnect(mux, data->channel_index);
+        return 0;
     }
+
+    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", data->channel_index, len);
 
     size_t len_remaining = len;
     size_t read_offset = 0;
@@ -190,24 +198,6 @@ int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct r
     }
     rfree(buffer);
     return 0;
-}
-
-ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender, RastaReceiveFunction receive_callback) {
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
-
-    ssize_t len = receive_callback(mux, data, buffer, sender);
-
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data on upd", data->channel_index);
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", data->channel_index, len);
-
-    if (len < 0) {
-        return -1;
-    }
-
-    if (!len) {
-        return 0;
-    }
-    return len;
 }
 
 struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len) {
@@ -553,43 +543,24 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
     return mux;
 }
 
-void cleanup_rasta_states(redundancy_mux *mux, struct rasta_transport_state *rasta_transport_states, unsigned int count) {
-    for (unsigned int i = 0; i < count; ++i) {
-        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, count);
-        bsd_close(rasta_transport_states[i].file_descriptor);
-    }
-
-    // free arrays
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "freeing thread data");
-    rfree(rasta_transport_states);
-
-    mux->port_count = 0;
-    freeRastaByteArray(&mux->sr_hashing_context.key);
-
-    logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux close", "redundancy multiplexer closed");
-}
-
-#ifdef USE_UDP
 void redundancy_mux_close(redundancy_mux *mux) {
-
-    // close the sockets of the transport channels
-    cleanup_rasta_states(mux, mux->transport_states, mux->port_count);
-
     // close the redundancy channels
     for (unsigned int j = 0; j < mux->channel_count; ++j) {
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "cleanup connected channel %d/%d", j + 1, mux->channel_count);
         red_f_cleanup(&mux->connected_channels[j]);
     }
     rfree(mux->connected_channels);
-}
-#endif
 
-#ifdef USE_TCP
-void redundancy_mux_close(redundancy_mux *mux) {
-    // close the sockets of the transport channels
-    cleanup_rasta_states(mux, mux->transport_states, mux->port_count);
+    // Close listening ports
+    for (unsigned int i = 0; i < mux->port_count; ++i) {
+        logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, mux->port_count);
+        bsd_close(mux->transport_states[i].file_descriptor);
+    }
+    mux->port_count = 0;
+    rfree(mux->transport_states);
+
+    freeRastaByteArray(&mux->sr_hashing_context.key);
 }
-#endif
 
 rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsigned long id) {
     // iterate over all known channels
@@ -730,16 +701,9 @@ int redundancy_mux_listen_channels(redundancy_mux *mux) {
     return result;
 }
 
-#ifdef USE_TCP
 void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port) {
-    // init socket
-    tcp_init(&mux->transport_states[channel], &mux->config.tls);
-    tcp_bind_device(&mux->transport_states[channel],
-                    (uint16_t)mux->config.redundancy.connections.data[channel].port,
-                    mux->config.redundancy.connections.data[channel].ip);
-    tcp_connect(&mux->transport_states[channel], host, port);
+    transport_connect(mux, channel, host, port);
 }
-#endif
 
 void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels) {
     rasta_redundancy_channel channel;
@@ -748,9 +712,7 @@ void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct Ra
     // add transport channels
     for (unsigned int i = 0; i < mux->port_count; ++i) {
         rasta_red_add_transport_channel(&channel,
-#ifdef USE_TCP
                                         mux->transport_states[i],
-#endif
                                         transport_channels[i].ip,
                                         (uint16_t)transport_channels[i].port);
     }
@@ -781,18 +743,10 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 
         if (c.associated_id == channel_id) {
             logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux remove channel", "skipping channel with ID=0x%lX", c.associated_id);
-#ifdef USE_TCP
             for (unsigned int i = 0; i < c.connected_channel_count; ++i) {
                 rasta_transport_channel *channel = &c.connected_channels[i];
-                bsd_close(channel->fd);
-#ifdef ENABLE_TLS
-                if (channel->ssl) {
-                    wolfSSL_shutdown(channel->ssl);
-                    wolfSSL_free(channel->ssl);
-                }
-#endif
+                transport_close(channel);
             }
-#endif
             // channel to remove, skip
             continue;
         }

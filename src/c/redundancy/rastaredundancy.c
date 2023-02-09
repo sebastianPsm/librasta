@@ -6,7 +6,7 @@
 #include <string.h>
 #include <rasta/rastautil.h>
 #include <rasta/rmemory.h>
-#include "../transport/rasta_transport_callbacks.h"
+#include "../transport/transport.h"
 
 void _deliver_message_to_upper_layer(rasta_redundancy_channel *channel, struct RastaByteArray *message) {
     // add to queue
@@ -257,24 +257,8 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
 
 void rasta_red_add_transport_channel(
     rasta_redundancy_channel *channel,
-#ifdef USE_TCP
     struct rasta_transport_state transport_state,
-#endif
     char *ip, uint16_t port) {
-    rasta_transport_channel transport_channel;
-
-#ifdef USE_TCP
-    transport_channel.fd = transport_state.file_descriptor;
-#ifdef ENABLE_TLS
-    transport_channel.ssl = transport_state.ssl;
-#endif
-#endif
-
-    transport_channel.port = port;
-    transport_channel.ip_address = rmalloc(sizeof(char) * 15);
-    transport_channel.send_callback = send_callback;
-    rmemcpy(transport_channel.ip_address, ip, 15);
-
-    channel->connected_channels[channel->connected_channel_count] = transport_channel;
+    transport_initialize(&channel->connected_channels[channel->connected_channel_count], transport_state, ip, port);
     channel->connected_channel_count++;
 }
