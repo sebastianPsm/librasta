@@ -247,18 +247,18 @@ struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender
 }
 #endif
 
-struct RastaConnectionData extractRastaConnectionData(struct RastaPacket p) {
+struct RastaConnectionData extractRastaConnectionData(struct RastaPacket *p) {
     struct RastaConnectionData result;
 
-    if (p.data.length == 14) {
+    if (p->data.length == 14) {
 
         // extract version
-        result.version[0] = p.data.bytes[0];
-        result.version[1] = p.data.bytes[1];
-        result.version[2] = p.data.bytes[2];
-        result.version[3] = p.data.bytes[3];
+        result.version[0] = p->data.bytes[0];
+        result.version[1] = p->data.bytes[1];
+        result.version[2] = p->data.bytes[2];
+        result.version[3] = p->data.bytes[3];
 
-        result.send_max = leShortToHost(&p.data.bytes[4]);
+        result.send_max = leShortToHost(&p->data.bytes[4]);
     } else {
         result.send_max = 0;
         for (int i = 0; i < 4; i++)
@@ -297,16 +297,16 @@ struct RastaPacket createDisconnectionRequest(uint32_t receiver_id, uint32_t sen
     return p;
 }
 
-struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket p) {
+struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket *p) {
     struct RastaDisconnectionData result;
 
-    if (p.data.length == 4) {
+    if (p->data.length == 4) {
 
         // details
-        result.details = leShortToHost(&p.data.bytes[0]);
+        result.details = leShortToHost(&p->data.bytes[0]);
 
         // reason
-        result.reason = leShortToHost(&p.data.bytes[2]);
+        result.reason = leShortToHost(&p->data.bytes[2]);
     } else {
         result.details = 0;
         result.reason = 0;
@@ -355,12 +355,12 @@ struct RastaPacket createDataMessage(uint32_t receiver_id, uint32_t sender_id, u
     return p;
 }
 
-struct RastaMessageData extractMessageData(struct RastaPacket p) {
+struct RastaMessageData extractMessageData(struct RastaPacket *p) {
     unsigned int current_length = 0;
     unsigned int counter = 0;
 
-    while (current_length < p.data.length) {
-        const uint16_t length = leShortToHost(&p.data.bytes[0 + current_length]);
+    while (current_length < p->data.length) {
+        const uint16_t length = leShortToHost(&p->data.bytes[0 + current_length]);
 
         current_length += length + 2;
         counter++;
@@ -372,12 +372,12 @@ struct RastaMessageData extractMessageData(struct RastaPacket p) {
     current_length = 0;
 
     for (unsigned int i = 0; i < result.count; i++) {
-        const uint16_t length = leShortToHost(&p.data.bytes[0 + current_length]);
+        const uint16_t length = leShortToHost(&p->data.bytes[0 + current_length]);
 
         allocateRastaByteArray(&result.data_array[i], length);
 
         for (int j = 0; j < length; j++) {
-            result.data_array[i].bytes[j] = p.data.bytes[2 + current_length + j];
+            result.data_array[i].bytes[j] = p->data.bytes[2 + current_length + j];
         }
 
         current_length += length + 2;

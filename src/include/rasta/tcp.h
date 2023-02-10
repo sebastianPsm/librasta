@@ -1,7 +1,10 @@
 #include <netinet/in.h>
 #include <stdint.h>
 
-#include <rasta/transport.h>
+#include <rasta/config.h>
+
+typedef struct rasta_transport_socket rasta_transport_socket;
+typedef struct rasta_transport_channel rasta_transport_channel;
 
 #define MAX_PENDING_CONNECTIONS 5
 

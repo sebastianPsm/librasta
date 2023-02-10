@@ -2,21 +2,28 @@
 
 #include "../transport/transport.h"
 #include <errno.h>
-#include <rasta/rastautil.h>
-#include <rasta/rmemory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
+#include "../retransmission/safety_retransmission.h"
 
-void _deliver_message_to_upper_layer(rasta_redundancy_channel *channel, struct RastaByteArray *message) {
-    // add to queue
-    struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
-    allocateRastaByteArray(to_fifo, message->length);
-    rmemcpy(to_fifo->bytes, message->bytes, message->length);
+void _deliver_message_to_upper_layer(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaByteArray message) {
+    struct RastaPacket packet = bytesToRastaPacket(message, &channel->hashing_context);
+    sr_receive(h, &packet);
 
-    if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
-        logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red deliver deferq", "discarded packet because receive buffer was full");
-    }
+    // // add to queue
+    // struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
+    // allocateRastaByteArray(to_fifo, message->length);
+    // rmemcpy(to_fifo->bytes, message->bytes, message->length);
+
+    // if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
+    //     logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red deliver deferq", "discarded packet because receive buffer was full");
+    // }
+
+    // Other side:
+    // struct RastaPacket packet = bytesToRastaPacket(*element, &target->hashing_context);
 }
 
 void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
@@ -70,7 +77,7 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
  * see 6.6.4.4.6 for more details
  * @param connection the connection data which is used
  */
-void red_f_deliverDeferQueue(rasta_redundancy_channel *channel) {
+void red_f_deliverDeferQueue(struct rasta_receive_handle *h, rasta_redundancy_channel *channel) {
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red deliver deferq", "f_deliverDeferQueue called");
 
     // check if message with seq_pdu == seq_rx in defer queue
@@ -84,7 +91,7 @@ void red_f_deliverDeferQueue(rasta_redundancy_channel *channel) {
         // convert inner data (RaSTA SR layer PDU) to byte array
         innerPackerBytes = rastaModuleToBytes(deferqueue_get(&channel->defer_q, channel->seq_rx).data,
                                               &channel->hashing_context);
-        _deliver_message_to_upper_layer(channel, &innerPackerBytes);
+        _deliver_message_to_upper_layer(h, channel, innerPackerBytes);
         freeRastaByteArray(&innerPackerBytes);
 
         // remove message from queue (effectively a pop operation with the get call)
@@ -98,7 +105,7 @@ void red_f_deliverDeferQueue(rasta_redundancy_channel *channel) {
                channel->seq_rx);
 }
 
-void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id) {
+void red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id) {
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "Channel %d: ptr=%p", channel_id, (void *)channel);
 
     if (!packet.checksum_correct) {
@@ -167,7 +174,7 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
         struct RastaByteArray innerPacketBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
         innerPacketBytes = rastaModuleToBytesNoChecksum(packet.data, &channel->hashing_context);
-        _deliver_message_to_upper_layer(channel, &innerPacketBytes);
+        _deliver_message_to_upper_layer(h, channel, innerPacketBytes);
         freeRastaByteArray(&innerPacketBytes);
 
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: added message to buffer",
@@ -177,7 +184,7 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
         channel->seq_rx++;
 
         // deliver message to upper layer
-        red_f_deliverDeferQueue(channel);
+        red_f_deliverDeferQueue(h, channel);
     } else if (channel->seq_rx < packet.sequence_number && packet.sequence_number <= (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)) {
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_rx < seq_pdu && seq_pdu <= (seq_rx + 10 * MAX_DEFERQUEUE_SIZE)", channel_id);
 
@@ -214,7 +221,7 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
     }
 }
 
-void red_f_deferTmo(rasta_redundancy_channel *channel) {
+void red_f_deferTmo(struct rasta_receive_handle *h, rasta_redundancy_channel *channel) {
     // find smallest seq_pdu in defer queue
     int smallest_index = deferqueue_smallest_seqnr(&channel->defer_q);
 
@@ -222,7 +229,7 @@ void red_f_deferTmo(rasta_redundancy_channel *channel) {
     channel->seq_rx = channel->defer_q.elements[smallest_index].packet.sequence_number;
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red f_deferTmo", "calling f_deliverDeferQueue");
-    red_f_deliverDeferQueue(channel);
+    red_f_deliverDeferQueue(h, channel);
 }
 
 void red_f_cleanup(rasta_redundancy_channel *channel) {

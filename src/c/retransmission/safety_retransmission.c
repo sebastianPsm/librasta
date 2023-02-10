@@ -3,6 +3,10 @@
 #include <rasta/rasta.h>
 #include <rasta/rasta_lib.h>
 #include <rasta/rmemory.h>
+#include <rasta/rastahandle.h>
+#include "../transport/events.h"
+#include "../transport/transport.h"
+#include "../retransmission/handlers.h"
 
 void updateTimeoutInterval(long confirmed_timestamp, struct rasta_connection *con, struct RastaConfigInfoSending cfg) {
     unsigned long t_local = cur_timestamp();
@@ -20,9 +24,9 @@ void resetDiagnostic(struct rasta_connection *connection) {
     }
 }
 
-void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket receivedPacket, struct RastaConfigInfoSending cfg, struct rasta_handle *h) {
+void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket *receivedPacket, struct RastaConfigInfoSending cfg, struct rasta_handle *h) {
     unsigned long t_local = cur_timestamp();
-    unsigned long t_rtd = t_local + (1000 / sysconf(_SC_CLK_TCK)) - receivedPacket.confirmed_timestamp;
+    unsigned long t_rtd = t_local + (1000 / sysconf(_SC_CLK_TCK)) - receivedPacket->confirmed_timestamp;
     unsigned long t_alive = t_local - connection->cts_r;
     for (unsigned int i = 0; i < connection->diagnostic_intervals_length; i++) {
         if (connection->diagnostic_intervals[i].interval_start >= t_rtd && connection->diagnostic_intervals[i].interval_end <= t_rtd) {
@@ -43,7 +47,7 @@ void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket re
     }
 }
 
-void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket packet) {
+void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket *packet) {
     struct RastaMessageData received_data;
     received_data = extractMessageData(packet);
 
@@ -51,7 +55,7 @@ void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_
 
     for (unsigned int i = 0; i < received_data.count; ++i) {
         rastaApplicationMessage *elem = rmalloc(sizeof(rastaApplicationMessage));
-        elem->id = packet.sender_id;
+        elem->id = packet->sender_id;
         allocateRastaByteArray(&elem->appMessage, received_data.data_array[i].length);
 
         rmemcpy(elem->appMessage.bytes, received_data.data_array[i].bytes, received_data.data_array[i].length);
@@ -61,7 +65,7 @@ void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_
         // fire onReceive event
         fire_on_receive(sr_create_notification_result(h->handle, con));
 
-        updateTimeoutInterval(packet.confirmed_timestamp, con, h->config);
+        updateTimeoutInterval(packet->confirmed_timestamp, con, h->config);
         updateDiagnostic(con, packet, h->config, h->handle);
     }
 }
@@ -109,9 +113,9 @@ void sr_remove_confirmed_messages(struct rasta_receive_handle *h, struct rasta_c
  * @param packet the packet
  * @return cts_in_seq (bool)
  */
-int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket packet) {
+int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket *packet) {
 
-    if (packet.type == RASTA_TYPE_HB || packet.type == RASTA_TYPE_DATA || packet.type == RASTA_TYPE_RETRDATA) {
+    if (packet->type == RASTA_TYPE_HB || packet->type == RASTA_TYPE_DATA || packet->type == RASTA_TYPE_RETRDATA) {
         // Workaround rs 05.04.22
         // what should happen if cts_r is 0 (i.e. no packet received yet)
         if (con->cts_r == 0) {
@@ -119,10 +123,10 @@ int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cf
         }
 
         // cts_in_seq := 0 <= CTS_PDU - CTS_R < t_i
-        if (packet.confirmed_timestamp < con->cts_r) {
+        if (packet->confirmed_timestamp < con->cts_r) {
             return 0;
         }
-        return (packet.confirmed_timestamp - con->cts_r) < cfg.t_max;
+        return (packet->confirmed_timestamp - con->cts_r) < cfg.t_max;
     } else {
         // for any other type return always true
         return 1;
@@ -135,14 +139,14 @@ int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cf
  * @param packet the packet
  * @return sn_in_seq (bool)
  */
-int sr_sn_in_seq(struct rasta_connection *con, struct RastaPacket packet) {
-    if (packet.type == RASTA_TYPE_CONNREQ || packet.type == RASTA_TYPE_CONNRESP ||
-        packet.type == RASTA_TYPE_RETRRESP || packet.type == RASTA_TYPE_DISCREQ) {
+int sr_sn_in_seq(struct rasta_connection *con, struct RastaPacket *packet) {
+    if (packet->type == RASTA_TYPE_CONNREQ || packet->type == RASTA_TYPE_CONNRESP ||
+        packet->type == RASTA_TYPE_RETRRESP || packet->type == RASTA_TYPE_DISCREQ) {
         // return always true
         return 1;
     } else {
         // check sn_in_seq := sn_r == sn_pdu
-        return (con->sn_r == packet.sequence_number);
+        return (con->sn_r == packet->sequence_number);
     }
 }
 
@@ -152,16 +156,16 @@ int sr_sn_in_seq(struct rasta_connection *con, struct RastaPacket packet) {
  * @param packet the packet
  * @return 1 if the sequency number of the @p packet is in range
  */
-int sr_sn_range_valid(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket packet) {
+int sr_sn_range_valid(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket *packet) {
     // for types ConReq, ConResp and RetrResp return true
-    if (packet.type == RASTA_TYPE_CONNREQ || packet.type == RASTA_TYPE_CONNRESP || packet.type == RASTA_TYPE_RETRRESP) {
+    if (packet->type == RASTA_TYPE_CONNREQ || packet->type == RASTA_TYPE_CONNRESP || packet->type == RASTA_TYPE_RETRRESP) {
         return 1;
     }
 
     // else
     // seq. nr. in range when 0 <= SN_PDU - SN_R <= N_SENDMAX * 10
-    return ((packet.sequence_number >= con->sn_r) &&
-            (packet.sequence_number - con->sn_r) <= (cfg.send_max * 10));
+    return ((packet->sequence_number >= con->sn_r) &&
+            (packet->sequence_number - con->sn_r) <= (cfg.send_max * 10));
 }
 
 /**
@@ -170,17 +174,17 @@ int sr_sn_range_valid(struct rasta_connection *con, struct RastaConfigInfoSendin
  * @param packet the packet
  * @return 1 if the integrity of the confirmed sequency number is confirmed, 0 otherwise
  */
-int sr_cs_valid(struct rasta_connection *con, struct RastaPacket packet) {
-    if (packet.type == RASTA_TYPE_CONNREQ) {
+int sr_cs_valid(struct rasta_connection *con, struct RastaPacket *packet) {
+    if (packet->type == RASTA_TYPE_CONNREQ) {
         // initial CS_PDU has to be 0
-        return (packet.confirmed_sequence_number == 0);
-    } else if (packet.type == RASTA_TYPE_CONNRESP) {
+        return (packet->confirmed_sequence_number == 0);
+    } else if (packet->type == RASTA_TYPE_CONNRESP) {
         // has to be identical to last used (sent) seq. nr.
-        return (packet.confirmed_sequence_number == (con->sn_t - 1));
+        return (packet->confirmed_sequence_number == (con->sn_t - 1));
     } else {
         // 0 <= CS_PDU - CS_R < SN_T - CS_R
-        return ((packet.confirmed_sequence_number >= con->cs_r) &&
-                (packet.confirmed_sequence_number - con->cs_r) < (con->sn_t - con->cs_r));
+        return ((packet->confirmed_sequence_number >= con->cs_r) &&
+                (packet->confirmed_sequence_number - con->cs_r) < (con->sn_t - con->cs_r));
     }
 }
 
@@ -190,13 +194,13 @@ int sr_cs_valid(struct rasta_connection *con, struct RastaPacket packet) {
  * @param packet the packet
  * @return 1 if sender and receiver of the @p packet are authentic, 0 otherwise
  */
-int sr_message_authentic(struct rasta_connection *con, struct RastaPacket packet) {
-    return (packet.sender_id == con->remote_id && packet.receiver_id == con->my_id);
+int sr_message_authentic(struct rasta_connection *con, struct RastaPacket *packet) {
+    return (packet->sender_id == con->remote_id && packet->receiver_id == con->my_id);
 }
 
-int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struct RastaConfigInfoSending cfg, struct RastaPacket receivedPacket, char *location) {
+int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struct RastaConfigInfoSending cfg, struct RastaPacket *receivedPacket, char *location) {
     // check received packet (5.5.2)
-    if (!(receivedPacket.checksum_correct &&
+    if (!(receivedPacket->checksum_correct &&
           sr_message_authentic(con, receivedPacket) &&
           sr_sn_range_valid(con, cfg, receivedPacket) &&
           sr_cs_valid(con, receivedPacket) &&
@@ -205,7 +209,7 @@ int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struc
         // something is invalid -> connection failure
         logger_log(logger, LOG_LEVEL_INFO, location, "received packet invalid");
 
-        logger_log(logger, LOG_LEVEL_DEBUG, location, "checksum = %d", receivedPacket.checksum_correct);
+        logger_log(logger, LOG_LEVEL_DEBUG, location, "checksum = %d", receivedPacket->checksum_correct);
         logger_log(logger, LOG_LEVEL_DEBUG, location, "authentic = %d", sr_message_authentic(con, receivedPacket));
         logger_log(logger, LOG_LEVEL_DEBUG, location, "sn_range_valid = %d", sr_sn_range_valid(con, cfg, receivedPacket));
         logger_log(logger, LOG_LEVEL_DEBUG, location, "cs_valid = %d", sr_cs_valid(con, receivedPacket));
@@ -339,7 +343,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         struct RastaPacket old_p = bytesToRastaPacket(packets[i], h->hashing_context);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "convert packet %d to packet structure", i);
 
-        struct RastaMessageData app_messages = extractMessageData(old_p);
+        struct RastaMessageData app_messages = extractMessageData(&old_p);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "extract data from packet %d ", i);
 
         // create new packet for retransmission
@@ -402,32 +406,27 @@ void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, st
 void sr_listen(struct rasta_handle *h) {
     redundancy_mux_listen_channels(&h->mux);
 
-    // I don't get this: Why are we registering receive events for tcp connections in the listen function?
+    // Register accept events
 
-// #ifdef USE_TCP
-//     if (was_not_already_initialized) {
-//         int channel_event_data_len = h->mux.port_count;
-//         fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
-//         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
+    int accept_event_data_len = h->mux.port_count;
+    fd_event *accept_events = rmalloc(sizeof(fd_event) * accept_event_data_len);
+    struct accept_event_data *accept_event_data = rmalloc(sizeof(struct accept_event_data) * accept_event_data_len);
 
-//         for (int i = 0; i < channel_event_data_len; i++) {
-//             memset(&channel_events[i], 0, sizeof(fd_event));
-//             channel_events[i].carry_data = channel_event_data + i;
+    for (int i = 0; i < accept_event_data_len; i++) {
+        memset(&accept_events[i], 0, sizeof(fd_event));
+        accept_events[i].carry_data = accept_event_data + i;
 
-//             channel_events[i].callback = channel_accept_event;
-//             channel_events[i].fd = h->mux.transport_sockets[i].file_descriptor;
-//             channel_events[i].enabled = 1;
+        accept_events[i].callback = channel_accept_event;
+        accept_events[i].fd = h->mux.transport_sockets[i].file_descriptor;
+        accept_events[i].enabled = 1;
 
-//             channel_event_data[i].channel = h->mux.;
-//             channel_event_data[i].event = channel_events + i;
-//             channel_event_data[i].h = h;
-//         }
-//         for (int i = 0; i < channel_event_data_len; i++) {
-//             // TODO: Leaked Events
-//             add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
-//         }
-//     }
-// #endif
+        accept_event_data[i].socket = &h->mux.transport_sockets[i];
+        accept_event_data[i].event = accept_events + i;
+        accept_event_data[i].h = h;
+
+        // TODO: accept_events and accept_event_data is leaked
+        add_fd_event(h->ev_sys, &accept_events[i], EV_READABLE);
+    }
 }
 
 // HACK
@@ -576,4 +575,125 @@ void sr_cleanup(struct rasta_handle *h) {
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA Cleanup", "Cleanup done");
 
     logger_destroy(&h->logger);
+}
+
+#ifdef ENABLE_OPAQUE
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig) {
+    uint64_t current_time;
+    if (connection->current_state == RASTA_CONNECTION_KEX_REQ) {
+        // already waiting for key exchange
+        return false;
+    }
+
+    if (connection->role != RASTA_ROLE_SERVER) {
+        // client cannot expect to receive key requests from server
+        return false;
+    }
+
+    if (!kexConfig->rekeying_interval_ms || !connection->kex_state.last_key_exchanged_millis) {
+        // no rekeying or no initial time yet
+        return false;
+    }
+
+    current_time = get_current_time_ms();
+
+    return current_time - connection->kex_state.last_key_exchanged_millis > REKEYING_ALLOWED_DELAY_MS + kexConfig->rekeying_interval_ms;
+}
+#else
+bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfigKex *kexConfig) {
+    // no rekeying possible without key exchange
+    (void)connection;
+    (void)kexConfig;
+    return false;
+}
+#endif
+
+// TODO: Find a suitable header file for this
+int rasta_receive(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket *receivedPacket);
+
+void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacket) {
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet %d from %d to %d %u", receivedPacket->type, receivedPacket->sender_id, receivedPacket->receiver_id, receivedPacket->length);
+
+    struct rasta_connection *con;
+    for (con = h->handle->first_con; con; con = con->linkedlist_next) {
+        if (con->remote_id == receivedPacket->sender_id) break;
+    }
+
+    // new client request
+    if (receivedPacket->type == RASTA_TYPE_CONNREQ) {
+        con = handle_conreq(h, con, receivedPacket);
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    if (con == NULL) {
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet (%d) from unknown source %d", receivedPacket->type, receivedPacket->sender_id);
+        // received packet from unknown source
+        // TODO: can these packets be ignored?
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    // handle response
+    if (receivedPacket->type == RASTA_TYPE_CONNRESP) {
+        handle_conresp(h, con, receivedPacket);
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Checking packet ...");
+
+    // check message checksum
+    if (!receivedPacket->checksum_correct) {
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet checksum incorrect");
+        // increase safety error counter
+        con->errors.safety++;
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    // check for plausible ids
+    if (!sr_message_authentic(con, receivedPacket)) {
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet invalid sender/receiver");
+        // increase address error counter
+        con->errors.address++;
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    // check sequency number range
+    if (!sr_sn_range_valid(con, h->config, receivedPacket)) {
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet sn range invalid");
+
+        // invalid -> increase error counter and discard packet
+        con->errors.sn++;
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    // check confirmed sequence number
+    if (!sr_cs_valid(con, receivedPacket)) {
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received packet cs invalid");
+
+        // invalid -> increase error counter and discard packet
+        con->errors.cs++;
+
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    if (sr_rekeying_skipped(con, &h->handle->config.kex)) {
+        logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %" PRIu64 " - disconnecting!", get_current_time_ms());
+        sr_close_connection(con, h->handle, h->mux, h->info, RASTA_DISC_REASON_TIMEOUT, 0);
+        freeRastaByteArray(&receivedPacket->data);
+        return;
+    }
+
+    rasta_receive(h, con, receivedPacket);
 }

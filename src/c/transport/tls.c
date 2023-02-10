@@ -303,11 +303,6 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return tls_receive(data->ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data) {
-    channel->fd = data->event->fd;
-    channel->ssl = data->ssl;
-}
-
 void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection transport_state, char *ip, uint16_t port) {
     channel->fd = transport_state.file_descriptor;
     channel->ssl = transport_state.ssl;

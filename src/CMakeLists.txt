@@ -50,6 +50,10 @@ set(sources
     c/logging.c
     c/rastafactory.c
     c/transport/bsd_utils.c
+    c/transport/diagnostics.c
+    c/transport/diagnostics.h
+    c/transport/events.c
+    c/transport/events.h
     c/retransmission/handlers.c
     c/retransmission/safety_retransmission.h
     c/retransmission/messages.c

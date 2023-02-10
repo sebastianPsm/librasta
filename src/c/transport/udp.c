@@ -164,13 +164,6 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return udp_receive(&mux->transport_sockets[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-// UDP doesn't need the extension function, as it is the default behavior.
-// This callback just fits the signatur of update_redundancy_channels.
-void redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data) {
-    (void)channel;
-    (void)data;
-}
-
 void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection transport_state, char *ip, uint16_t port) {
     (void)transport_state;
     channel->port = port;

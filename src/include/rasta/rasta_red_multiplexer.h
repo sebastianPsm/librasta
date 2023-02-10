@@ -19,12 +19,7 @@ extern "C" { // only need to export C interface if
  * define struct as type here to allow usage in notification pointers
  */
 typedef struct redundancy_mux redundancy_mux;
-
-struct receive_event_data {
-    fd_event *event;
-    struct rasta_handle *h;
-    rasta_transport_channel *channel;
-};
+struct receive_event_data;
 
 typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
 
@@ -170,10 +165,6 @@ void redundancy_mux_open(redundancy_mux *mux);
  */
 void redundancy_mux_close(redundancy_mux *mux);
 
-int channel_accept_event_tls(void *carry_data);
-int channel_accept_event(void *carry_data);
-int channel_receive_event(void *carry_data);
-
 /**
  * getter for a redundancy channel
  * @param mux the redundancy multiplexer that contains the channel
@@ -242,11 +233,11 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
 struct rasta_receive_handle;
-int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data);
+int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
 
 struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len);
 
-void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback);
+void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender);
 
 #ifdef __cplusplus
 }

@@ -15,6 +15,10 @@ extern "C" { // only need to export C interface if
 #include "udp.h"
 #include "transport.h"
 
+typedef struct rasta_transport_channel rasta_transport_channel;
+typedef struct rasta_transport_socket rasta_transport_socket;
+struct rasta_receive_handle;
+
 /**
  * maximum size of messages in the defer queue in bytes
  */
@@ -134,13 +138,13 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
  * @param packet the packet that has been received over UDP
  * @param channel_id the index of the transport channel, the @p packet has been received
  */
-void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+void red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
 
 /**
  * the f_deferTmo function of the redundancy layer
  * @param channel the redundancy channel that is used
  */
-void red_f_deferTmo(rasta_redundancy_channel *channel);
+void red_f_deferTmo(struct rasta_receive_handle *h, rasta_redundancy_channel *channel);
 
 /**
  * blocks until the state is closed and all notification threads terminate

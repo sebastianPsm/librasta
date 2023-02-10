@@ -153,10 +153,6 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return tcp_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data) {
-    channel->fd = data->event->fd;
-}
-
 void transport_create_socket(rasta_transport_socket *socket, const struct RastaConfigTLS *tls_config) {
     // init socket
     tcp_init(socket, tls_config);

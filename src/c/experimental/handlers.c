@@ -10,7 +10,7 @@
  * @param con the used connection
  * @param packet the received Key Exchange Request packet
  */
-void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Request", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -97,7 +97,7 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
  * @param con the used connection
  * @param packet the received Key Exchange Response packet
  */
-void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Response", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -176,7 +176,7 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
  * @param con the used connection
  * @param packet the received Key Exchange Authentication packet
  */
-void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Authentication", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
