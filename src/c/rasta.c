@@ -166,14 +166,12 @@ int on_readable_event(void *handle) {
         }
 
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet %d from %d to %d %u", receivedPacket.type, receivedPacket.sender_id, receivedPacket.receiver_id, receivedPacket.length);
-        // for(int i = 0; i < receivedPacket.length; i++)
-        //     fprintf(stdout, "%02X ", receivedPacket.data.bytes[i]);
-        // fprintf(stdout, "\n");
 
         struct rasta_connection *con;
         for (con = h->handle->first_con; con; con = con->linkedlist_next) {
             if (con->remote_id == receivedPacket.sender_id) break;
         }
+
         // new client request
         if (receivedPacket.type == RASTA_TYPE_CONNREQ) {
             con = handle_conreq(h, con, receivedPacket);
@@ -744,9 +742,15 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
     }
 }
 
-void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels) {
+// TODO: This should be moved into safety_retransmission, and not be called from the outside
+// Add rasta_connect
+int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length) {
+    if (connection_exists(h, id))
+        return 0;
 
-    redundancy_mux_add_channel(&h->mux, id, channels);
+    if (redundancy_mux_add_channel(&h->mux, id, channels, channels_length) != 0) {
+        return 1;
+    }
 
     struct rasta_connection new_con;
     memset(&new_con, 0, sizeof(struct rasta_connection));
@@ -785,7 +789,7 @@ void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaI
     void *memory = h->user_handles->on_connection_start(&new_con);
     if (memory == NULL) {
         logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "connection refused by user to %d", new_con.remote_id);
-        return;
+        return 1;
     }
 
     struct rasta_connection *con = memory;
@@ -798,67 +802,25 @@ void sr_connect_abstract(struct rasta_handle *h, unsigned long id, struct RastaI
     fire_on_connection_state_change(sr_create_notification_result(h, con));
 
     init_connection_events(h, con);
+
+    return 0;
 }
-
-#ifdef USE_TCP
-void init_channels_tcp(struct rasta_handle *h, struct RastaIPData *channels) {
-    // TODO: const ports in redundancy? (why no dynamic port length)
-    for (unsigned int i = 0; i < h->mux.port_count; ++i) {
-        redundancy_mux_connect(&h->mux, i, channels[i].ip, (uint16_t)channels[i].port);
-
-        fd_event *evt = rmalloc(sizeof(fd_event));
-        struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
-        channel_event_data->channel_index = i / h->mux.port_count;
-        channel_event_data->event = evt;
-        channel_event_data->h = h;
-        channel_event_data->event = evt;
-#ifdef ENABLE_TLS
-        channel_event_data->ssl = h->mux.transport_states[i].ssl;
-#endif
-        memset(evt, 0, sizeof(fd_event));
-        evt->enabled = 1;
-        evt->carry_data = channel_event_data;
-        evt->callback = channel_receive_event;
-        evt->fd = h->mux.transport_states[i].file_descriptor;
-
-        add_fd_event(h->ev_sys, evt, EV_READABLE);
-    }
-}
-void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels) {
-    if (connection_exists(h, id))
-        return;
-
-    init_channels_tcp(h, channels);
-
-    sr_connect_abstract(h, id, channels);
-}
-
-#else
-
-void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels) {
-    if (connection_exists(h, id))
-        return;
-
-    sr_connect_abstract(h, id, channels);
-}
-#endif
 
 // This is the time that packets are deferred for creating multi-packet messages
 // See section 5.5.10
 #define IO_INTERVAL 10000
-void sr_begin_abstract(struct rasta_handle *h, event_system *event_system, int channel_timeout_ms, int listen) {
+
+void rasta_recv(rasta_lib_configuration_t user_configuration, int channel_timeout_ms) {
+    struct rasta_handle *h = &user_configuration->h;
+    event_system *event_system = &user_configuration->rasta_lib_event_system;
+
     timed_event send_event, receive_event;
     timed_event channel_timeout_event;
     struct timeout_event_data timeout_data;
 
     h->ev_sys = event_system;
 
-    if (listen) {
-        sr_listen(h);
-    }
-
-    // busy wait like io events
-    // TODO: move to a position so it is only called when needed
+    // batch outgoing packets
     memset(&send_event, 0, sizeof(timed_event));
     send_event.callback = data_send_event;
     send_event.interval = IO_INTERVAL * 1000lu;
@@ -866,14 +828,16 @@ void sr_begin_abstract(struct rasta_handle *h, event_system *event_system, int c
     enable_timed_event(&send_event);
     add_timed_event(event_system, &send_event);
 
-    memset(&receive_event, 0, sizeof(timed_event));
-    receive_event.callback = on_readable_event;
-    receive_event.interval = IO_INTERVAL * 1000lu;
-    receive_event.carry_data = h->receive_handle;
-    enable_timed_event(&receive_event);
-    add_timed_event(event_system, &receive_event);
+    // TODO: remove fifo_recv, only take action when transport socket is readable, instead of polling
+    // memset(&receive_event, 0, sizeof(timed_event));
+    // receive_event.callback = on_readable_event;
+    // receive_event.interval = IO_INTERVAL * 1000lu;
+    // receive_event.carry_data = h->receive_handle;
+    // enable_timed_event(&receive_event);
+    // add_timed_event(event_system, &receive_event);
 
     // Handshake timeout event
+    // TODO: Shouldn't this be t_max?
     init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux, channel_timeout_ms);
     if (channel_timeout_ms) {
         enable_timed_event(&channel_timeout_event);
@@ -889,44 +853,63 @@ void sr_begin_abstract(struct rasta_handle *h, event_system *event_system, int c
     remove_timed_event(event_system, &channel_timeout_event);
 }
 
-#ifdef USE_UDP
-void cleanup_channel_events_udp(event_system *event_system, fd_event *channel_events, int len) {
-    for (int i = 0; i < len; i++) {
-        remove_fd_event(event_system, &channel_events[i]);
-    }
+// void cleanup_channel_events_udp(event_system *event_system, fd_event *channel_events, int len) {
+//     for (int i = 0; i < len; i++) {
+//         remove_fd_event(event_system, &channel_events[i]);
+//     }
+// }
+
+// void init_channels_udp(struct rasta_handle *h, event_system *event_system, fd_event *channel_events, struct receive_event_data *channel_event_data, int channel_event_data_len) {
+//     for (int i = 0; i < channel_event_data_len; i++) {
+//         memset(&channel_events[i], 0, sizeof(fd_event));
+//         channel_events[i].carry_data = channel_event_data + i;
+//         channel_events[i].enabled = 1;
+//         channel_events[i].callback = channel_receive_event;
+//         channel_events[i].fd = h->mux.transport_sockets[i].file_descriptor;
+
+//         channel_event_data[i].channel_index = i;
+//         // channel_event_data[i].channel_index = i / h->mux.port_count;
+//         channel_event_data[i].event = channel_events + i;
+//         channel_event_data[i].h = h;
+//     }
+//     for (int i = 0; i < channel_event_data_len; i++) {
+//         add_fd_event(event_system, &channel_events[i], EV_READABLE);
+//     }
+// }
+
+// void init_channels_tcp(struct rasta_handle *h, struct RastaIPData *channels) {
+//     // TODO: const ports in redundancy? (why no dynamic port length)
+//     for (unsigned int i = 0; i < h->mux.port_count; ++i) {
+//         redundancy_mux_connect(&h->mux, i, channels[i].ip, (uint16_t)channels[i].port);
+
+//         fd_event *evt = rmalloc(sizeof(fd_event));
+//         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
+//         channel_event_data->channel_index = i / h->mux.port_count;
+//         channel_event_data->event = evt;
+//         channel_event_data->h = h;
+//         channel_event_data->event = evt;
+// #ifdef ENABLE_TLS
+//         channel_event_data->ssl = h->mux.transport_sockets[i].ssl;
+// #endif
+//         memset(evt, 0, sizeof(fd_event));
+//         evt->enabled = 1;
+//         evt->carry_data = channel_event_data;
+//         evt->callback = channel_receive_event;
+//         evt->fd = h->mux.transport_sockets[i].file_descriptor;
+
+//         add_fd_event(h->ev_sys, evt, EV_READABLE);
+//     }
+// }
+
+// void sr_recv(struct rasta_handle *h, event_system *event_system, int channel_timeout_ms, int listen) {
+//     int channel_event_data_len = h->mux.port_count;
+//     fd_event channel_events[channel_event_data_len];
+//     struct receive_event_data channel_event_data[channel_event_data_len];
+//     init_channels_udp(h, event_system, &channel_events[0], &channel_event_data[0], channel_event_data_len);
+//     sr_recv_abstract(h, event_system, channel_timeout_ms, listen);
+//     cleanup_channel_events_udp(event_system, channel_events, channel_event_data_len);
+// }
+
+void rasta_bind(struct rasta_handle *h) {
+    redundancy_mux_bind(&h->mux);
 }
-
-void init_channels_udp(struct rasta_handle *h, event_system *event_system, fd_event *channel_events, struct receive_event_data *channel_event_data, int channel_event_data_len) {
-    for (int i = 0; i < channel_event_data_len; i++) {
-        memset(&channel_events[i], 0, sizeof(fd_event));
-        channel_events[i].carry_data = channel_event_data + i;
-        channel_events[i].enabled = 1;
-        channel_events[i].callback = channel_receive_event;
-        channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
-
-        channel_event_data[i].channel_index = i;
-        // channel_event_data[i].channel_index = i / h->mux.port_count;
-        channel_event_data[i].event = channel_events + i;
-        channel_event_data[i].h = h;
-    }
-    for (int i = 0; i < channel_event_data_len; i++) {
-        add_fd_event(event_system, &channel_events[i], EV_READABLE);
-    }
-}
-
-void sr_begin(struct rasta_handle *h, event_system *event_system, int channel_timeout_ms, int listen) {
-    int channel_event_data_len = h->mux.port_count;
-    fd_event channel_events[channel_event_data_len];
-    struct receive_event_data channel_event_data[channel_event_data_len];
-    init_channels_udp(h, event_system, &channel_events[0], &channel_event_data[0], channel_event_data_len);
-    sr_begin_abstract(h, event_system, channel_timeout_ms, listen);
-    cleanup_channel_events_udp(event_system, channel_events, channel_event_data_len);
-}
-
-#else
-
-void sr_begin(struct rasta_handle *h, event_system *event_system, int channel_timeout_ms, int listen) {
-    sr_begin_abstract(h, event_system, channel_timeout_ms, listen);
-}
-
-#endif

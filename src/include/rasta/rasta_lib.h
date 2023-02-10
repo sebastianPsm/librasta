@@ -43,7 +43,7 @@ typedef timed_event rasta_lib_timed_event;
 
 void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, struct RastaConfigInfo config, struct logger_t *logger);
 
-void rasta_lib_start(rasta_lib_configuration_t user_configuration, int channel_timeout_ms, int listen);
+void rasta_recv(rasta_lib_configuration_t user_configuration, int channel_timeout_ms);
 
 #ifdef __cplusplus
 }

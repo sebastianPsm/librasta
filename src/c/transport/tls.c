@@ -96,12 +96,12 @@ static int Tls13SecretCallback(WOLFSSL *ssl, int id, const unsigned char *secret
 }
 #endif
 
-void tcp_init(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void tcp_init(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
     transport_state->tls_config = tls_config;
     transport_state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-static void apply_tls_mode(struct rasta_transport_state *transport_state) {
+static void apply_tls_mode(rasta_transport_connection *transport_state) {
     const struct RastaConfigTLS *tls_config = transport_state->tls_config;
     switch (tls_config->mode) {
     case TLS_MODE_DISABLED:
@@ -116,29 +116,29 @@ static void apply_tls_mode(struct rasta_transport_state *transport_state) {
     }
 }
 
-static void handle_tls_mode_server(struct rasta_transport_state *transport_state) {
+static void handle_tls_mode_server(rasta_transport_connection *transport_state) {
     apply_tls_mode(transport_state);
     if (transport_state->activeMode == TLS_MODE_TLS_1_3) {
         wolfssl_start_tls_server(transport_state, transport_state->tls_config);
     }
 }
 
-static void handle_tls_mode_client(struct rasta_transport_state *transport_state) {
+static void handle_tls_mode_client(rasta_transport_connection *transport_state) {
     apply_tls_mode(transport_state);
     if (transport_state->activeMode == TLS_MODE_TLS_1_3) {
         wolfssl_start_tls_client(transport_state, transport_state->tls_config);
     }
 }
 
-void tcp_bind(struct rasta_transport_state *transport_state, uint16_t port) {
+void tcp_bind(rasta_transport_connection *transport_state, uint16_t port) {
     bsd_bind_port(transport_state->file_descriptor, port);
 }
 
-void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char *ip) {
+void tcp_bind_device(rasta_transport_connection *transport_state, uint16_t port, char *ip) {
     bsd_bind_device(transport_state->file_descriptor, port, ip);
 }
 
-void tcp_listen(struct rasta_transport_state *transport_state) {
+void tcp_listen(rasta_transport_connection *transport_state) {
     if (listen(transport_state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0) {
         // listen failed
         fprintf(stderr, "error whe listening to file_descriptor %d", transport_state->file_descriptor);
@@ -148,7 +148,7 @@ void tcp_listen(struct rasta_transport_state *transport_state) {
     handle_tls_mode_server(transport_state);
 }
 
-int tcp_accept(struct rasta_transport_state *transport_state) {
+int tcp_accept(rasta_transport_connection *transport_state) {
     struct sockaddr_in empty_sockaddr_in;
     socklen_t sender_len = sizeof(empty_sockaddr_in);
     int socket;
@@ -160,7 +160,7 @@ int tcp_accept(struct rasta_transport_state *transport_state) {
     return socket;
 }
 
-void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_connected_transport_channel_state *connectionState) {
+void tcp_accept_tls(rasta_transport_connection *transport_state, struct rasta_connected_transport_channel_state *connectionState) {
     int socket = tcp_accept(transport_state);
 
     /* Create a WOLFSSL object */
@@ -187,7 +187,7 @@ void tcp_accept_tls(struct rasta_transport_state *transport_state, struct rasta_
     connectionState->file_descriptor = socket;
 }
 
-void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint16_t port) {
+void tcp_connect(rasta_transport_connection *transport_state, char *host, uint16_t port) {
     struct sockaddr_in server;
 
     rmemset((char *)&server, 0, sizeof(server));
@@ -267,7 +267,7 @@ void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     wolfssl_send_tls(ssl, message, message_len);
 }
 
-void tcp_close(struct rasta_transport_state *transport_state) {
+void tcp_close(rasta_transport_connection *transport_state) {
     if (transport_state->activeMode != TLS_MODE_DISABLED) {
         wolfssl_cleanup(transport_state);
     }
@@ -277,11 +277,11 @@ void tcp_close(struct rasta_transport_state *transport_state) {
 
 void transport_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port) {
     // init socket
-    tcp_init(&mux->transport_states[channel], &mux->config.tls);
-    tcp_bind_device(&mux->transport_states[channel],
+    tcp_init(&mux->transport_sockets[channel], &mux->config.tls);
+    tcp_bind_device(&mux->transport_sockets[channel],
                     (uint16_t)mux->config.redundancy.connections.data[channel].port,
                     mux->config.redundancy.connections.data[channel].ip);
-    tcp_connect(&mux->transport_states[channel], host, port);
+    tcp_connect(&mux->transport_sockets[channel], host, port);
 }
 
 void transport_close(rasta_transport_channel *channel) {
@@ -308,7 +308,7 @@ void redundancy_channel_extension_callback(rasta_transport_channel *channel, str
     channel->ssl = data->ssl;
 }
 
-void transport_initialize(rasta_transport_channel *channel, struct rasta_transport_state transport_state, char *ip, uint16_t port) {
+void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection transport_state, char *ip, uint16_t port) {
     channel->fd = transport_state.file_descriptor;
     channel->ssl = transport_state.ssl;
 

@@ -11,12 +11,12 @@
 
 #include "transport.h"
 
-void tcp_init(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void tcp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
     transport_state->tls_config = tls_config;
     transport_state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-static void apply_tls_mode(struct rasta_transport_state *transport_state) {
+static void apply_tls_mode(rasta_transport_socket *transport_state) {
     const struct RastaConfigTLS *tls_config = transport_state->tls_config;
     switch (tls_config->mode) {
     case TLS_MODE_DISABLED:
@@ -28,19 +28,19 @@ static void apply_tls_mode(struct rasta_transport_state *transport_state) {
     }
 }
 
-static void handle_tls_mode_server(struct rasta_transport_state *transport_state) {
+static void handle_tls_mode_server(rasta_transport_socket *transport_state) {
     apply_tls_mode(transport_state);
 }
 
-void tcp_bind(struct rasta_transport_state *transport_state, uint16_t port) {
+void tcp_bind(rasta_transport_socket *transport_state, uint16_t port) {
     bsd_bind_port(transport_state->file_descriptor, port);
 }
 
-void tcp_bind_device(struct rasta_transport_state *transport_state, uint16_t port, char *ip) {
+void tcp_bind_device(rasta_transport_socket *transport_state, const char *ip, uint16_t port) {
     bsd_bind_device(transport_state->file_descriptor, port, ip);
 }
 
-void tcp_listen(struct rasta_transport_state *transport_state) {
+void tcp_listen(rasta_transport_socket *transport_state) {
     if (listen(transport_state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0) {
         // listen failed
         fprintf(stderr, "error whe listening to file_descriptor %d", transport_state->file_descriptor);
@@ -50,7 +50,7 @@ void tcp_listen(struct rasta_transport_state *transport_state) {
     handle_tls_mode_server(transport_state);
 }
 
-int tcp_accept(struct rasta_transport_state *transport_state) {
+int tcp_accept(rasta_transport_socket *transport_state) {
     struct sockaddr_in empty_sockaddr_in;
     socklen_t sender_len = sizeof(empty_sockaddr_in);
     int socket;
@@ -62,33 +62,36 @@ int tcp_accept(struct rasta_transport_state *transport_state) {
     return socket;
 }
 
-void tcp_connect(struct rasta_transport_state *transport_state, char *host, uint16_t port) {
+int tcp_connect(rasta_transport_channel *channel) {
     struct sockaddr_in server;
 
     rmemset((char *)&server, 0, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_port = htons(port);
+    server.sin_port = htons(channel->port);
 
     // convert host string to usable format
-    if (inet_aton(host, &server.sin_addr) == 0) {
+    if (inet_aton(channel->ip_address, &server.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
         exit(1);
     }
 
-    if (connect(transport_state->file_descriptor, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        perror("tcp connection failed");
-        exit(1);
+    if (connect(channel->fd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        channel->connected = 0;
+        return 1;
     }
+
+    channel->connected = 1;
+    return 0;
 }
 
-ssize_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender) {
+ssize_t tcp_receive(rasta_transport_channel *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender) {
     if (transport_state->activeMode == TLS_MODE_DISABLED) {
         ssize_t recv_len;
         struct sockaddr_in empty_sockaddr_in;
         socklen_t sender_len = sizeof(empty_sockaddr_in);
 
         // wait for incoming data
-        if ((recv_len = recvfrom(transport_state->file_descriptor, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) < 0) {
+        if ((recv_len = recvfrom(transport_state->fd, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) < 0) {
             perror("an error occured while trying to receive data");
             return -1;
         }
@@ -98,26 +101,41 @@ ssize_t tcp_receive(struct rasta_transport_state *transport_state, unsigned char
     return 0;
 }
 
-void tcp_send(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port) {
-    bsd_send(transport_state->file_descriptor, message, message_len, host, port);
+void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port) {
+    bsd_send(transport_state->fd, message, message_len, host, port);
 }
 
-void tcp_close(struct rasta_transport_state *transport_state) {
-    bsd_close(transport_state->file_descriptor);
+void tcp_close(rasta_transport_channel *transport_state) {
+    bsd_close(transport_state->fd);
 }
 
-void transport_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port) {
-    // init socket
-    tcp_init(&mux->transport_states[channel], &mux->config.tls);
-    tcp_bind_device(&mux->transport_states[channel],
-                    (uint16_t)mux->config.redundancy.connections.data[channel].port,
-                    mux->config.redundancy.connections.data[channel].ip);
-    tcp_connect(&mux->transport_states[channel], host, port);
+void transport_listen(rasta_transport_socket *socket) {
+    tcp_listen(socket);
 }
 
-void transport_reconnect(redundancy_mux *mux, unsigned int channel) {
-    (void)mux; (void)channel;
-    // tcp_connect(&mux->transport_states[channel], host, port);
+void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
+    int fd = tcp_accept(socket);
+    channel->id = socket->id;
+    channel->port = 0;
+    channel->ip_address = NULL;
+    channel->send_callback = send_callback;
+    channel->activeMode = socket->activeMode;
+    channel->fd = fd;
+}
+
+int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port) {
+    channel->id = socket->id;
+    channel->port = port;
+    channel->ip_address = rmalloc(sizeof(char) * 15);
+    channel->send_callback = send_callback;
+    rmemcpy(channel->ip_address, host, 15);
+    channel->activeMode = socket->activeMode;
+    channel->fd = socket->file_descriptor;
+    return tcp_connect(channel);
+}
+
+int transport_redial(rasta_transport_channel* channel) {
+    return tcp_connect(channel);
 }
 
 void transport_close(rasta_transport_channel *channel) {
@@ -125,23 +143,25 @@ void transport_close(rasta_transport_channel *channel) {
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
+    UNUSED(mux);
     UNUSED(channel_index);
-    tcp_send(&mux->transport_states[channel_index], data_to_send.bytes, data_to_send.length, channel->ip_address, channel->port);
+    tcp_send(channel, data_to_send.bytes, data_to_send.length, channel->ip_address, channel->port);
 }
 
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
-    return tcp_receive(&mux->transport_states[data->channel_index], buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
+    UNUSED(mux);
+    return tcp_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
 void redundancy_channel_extension_callback(rasta_transport_channel *channel, struct receive_event_data *data) {
     channel->fd = data->event->fd;
 }
 
-void transport_initialize(rasta_transport_channel *channel, struct rasta_transport_state transport_state, char *ip, uint16_t port) {
-    channel->fd = transport_state.file_descriptor;
+void transport_create_socket(rasta_transport_socket *socket, const struct RastaConfigTLS *tls_config) {
+    // init socket
+    tcp_init(socket, tls_config);
+}
 
-    channel->port = port;
-    channel->ip_address = rmalloc(sizeof(char) * 15);
-    channel->send_callback = send_callback;
-    rmemcpy(channel->ip_address, ip, 15);
+void transport_bind(rasta_transport_socket *socket, const char *ip, uint16_t port) {
+    tcp_bind_device(socket, ip, port);
 }

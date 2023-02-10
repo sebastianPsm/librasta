@@ -3,6 +3,7 @@
 typedef struct redundancy_mux redundancy_mux;
 
 #include <rasta/rastautil.h>
+#include <rasta/config.h>
 
 /**
  * representation of the transport channel diagnostic data
@@ -38,10 +39,16 @@ typedef struct {
  * representation of a RaSTA redundancy layer transport channel
  */
 typedef struct rasta_transport_channel {
+    int id;
+
+    int connected;
+
     /**
      * IPv4 address in format a.b.c.d
      */
     char *ip_address;
+
+    enum RastaTLSMode activeMode;
 
 #ifdef USE_TCP
     /**
@@ -65,3 +72,24 @@ typedef struct rasta_transport_channel {
 
     void (*send_callback)(redundancy_mux *mux, struct RastaByteArray data_to_send, struct rasta_transport_channel *channel, unsigned int channel_index);
 } rasta_transport_channel;
+
+typedef struct rasta_transport_socket {
+
+    int id;
+
+    int file_descriptor;
+
+    enum RastaTLSMode activeMode;
+
+    const struct RastaConfigTLS *tls_config;
+
+#ifdef ENABLE_TLS
+
+    WOLFSSL_CTX *ctx;
+
+    WOLFSSL *ssl;
+
+    enum rasta_tls_connection_state state;
+#endif
+
+} rasta_transport_socket;

@@ -16,10 +16,8 @@ void sr_close_connection(struct rasta_connection *connection, struct rasta_handl
 void sr_diagnostic_interval_init(struct rasta_connection *connection, struct RastaConfigInfoSending cfg);
 void sr_init_connection(struct rasta_connection *connection, unsigned long id, struct RastaConfigInfoGeneral info, struct RastaConfigInfoSending cfg, struct logger_t *logger, rasta_role role);
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection *connection);
-void sr_init_handle(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger);
+void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger);
 void sr_listen(struct rasta_handle *h);
-void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels);
-void sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels);
 void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages);
 void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con);
 void sr_cleanup(struct rasta_handle *h);

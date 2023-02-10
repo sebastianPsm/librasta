@@ -84,14 +84,12 @@ typedef struct {
      * the transport channels of the partner (client) when running in server mode.
      * these are dynamically added when a message from the corresponding channel is received.
      */
-    rasta_transport_channel *connected_channels;
-
-
+    rasta_transport_channel *transport_channels;
 
     /**
      * the amount of discovered partner transport channels
      */
-    unsigned int connected_channel_count;
+    unsigned int connected_transport_channel_count;
 
     /**
      * the total amount of transport channels
@@ -156,8 +154,8 @@ void rasta_red_wait_for_close(rasta_redundancy_channel *channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-void rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
-                                     struct rasta_transport_state transport_state,
+int rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
+                                     rasta_transport_socket *transport_state,
                                      char *ip, uint16_t port);
 
 /**

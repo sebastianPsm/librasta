@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
         disable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, 0, true);
+        rasta_recv(rc, 0, true);
     } else if (strcmp(argv[1], "c") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_C);
 
@@ -175,7 +175,7 @@ int main(int argc, char *argv[]) {
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, 0, false);
+        rasta_recv(rc, 0, false);
     }
 
     getchar();

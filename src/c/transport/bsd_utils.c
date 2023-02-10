@@ -75,7 +75,7 @@ void bsd_bind_port(int file_descriptor, uint16_t port) {
     }
 }
 
-void bsd_bind_device(int file_descriptor, uint16_t port, char *ip) {
+void bsd_bind_device(int file_descriptor, uint16_t port, const char *ip) {
     struct sockaddr_in local;
 
     // set struct to 0s

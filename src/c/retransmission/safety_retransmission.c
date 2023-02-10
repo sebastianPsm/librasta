@@ -389,57 +389,45 @@ unsigned int sr_send_queue_item_count(struct rasta_connection *connection) {
     return fifo_get_size(connection->fifo_send);
 }
 
-void sr_init_handle(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger) {
-
+void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger) {
     rasta_handle_init(handle, config, logger);
 
     // init the redundancy layer
     redundancy_mux_init_config(&handle->mux, handle->redlogger, handle->config);
-    // redundancy_mux_set_config_id(&handle->mux,handle->own_id);
+
     //  register redundancy layer diagnose notification handler
     handle->mux.notifications.on_diagnostics_available = handle->notifications.on_redundancy_diagnostic_notification;
-
-    // setup MD4
-    /*setMD4checksum(handle->config.sending.md4_type,
-                   handle->config.sending.md4_a,
-                   handle->config.sending.md4_b,
-                   handle->config.sending.md4_c,
-                   handle->config.sending.md4_d);*/
-
-    handle->hashing_context.algorithm = RASTA_ALGO_MD4;
-    handle->hashing_context.hash_length = handle->config.sending.md4_type;
-    rasta_md4_set_key(&handle->hashing_context, handle->config.sending.md4_a, handle->config.sending.md4_b,
-                      handle->config.sending.md4_c, handle->config.sending.md4_d);
 }
 
 void sr_listen(struct rasta_handle *h) {
-    int was_not_already_initialized = redundancy_mux_listen_channels(&h->mux);
-    (void)was_not_already_initialized;
+    redundancy_mux_listen_channels(&h->mux);
 
-#ifdef USE_TCP
-    if (was_not_already_initialized) {
-        int channel_event_data_len = h->mux.port_count;
-        fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
-        struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
+    // I don't get this: Why are we registering receive events for tcp connections in the listen function?
 
-        for (int i = 0; i < channel_event_data_len; i++) {
-            memset(&channel_events[i], 0, sizeof(fd_event));
-            channel_events[i].carry_data = channel_event_data + i;
+// #ifdef USE_TCP
+//     if (was_not_already_initialized) {
+//         int channel_event_data_len = h->mux.port_count;
+//         fd_event *channel_events = rmalloc(sizeof(fd_event) * channel_event_data_len);
+//         struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data) * channel_event_data_len);
 
-            channel_events[i].callback = channel_accept_event;
-            channel_events[i].fd = h->mux.transport_states[i].file_descriptor;
-            channel_events[i].enabled = 1;
+//         for (int i = 0; i < channel_event_data_len; i++) {
+//             memset(&channel_events[i], 0, sizeof(fd_event));
+//             channel_events[i].carry_data = channel_event_data + i;
 
-            channel_event_data[i].channel_index = i;
-            channel_event_data[i].event = channel_events + i;
-            channel_event_data[i].h = h;
-        }
-        for (int i = 0; i < channel_event_data_len; i++) {
-            // TODO: Leaked Events
-            add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
-        }
-    }
-#endif
+//             channel_events[i].callback = channel_accept_event;
+//             channel_events[i].fd = h->mux.transport_sockets[i].file_descriptor;
+//             channel_events[i].enabled = 1;
+
+//             channel_event_data[i].channel = h->mux.;
+//             channel_event_data[i].event = channel_events + i;
+//             channel_event_data[i].h = h;
+//         }
+//         for (int i = 0; i < channel_event_data_len; i++) {
+//             // TODO: Leaked Events
+//             add_fd_event(h->ev_sys, &channel_events[i], EV_READABLE);
+//         }
+//     }
+// #endif
 }
 
 // HACK

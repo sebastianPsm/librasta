@@ -14,7 +14,7 @@ void wolfssl_initialize_if_necessary() {
     }
 }
 
-void wolfssl_start_dtls_server(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_dtls_server(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_server(transport_state, tls_config, wolfDTLSv1_2_server_method());
 
     // TODO: remove duplicated code in tcp_accept
@@ -29,11 +29,11 @@ void wolfssl_start_dtls_server(struct rasta_transport_state *transport_state, co
     transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
-void wolfssl_start_tls_server(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_tls_server(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_server(transport_state, tls_config, wolfTLSv1_3_server_method());
 }
 
-void wolfssl_start_server(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *server_method) {
+void wolfssl_start_server(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *server_method) {
     int err;
     wolfssl_initialize_if_necessary();
     transport_state->ctx = wolfSSL_CTX_new(server_method);
@@ -68,7 +68,7 @@ void wolfssl_start_server(struct rasta_transport_state *transport_state, const s
     transport_state->tls_config = tls_config;
 }
 
-void set_dtls_async(struct rasta_transport_state *transport_state) {
+void set_dtls_async(rasta_transport_connection *transport_state) {
     set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
 }
 
@@ -90,7 +90,7 @@ void set_tls_async(int fd, WOLFSSL *ssl) {
     wolfSSL_set_using_nonblock(ssl, 1);
 }
 
-void set_socket_async(struct rasta_transport_state *transport_state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method) {
+void set_socket_async(rasta_transport_connection *transport_state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method) {
     int socket_flags;
     // set socket to non-blocking so we can select() on it
     socket_flags = fcntl(transport_state->file_descriptor, F_GETFL, 0);
@@ -108,15 +108,15 @@ void set_socket_async(struct rasta_transport_state *transport_state, WOLFSSL_ASY
     (*wolfssl_async_method)(transport_state->ssl, 1);
 }
 
-void wolfssl_start_dtls_client(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_dtls_client(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfDTLSv1_2_client_method());
 }
 
-void wolfssl_start_tls_client(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_tls_client(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfTLSv1_3_client_method());
 }
 
-void wolfssl_start_client(struct rasta_transport_state *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method) {
+void wolfssl_start_client(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method) {
     wolfssl_initialize_if_necessary();
     transport_state->ctx = wolfSSL_CTX_new(client_method);
     if (!transport_state->ctx) {
@@ -183,7 +183,7 @@ void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     }
 }
 
-void wolfssl_send_dtls(struct rasta_transport_state *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver) {
+void wolfssl_send_dtls(rasta_transport_connection *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver) {
     if (transport_state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED) {
         wolfSSL_dtls_set_peer(transport_state->ssl, receiver, sizeof(*receiver));
 
@@ -233,7 +233,7 @@ ssize_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_
     return received_total;
 }
 
-void wolfssl_cleanup(struct rasta_transport_state *transport_state) {
+void wolfssl_cleanup(rasta_transport_connection *transport_state) {
     transport_state->tls_state = RASTA_TLS_CONNECTION_CLOSED;
     wolfSSL_set_fd(transport_state->ssl, 0);
     wolfSSL_shutdown(transport_state->ssl);

@@ -1,12 +1,12 @@
 #include <rasta/rastaredundancy.h>
 
+#include "../transport/transport.h"
 #include <errno.h>
+#include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <rasta/rastautil.h>
-#include <rasta/rmemory.h>
-#include "../transport/transport.h"
 
 void _deliver_message_to_upper_layer(rasta_redundancy_channel *channel, struct RastaByteArray *message) {
     // add to queue
@@ -60,8 +60,8 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
     }
     // init transport channel buffer;
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red init", "space for %d connected channels", transport_channel_count);
-    channel->connected_channels = rmalloc(transport_channel_count * sizeof(rasta_transport_channel));
-    channel->connected_channel_count = 0;
+    channel->transport_channels = rmalloc(transport_channel_count * sizeof(rasta_transport_channel));
+    channel->connected_transport_channel_count = 0;
     channel->transport_channel_count = transport_channel_count;
 }
 
@@ -83,7 +83,7 @@ void red_f_deliverDeferQueue(rasta_redundancy_channel *channel) {
         struct RastaByteArray innerPackerBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
         innerPackerBytes = rastaModuleToBytes(deferqueue_get(&channel->defer_q, channel->seq_rx).data,
-                                                &channel->hashing_context);
+                                              &channel->hashing_context);
         _deliver_message_to_upper_layer(channel, &innerPackerBytes);
         freeRastaByteArray(&innerPackerBytes);
 
@@ -112,7 +112,7 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
 
     { // Diagnostics
         // increase amount of received packets of this channel
-        channel->connected_channels[channel_id].diagnostics_data.received_packets += 1;
+        channel->transport_channels[channel_id].diagnostics_data.received_packets += 1;
     }
 
     // only accept pdu with seq. nr = 0 as first message
@@ -138,11 +138,11 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
                 // if delay > T_SEQ, message is late
                 if (delay > channel->configuration_parameters.t_seq) {
                     // channel is late, increase missed counter
-                    channel->connected_channels[channel_id].diagnostics_data.n_missed++;
+                    channel->transport_channels[channel_id].diagnostics_data.n_missed++;
                 } else {
                     // update t_drift and t_drift2
-                    channel->connected_channels[channel_id].diagnostics_data.t_drift += delay;
-                    channel->connected_channels[channel_id].diagnostics_data.t_drift2 += (delay * delay);
+                    channel->transport_channels[channel_id].diagnostics_data.t_drift += delay;
+                    channel->transport_channels[channel_id].diagnostics_data.t_drift2 += (delay * delay);
                 }
             }
         }
@@ -154,7 +154,6 @@ void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancy
                    channel_id);
         logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_pdu=%lu, seq_rx=%lu",
                    channel_id, (long unsigned int)packet.sequence_number, channel->seq_rx - 1);
-
 
         { // Diagnostics
             // received packet as first transport channel -> add with ts to diagnostics buffer
@@ -236,12 +235,12 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "freeing connected channels");
     // free the channels
-    for (unsigned int i = 0; i < channel->connected_channel_count; ++i) {
-        rfree(channel->connected_channels[i].ip_address);
+    for (unsigned int i = 0; i < channel->connected_transport_channel_count; ++i) {
+        rfree(channel->transport_channels[i].ip_address);
     }
-    rfree(channel->connected_channels);
+    rfree(channel->transport_channels);
     channel->transport_channel_count = 0;
-    channel->connected_channel_count = 0;
+    channel->connected_transport_channel_count = 0;
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "freeing FIFO");
 
@@ -251,14 +250,4 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
     freeRastaByteArray(&channel->hashing_context.key);
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "Cleanup complete");
-}
-
-// This does not belong here.
-
-void rasta_red_add_transport_channel(
-    rasta_redundancy_channel *channel,
-    struct rasta_transport_state transport_state,
-    char *ip, uint16_t port) {
-    transport_initialize(&channel->connected_channels[channel->connected_channel_count], transport_state, ip, port);
-    channel->connected_channel_count++;
 }

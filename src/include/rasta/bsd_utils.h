@@ -21,7 +21,7 @@ void bsd_bind_port(int file_descriptor, uint16_t port);
  * @param port the port the socket will listen on
  * @param ip the IPv4 address of the network interface the socket will listen on.
  */
-void bsd_bind_device(int file_descriptor, uint16_t port, char *ip);
+void bsd_bind_device(int file_descriptor, uint16_t port, const char *ip);
 
 /**
  * Sends a message via the given file descriptor to a @p host and @p port
