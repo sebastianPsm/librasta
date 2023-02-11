@@ -41,7 +41,7 @@ typedef struct {
  * @param listenports
  * @param port_count
  */
-void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger);
+void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo *config, struct logger_t *logger);
 
 void rasta_bind(struct rasta_handle *handle);
 

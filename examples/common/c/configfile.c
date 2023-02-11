@@ -797,28 +797,29 @@ void config_setstd(struct RastaConfig *cfg) {
 /*
  * Public functions
  */
-struct RastaConfig config_load(const char filename[256]) {
+int config_load(struct RastaConfig *config, const char filename[256]) {
+
+    memset(config, 0, sizeof(struct RastaConfig));
 
     FILE *f;
     char buf[CONFIG_BUFFER_LENGTH];
-    struct RastaConfig config = {0};
-    strcpy(config.filename, filename);
+    strcpy(config->filename, filename);
 
-    config.logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
+    config->logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
-    f = fopen(config.filename, "r");
+    f = fopen(config->filename, "r");
     if (!f) {
-        logger_log(&config.logger, LOG_LEVEL_ERROR, config.filename, "File not found");
-        return config;
+        logger_log(&config->logger, LOG_LEVEL_ERROR, config->filename, "File not found");
+        return 1;
     }
 
-    config.dictionary = dictionary_create(2);
+    config->dictionary = dictionary_create(2);
 
     int n = 1;
     while (fgets(buf, CONFIG_BUFFER_LENGTH, f) != NULL) {
         // initialize parser
         struct LineParser p;
-        parser_init(&p, buf, n, &config);
+        parser_init(&p, buf, n, config);
 
         // skip empty start
         parser_skipBlanc(&p);
@@ -866,9 +867,9 @@ struct RastaConfig config_load(const char filename[256]) {
     fclose(f);
 
     // initialize standard value
-    config_setstd(&config);
+    config_setstd(config);
 
-    return config;
+    return 0;
 }
 
 struct DictionaryEntry config_get(struct RastaConfig *cfg, const char *key) {
@@ -952,7 +953,7 @@ uint32_t get_initial_seq_num(struct RastaConfig *config) {
 
 void load_configfile(struct RastaConfigInfo *c, struct logger_t *logger, const char *config_file_path) {
     struct RastaConfig config;
-    config = config_load(config_file_path);
+    config_load(&config, config_file_path);
     *c = config.values;
 
     // load logger configuration

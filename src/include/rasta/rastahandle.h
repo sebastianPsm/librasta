@@ -389,8 +389,6 @@ struct rasta_sending_handle {
      */
     struct rasta_handle *handle;
 
-    int *running;
-
     /**
      * The paramenters that are used for SR checksums
      */
@@ -412,8 +410,6 @@ struct rasta_heartbeat_handle {
      * handle for notification only
      */
     struct rasta_handle *handle;
-
-    int *running;
 
     /**
      * The paramenters that are used for SR checksums
@@ -437,8 +433,6 @@ struct rasta_receive_handle {
      */
     struct rasta_handle *handle;
 
-    int *running;
-
     /**
      * The paramenters that are used for SR checksums
      */
@@ -450,19 +444,16 @@ struct rasta_handle {
      * the receiving data
      */
     struct rasta_receive_handle *receive_handle;
-    int recv_running;
 
     /**
      * the sending data
      */
     struct rasta_sending_handle *send_handle;
-    int send_running;
 
     /**
      * the heartbeat data
      */
     struct rasta_heartbeat_handle *heartbeat_handle;
-    int hb_running;
 
     /**
      * pointers to functions that will be called on notifications as described in 5.2.2 and 5.5.6.4
@@ -563,7 +554,7 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result);
  * @param h
  * @param config_file_path
  */
-void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, struct logger_t *logger);
+void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, struct logger_t *logger);
 
 void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con);
 void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con);

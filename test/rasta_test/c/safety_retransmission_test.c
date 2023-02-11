@@ -50,10 +50,10 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.transport_channels = &transport;
+    fake_channel.redundancy_channels = &transport;
     fake_channel.connected_transport_channel_count = 1;
 
-    mux.transport_channels = &fake_channel;
+    mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;
 
     struct rasta_connection connection;
@@ -102,10 +102,10 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.transport_channels = &transport;
+    fake_channel.redundancy_channels = &transport;
     fake_channel.connected_transport_channel_count = 1;
 
-    mux.transport_channels = &fake_channel;
+    mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;
 
     struct rasta_connection connection;

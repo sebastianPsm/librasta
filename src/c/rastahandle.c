@@ -155,9 +155,8 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result) {
     on_heartbeat_timeout_call(&result);
 }
 
-void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, struct logger_t *logger) {
-
-    h->config = config;
+void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, struct logger_t *logger) {
+    h->config = *config;
     h->logger = h->redlogger = *logger;
 
     // set notification pointers to NULL
@@ -172,28 +171,23 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, st
     h->last_con = NULL;
 
     // init hashing context
-    h->hashing_context.hash_length = h->config.sending.md4_type;
-    h->hashing_context.algorithm = h->config.sending.sr_hash_algorithm;
+    // h->hashing_context.hash_length = h->config.sending.md4_type;
+    // h->hashing_context.algorithm = h->config.sending.sr_hash_algorithm;
 
-    if (h->hashing_context.algorithm == RASTA_ALGO_MD4) {
-        // use MD4 IV as key
-        rasta_md4_set_key(&h->hashing_context, h->config.sending.md4_a, h->config.sending.md4_b,
-                          h->config.sending.md4_c, h->config.sending.md4_d);
-    } else {
-        // use the sr_hash_key
-        allocateRastaByteArray(&h->hashing_context.key, sizeof(unsigned int));
+    // if (h->hashing_context.algorithm == RASTA_ALGO_MD4) {
+    //     // use MD4 IV as key
+    //     rasta_md4_set_key(&h->hashing_context, h->config.sending.md4_a, h->config.sending.md4_b,
+    //                       h->config.sending.md4_c, h->config.sending.md4_d);
+    // } else {
+    //     // use the sr_hash_key
+    //     allocateRastaByteArray(&h->hashing_context.key, sizeof(unsigned int));
 
-        // convert unsigned in to byte array
-        h->hashing_context.key.bytes[0] = (h->config.sending.sr_hash_key >> 24) & 0xFF;
-        h->hashing_context.key.bytes[1] = (h->config.sending.sr_hash_key >> 16) & 0xFF;
-        h->hashing_context.key.bytes[2] = (h->config.sending.sr_hash_key >> 8) & 0xFF;
-        h->hashing_context.key.bytes[3] = (h->config.sending.sr_hash_key) & 0xFF;
-    }
-
-    // setup thread data
-    h->recv_running = 0;
-    h->send_running = 0;
-    h->hb_running = 0;
+    //     // convert unsigned in to byte array
+    //     h->hashing_context.key.bytes[0] = (h->config.sending.sr_hash_key >> 24) & 0xFF;
+    //     h->hashing_context.key.bytes[1] = (h->config.sending.sr_hash_key >> 16) & 0xFF;
+    //     h->hashing_context.key.bytes[2] = (h->config.sending.sr_hash_key >> 8) & 0xFF;
+    //     h->hashing_context.key.bytes[3] = (h->config.sending.sr_hash_key) & 0xFF;
+    // }
 
     h->receive_handle = rmalloc(sizeof(struct rasta_receive_handle));
     h->heartbeat_handle = rmalloc(sizeof(struct rasta_heartbeat_handle));
@@ -203,28 +197,22 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo config, st
     h->receive_handle->config = h->config.sending;
     h->receive_handle->info = h->config.general;
     h->receive_handle->handle = h;
-    h->receive_handle->running = &h->recv_running;
     h->receive_handle->logger = &h->logger;
     h->receive_handle->mux = &h->mux;
-    h->receive_handle->hashing_context = &h->hashing_context;
 
     // send
     h->send_handle->config = h->config.sending;
     h->send_handle->info = h->config.general;
     h->send_handle->handle = h;
-    h->send_handle->running = &h->send_running;
     h->send_handle->logger = &h->logger;
     h->send_handle->mux = &h->mux;
-    h->send_handle->hashing_context = &h->hashing_context;
 
     // heartbeat
     h->heartbeat_handle->config = h->config.sending;
     h->heartbeat_handle->info = h->config.general;
     h->heartbeat_handle->handle = h;
-    h->heartbeat_handle->running = &h->hb_running;
     h->heartbeat_handle->logger = &h->logger;
     h->heartbeat_handle->mux = &h->mux;
-    h->heartbeat_handle->hashing_context = &h->hashing_context;
 }
 
 void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con) {

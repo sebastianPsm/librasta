@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <rasta/rmemory.h>
 #include <rasta/rastautil.h>
 
 #define htole32(X) (X)
@@ -26,11 +27,11 @@ uint32_t current_ts() {
 
 void freeRastaByteArray(struct RastaByteArray *data) {
     data->length = 0;
-    free(data->bytes);
+    rfree(data->bytes);
 }
 
 void allocateRastaByteArray(struct RastaByteArray *data, unsigned int length) {
-    data->bytes = malloc(length);
+    data->bytes = rmalloc(length);
     data->length = length;
 }
 

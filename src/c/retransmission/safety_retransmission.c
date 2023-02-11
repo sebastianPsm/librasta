@@ -393,7 +393,7 @@ unsigned int sr_send_queue_item_count(struct rasta_connection *connection) {
     return fifo_get_size(connection->fifo_send);
 }
 
-void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger) {
+void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo *config, struct logger_t *logger) {
     rasta_handle_init(handle, config, logger);
 
     // init the redundancy layer
@@ -404,7 +404,7 @@ void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo config, st
 }
 
 void sr_listen(struct rasta_handle *h) {
-    redundancy_mux_listen_channels(&h->mux);
+    redundancy_mux_listen_channels(&h->mux, &h->config.tls);
 
     // Register accept events
 
@@ -539,10 +539,6 @@ void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con) {
 
 void sr_cleanup(struct rasta_handle *h) {
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA Cleanup", "Cleanup called");
-
-    h->hb_running = 0;
-    h->recv_running = 0;
-    h->send_running = 0;
 
     if (h->user_handles->on_rasta_cleanup) {
         h->user_handles->on_rasta_cleanup();

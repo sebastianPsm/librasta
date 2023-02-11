@@ -71,7 +71,7 @@ void red_call_on_new_connection(redundancy_mux *mux, unsigned long id) {
     wrapper->id = id;
 
     red_on_new_connection_caller(wrapper);
-    free(wrapper);
+    rfree(wrapper);
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA Redundancy call onNewConnection", "called onNewConnection");
 }
@@ -295,6 +295,26 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, str
         }
     }
 
+    // init hashing context
+    // TODO: Why is this code duplicated in the safety/retransmission layer?
+    mux->sr_hashing_context.hash_length = config.sending.md4_type;
+    mux->sr_hashing_context.algorithm = config.sending.sr_hash_algorithm;
+
+    if (mux->sr_hashing_context.algorithm == RASTA_ALGO_MD4) {
+        // use MD4 IV as key
+        rasta_md4_set_key(&mux->sr_hashing_context, config.sending.md4_a, config.sending.md4_b,
+                          config.sending.md4_c, config.sending.md4_d);
+    } else {
+        // use the sr_hash_key
+        allocateRastaByteArray(&mux->sr_hashing_context.key, sizeof(unsigned int));
+
+        // convert unsigned in to byte array
+        mux->sr_hashing_context.key.bytes[0] = (config.sending.sr_hash_key >> 24) & 0xFF;
+        mux->sr_hashing_context.key.bytes[1] = (config.sending.sr_hash_key >> 16) & 0xFF;
+        mux->sr_hashing_context.key.bytes[2] = (config.sending.sr_hash_key >> 8) & 0xFF;
+        mux->sr_hashing_context.key.bytes[3] = (config.sending.sr_hash_key) & 0xFF;
+    }
+
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
 }
 
@@ -474,8 +494,11 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id) {
     logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux wait", "entity with id=0x%lX available", id);
 }
 
-void redundancy_mux_listen_channels(redundancy_mux *mux) {
+void redundancy_mux_listen_channels(redundancy_mux *mux, struct RastaConfigTLS *tls_config) {
     for (unsigned i = 0; i < mux->port_count; ++i) {
+        // TODO: We should have a transport_socket initialize constructor
+        mux->transport_sockets[i].id = i;
+        mux->transport_sockets[i].tls_config = tls_config;
         transport_listen(&mux->transport_sockets[i]);
     }
 }

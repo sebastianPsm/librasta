@@ -206,7 +206,7 @@ void redundancy_mux_wait_for_notifications(redundancy_mux *mux);
  */
 void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_listen_channels(redundancy_mux *mux);
+void redundancy_mux_listen_channels(redundancy_mux *mux, struct RastaConfigTLS *tls_config);
 
 /**
  * adds a new redundancy channel to the multiplexer id and given transport channels.

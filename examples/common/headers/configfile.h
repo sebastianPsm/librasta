@@ -46,11 +46,12 @@ struct RastaConfig {
 };
 
 /**
- * loads a config file and returns the config representing the values in the file
+ * loads a config file and fills the config with the values in the file
+ * @param config the loaded config
  * @param filename
- * @return
+ * @return 0 if success
  */
-struct RastaConfig config_load(const char filename[256]);
+int config_load(struct RastaConfig *config, const char filename[256]);
 
 /**
  * returns the entry behind the key
