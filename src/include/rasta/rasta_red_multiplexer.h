@@ -100,10 +100,10 @@ struct redundancy_mux {
     /**
      * the redundancy channels to remote entities this multiplexer is aware of
      */
-    rasta_redundancy_channel *transport_channels;
+    rasta_redundancy_channel *redundancy_channels;
 
     /**
-     * the amount of known redundancy channels, i.e. the length of transport_channels
+     * the amount of known redundancy channels, i.e. the length of redundancy_channels
      */
     unsigned int channel_count;
 

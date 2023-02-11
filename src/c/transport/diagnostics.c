@@ -84,7 +84,7 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 
 void run_channel_diagnostics(struct rasta_handle *h, unsigned int channel_count, unsigned int channel_index) {
     for (unsigned int i = 0; i < channel_count; ++i) {
-        rasta_redundancy_channel current = h->mux.transport_channels[i];
+        rasta_redundancy_channel current = h->mux.redundancy_channels[i];
         int n_diagnose = h->mux.config.redundancy.n_diagnose;
 
         unsigned long channel_diag_start_time = current.transport_channels[channel_index].diagnostics_data.start_time;
