@@ -295,9 +295,12 @@ void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const cha
                message, fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
 }
 
+// HACK
+// TODO: Also fill this from kex handlers
+static struct rasta_connection *accepted_connection;
 struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Received ConnectionRequest from %d", receivedPacket->sender_id);
-    // struct rasta_connection* con = rastalist_getConnectionByRemote(&h->connections, receivedPacket->sender_id);
+    // TODO: It should not be possible to re-use a connection. Once it's closed, the handle should be dead.
     if (connection == NULL || connection->current_state == RASTA_CONNECTION_CLOSED || connection->current_state == RASTA_CONNECTION_DOWN) {
         // new client
         if (connection == NULL) {
@@ -375,6 +378,7 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
                     return NULL;
                 }
                 *memory = new_con;
+                accepted_connection = memory;
                 add_connection_to_list(h->handle, memory);
                 fire_on_connection_state_change(sr_create_notification_result(h->handle, memory));
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: ConnectionRequest", "Add new client %d", receivedPacket->sender_id);
@@ -433,8 +437,6 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
                 con->cs_t = receivedPacket->sequence_number;
                 con->ts_r = receivedPacket->timestamp;
                 con->cs_r = receivedPacket->confirmed_sequence_number;
-
-                // printf("RECEIVED CS_PDU=%lu (Type=%d)\n", receivedPacket->sequence_number, receivedPacket->type);
 
                 // update state, ready to send data
                 con->current_state = RASTA_CONNECTION_UP;
@@ -542,7 +544,7 @@ int handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connectio
 
             // arm the timeout timer
             enable_timed_event(&connection->timeout_event);
-            return 0;
+            return 1;
         } else {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "Heartbeat is invalid");
 
@@ -606,12 +608,13 @@ int handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connectio
 
 // TODO: This should be moved into safety_retransmission, and not be called from the outside
 // Add rasta_connect
-int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length) {
-    if (connection_exists(h, id))
-        return 0;
+struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length) {
+    // TODO: Remove linked lists of connections
+    // if (connection_exists(h, id))
+    //     return 0;
 
     if (redundancy_mux_add_channel(h, &h->mux, id, channels, channels_length) != 0) {
-        return 1;
+        return NULL;
     }
 
     struct rasta_connection new_con;
@@ -652,7 +655,7 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
     void *memory = h->user_handles->on_connection_start(&new_con);
     if (memory == NULL) {
         logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "connection refused by user to %d", new_con.remote_id);
-        return 1;
+        return NULL;
     }
 
     struct rasta_connection *con = memory;
@@ -681,12 +684,12 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
 
     // What happened? Timeout, or user abort, or success?
     if (con->current_state != RASTA_CONNECTION_UP) {
-        return 1;
+        return NULL;
     }
 
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "handshake completed with %d", new_con.remote_id);
 
-    return 0;
+    return con;
 }
 
 // This is the time that packets are deferred for creating multi-packet messages
@@ -722,17 +725,33 @@ int rasta_recv(rasta_lib_configuration_t user_configuration, void *buf, size_t l
     return sr_get_received_data_len();
 }
 
-int rasta_send(rasta_lib_configuration_t user_configuration, uint32_t remote_id, void *buf, size_t len) {
+int rasta_send(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
     struct RastaMessageData messageData1;
     allocateRastaMessageData(&messageData1, 1);
     messageData1.data_array[0].bytes = buf;
     messageData1.data_array[0].length = len;
 
-    sr_send(&user_configuration->h, remote_id, messageData1);
+    sr_send(&user_configuration->h, connection, messageData1);
     rfree(messageData1.data_array);
     return 0;
 }
 
 void rasta_bind(struct rasta_handle *h) {
     redundancy_mux_bind(&h->mux);
+}
+
+struct rasta_connection * rasta_accept(rasta_lib_configuration_t user_configuration) {
+    struct rasta_handle *h = &user_configuration->h;
+    event_system *event_system = &user_configuration->rasta_lib_event_system;
+    accepted_connection = NULL;
+
+    // accept events were already prepared by sr_listen
+    // event system will break when we have received the first heartbeat of a new connection
+    log_main_loop_state(h, event_system, "event-system started");
+    event_system_start(event_system);
+
+    struct rasta_connection *result = accepted_connection;
+    accepted_connection = NULL;
+
+    return result;
 }

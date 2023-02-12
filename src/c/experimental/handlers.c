@@ -155,7 +155,7 @@ int handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection 
                 logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Not implemented!");
                 abort();
 #endif
-
+                return 1;
             } else {
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Kex", "CTS not in SEQ");
 
@@ -226,7 +226,7 @@ int handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *con
                 logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Auth", "Not implemented!");
                 abort();
 #endif
-
+                return 1;
             } else {
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Kex", "CTS not in SEQ");
 

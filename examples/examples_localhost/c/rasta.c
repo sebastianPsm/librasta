@@ -24,19 +24,9 @@ void printHelpAndExit(void) {
     exit(1);
 }
 
-void addRastaString(struct RastaMessageData *data, int pos, char *str) {
-    int size = strlen(str) + 1;
-
-    struct RastaByteArray msg;
-    allocateRastaByteArray(&msg, size);
-    rmemcpy(msg.bytes, str, size);
-
-    data->data_array[pos] = msg;
-}
-
 struct connect_event_data {
     rasta_lib_configuration_t rc;
-    uint32_t remote_id;
+    struct rasta_connection *connection;
 };
 
 int send_input_data(void *carry_data) {
@@ -51,7 +41,7 @@ int send_input_data(void *carry_data) {
 
             if (c == EOF) {
                 if (read_len > 0) {
-                    rasta_send(data->rc, data->remote_id, buf, read_len);
+                    rasta_send(data->rc, data->connection, buf, read_len);
                 }
                 // TODO: Disconnect
                 // sr_cleanup(&data->rc->h);
@@ -61,11 +51,11 @@ int send_input_data(void *carry_data) {
             buf[read_len++] = c;
 
             if (c == '\n') {
-                rasta_send(data->rc, data->remote_id, buf, read_len);
+                rasta_send(data->rc, data->connection, buf, read_len);
                 return 0;
             }
         }
-        rasta_send(data->rc, data->remote_id, buf, read_len);
+        rasta_send(data->rc, data->connection, buf, read_len);
     }
 }
 
@@ -94,8 +84,6 @@ int main(int argc, char *argv[]) {
 
     fd_event input_available_event;
     struct connect_event_data input_available_event_data;
-    // TODO: Terrible API
-    input_available_event_data.rc[0] = rc[0];
 
     input_available_event.callback = send_input_data;
     input_available_event.carry_data = &input_available_event_data;
@@ -111,11 +99,15 @@ int main(int argc, char *argv[]) {
         rasta_lib_init_configuration(rc, &config, &logger);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
-        input_available_event_data.remote_id = ID_S;
 
         rasta_bind(&rc->h);
 
         sr_listen(&rc->h);
+
+        struct rasta_connection *c = rasta_accept(rc);
+        // TODO: Terrible API
+        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
         add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
@@ -133,14 +125,19 @@ int main(int argc, char *argv[]) {
         rasta_lib_init_configuration(rc, &config, &logger);
         rc->h.user_handles->on_connection_start = on_con_start;
         rc->h.user_handles->on_disconnect = on_con_end;
-        input_available_event_data.remote_id = ID_R;
 
         rasta_bind(&rc->h);
 
-        if (sr_connect(&rc->h, ID_R, toServer, 2) != 0) {
+        struct rasta_connection *c = sr_connect(&rc->h, ID_R, toServer, 2);
+
+        if (c == NULL) {
             printf("->   Failed to connect any channel.\n");
             return 1;
         };
+
+        // TODO: Terrible API
+        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
         add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);

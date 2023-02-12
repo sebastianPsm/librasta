@@ -73,6 +73,7 @@ void red_call_on_new_connection(redundancy_mux *mux, unsigned long id) {
 /* --------------------- */
 
 int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *transport_channel, struct receive_event_data *data, struct sockaddr_in *sender, unsigned char *buffer, size_t len) {
+    int result = 0;
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", data->channel->id, len);
 
     size_t len_remaining = len;
@@ -88,15 +89,15 @@ int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_tr
         if (deferqueue_isfull(&channel->defer_q)) {
             // Discard incoming packet
         } else {
-            // TODO: If this turned out to be new application data, break from processing, i.e. return != 0
-            red_f_receiveData(h, channel, receivedPacket, data->channel->id);
+            // If this turned out to be a new connection or new application data, break from processing
+            result |= red_f_receiveData(h, channel, receivedPacket, data->channel->id);
         }
 
         len_remaining -= currentPacketSize;
         read_offset += currentPacketSize;
     }
 
-    return 0;
+    return result;
 }
 
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket) {

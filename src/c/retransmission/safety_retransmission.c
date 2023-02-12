@@ -445,20 +445,13 @@ void sr_listen(struct rasta_handle *h) {
 // HACK
 int data_send_event(void *carry_data);
 
-void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages) {
-
-    struct rasta_connection *con;
-    for (con = h->first_con; con; con = con->linkedlist_next) {
-        if (con->remote_id == remote_id)
-            break;
-    }
-
-    if (con == 0)
+void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages) {
+    if (con == NULL)
         return;
 
     if (con->current_state == RASTA_CONNECTION_UP) {
         if (app_messages.count > h->config.sending.max_packet) {
-            // to many application messages
+            // too many application messages
             logger_log(&h->logger, LOG_LEVEL_ERROR, "RaSTA send", "too many application messages to send in one packet. Maximum is %d",
                        h->config.sending.max_packet);
             // do nothing and leave method with error code 2

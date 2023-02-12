@@ -52,7 +52,7 @@ void sr_listen(struct rasta_handle *h);
  * @param handle
  * @param id
  */
-int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length);
+struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length);
 
 /**
  * send data to another instance
@@ -60,7 +60,7 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
  * @param remote_id
  * @param app_messages
  */
-void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages);
+void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages);
 
 /**
  * get data from message buffer

@@ -18,7 +18,6 @@ void sr_init_connection(struct rasta_connection *connection, unsigned long id, s
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection *connection);
 void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo *config, struct logger_t *logger);
 void sr_listen(struct rasta_handle *h);
-void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages);
 void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con);
 void sr_cleanup(struct rasta_handle *h);
 int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket *packet);

@@ -480,6 +480,7 @@ struct rasta_handle {
     /**
      * linked list of rasta connections
      */
+    // TODO: Remove
     struct rasta_connection *first_con;
     struct rasta_connection *last_con;
 
