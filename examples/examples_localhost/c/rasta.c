@@ -15,7 +15,7 @@
 #define CONFIG_PATH_C "rasta_client_local.cfg"
 
 #define ID_R 0x61
-#define ID_S 0x62
+#define ID_S 0x60
 
 #define BUF_SIZE 500
 
@@ -105,6 +105,11 @@ int main(int argc, char *argv[]) {
         sr_listen(&rc->h);
 
         struct rasta_connection *c = rasta_accept(rc);
+        if (c == NULL) {
+            printf("Could not accept connection\n");
+            exit(1);
+        }
+
         // TODO: Terrible API
         input_available_event_data.rc[0] = rc[0];
         input_available_event_data.connection = c;
@@ -113,7 +118,7 @@ int main(int argc, char *argv[]) {
         add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
-        while ((recv_len = rasta_recv(rc, buf, BUF_SIZE)) > 0) {
+        while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
             // write to stdout
             write(STDOUT_FILENO, buf, recv_len);
         }
@@ -143,7 +148,7 @@ int main(int argc, char *argv[]) {
         add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
-        while ((recv_len = rasta_recv(rc, buf, BUF_SIZE)) > 0) {
+        while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
             write(STDOUT_FILENO, buf, recv_len);
         }
     }

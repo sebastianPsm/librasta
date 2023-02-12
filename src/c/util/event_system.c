@@ -57,6 +57,7 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s *fd_
     // wait
     int result = select(nfds, &on_readable, &on_writable, &on_exceptional, &tv);
     if (result == -1) {
+        perror("select failed");
         // syscall error or error on select()
         return -1;
     }

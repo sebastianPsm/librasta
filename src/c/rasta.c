@@ -696,7 +696,7 @@ struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, st
 // See section 5.5.10
 #define IO_INTERVAL 10000
 
-int rasta_recv(rasta_lib_configuration_t user_configuration, void *buf, size_t len) {
+int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
 
@@ -712,15 +712,21 @@ int rasta_recv(rasta_lib_configuration_t user_configuration, void *buf, size_t l
     enable_timed_event(&send_event);
     add_timed_event(event_system, &send_event);
 
-    log_main_loop_state(h, event_system, "event-system started");
-    event_system_start(event_system);
+    size_t received_data_len = 0;
+
+    while (connection->current_state == RASTA_CONNECTION_UP && received_data_len == 0) {
+        log_main_loop_state(h, event_system, "event-system started");
+        event_system_start(event_system);
+
+        received_data_len = sr_get_received_data_len();
+    }
 
     // Remove all stack entries from linked lists...
     remove_timed_event(event_system, &send_event);
 
-    // if (con->current_state != RASTA_CONNECTION_UP) {
-    //     return -1;
-    // }
+    if (connection->current_state != RASTA_CONNECTION_UP) {
+        return -1;
+    }
 
     return sr_get_received_data_len();
 }

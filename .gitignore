@@ -9,6 +9,7 @@ CUnitAutomated-Listing.xml
 CUnitAutomated-Results.xml
 
 build
+build-*
 ubuntu-xenial*
 \.idea/
 cmake-build-debug/
