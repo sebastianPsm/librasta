@@ -18,7 +18,7 @@ struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port) {
     // convert host string to usable format
     if (inet_aton(host, &receiver.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
+        abort();
     }
     return receiver;
 }
@@ -38,19 +38,19 @@ int bsd_create_socket(int family, int type, int protocol_type) {
             perror("The socket could not be initialized");
         }
 
-        exit(1);
+        abort();
     }
 
     // Make socket reusable
     if (setsockopt(file_desc, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0) {
         perror("setsockopt(SO_REUSEADDR) failed");
-        exit(1);
+        abort();
     }
 
 #ifdef SO_REUSEPORT
     if (setsockopt(file_desc, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) {
         perror("setsockopt(SO_REUSEPORT) failed");
-        exit(1);
+        abort();
     }
 #endif
 
@@ -71,7 +71,7 @@ void bsd_bind_port(int file_descriptor, uint16_t port) {
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(local)) < 0) {
         // bind failed
         fprintf(stderr, "could not bind the socket to port %d", port);
-        exit(1);
+        abort();
     }
 }
 
@@ -86,7 +86,7 @@ void bsd_bind_device(int file_descriptor, uint16_t port, const char *ip) {
     if (bind(file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) < 0) {
         // bind failed
         perror("could not bind the socket to port");
-        exit(1);
+        abort();
     }
 }
 
@@ -100,7 +100,7 @@ void bsd_send(int file_descriptor, unsigned char *message, size_t message_len, c
 void bsd_send_sockaddr(int file_descriptor, unsigned char *message, size_t message_len, struct sockaddr_in receiver) {
     if (sendto(file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) < 0) {
         perror("failed to send data");
-        exit(1);
+        abort();
     }
 }
 
@@ -111,12 +111,12 @@ void bsd_close(int file_descriptor) {
         if (shutdown(file_descriptor, SHUT_RDWR) < 0)   // secondly, terminate the 'reliable' delivery
             if (errno != ENOTCONN && errno != EINVAL) { // SGI causes EINVAL
                 perror("shutdown");
-                exit(1);
+                abort();
             }
         if (close(file_descriptor) < 0) // finally call close()
         {
             perror("close");
-            exit(1);
+            abort();
         }
     }
 }
@@ -125,7 +125,7 @@ int getSO_ERROR(int fd) {
     int err = 1;
     socklen_t len = sizeof err;
     if (-1 == getsockopt(fd, SOL_SOCKET, SO_ERROR, (char *)&err, &len))
-        exit(1);
+        abort();
     if (err)
         errno = err; // set errno to the socket SO_ERROR
     return err;

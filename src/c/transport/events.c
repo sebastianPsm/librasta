@@ -70,7 +70,7 @@ int channel_receive_event(void *carry_data) {
         return 0;
     }
 
-    int result = receive_packet(h->receive_handle, &h->mux, data, &sender, buffer, len);
+    int result = receive_packet(h->receive_handle, &h->mux, data->channel, data, &sender, buffer, len);
 
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d receive done",
                data->channel->id);

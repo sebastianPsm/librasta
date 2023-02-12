@@ -8,7 +8,7 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
-#include "types.h"
+#include "transport.h"
 #include <netinet/in.h>
 #include <stdint.h>
 #ifdef ENABLE_TLS

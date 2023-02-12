@@ -112,7 +112,7 @@ static void apply_tls_mode(rasta_transport_connection *transport_state) {
         break;
     default:
         fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
-        exit(1);
+        abort();
     }
 }
 
@@ -142,7 +142,7 @@ void tcp_listen(rasta_transport_connection *transport_state) {
     if (listen(transport_state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0) {
         // listen failed
         fprintf(stderr, "error whe listening to file_descriptor %d", transport_state->file_descriptor);
-        exit(1);
+        abort();
     }
 
     handle_tls_mode_server(transport_state);
@@ -154,7 +154,7 @@ int tcp_accept(rasta_transport_connection *transport_state) {
     int socket;
     if ((socket = accept(transport_state->file_descriptor, (struct sockaddr *)&empty_sockaddr_in, &sender_len)) < 0) {
         perror("tcp failed to accept connection");
-        exit(1);
+        abort();
     }
 
     return socket;
@@ -166,7 +166,7 @@ void tcp_accept_tls(rasta_transport_connection *transport_state, struct rasta_co
     /* Create a WOLFSSL object */
     if ((connectionState->ssl = wolfSSL_new(transport_state->ctx)) == NULL) {
         fprintf(stderr, "ERROR: failed to create WOLFSSL object\n");
-        exit(1);
+        abort();
     }
 
     /* Attach wolfSSL to the socket */
@@ -178,7 +178,7 @@ void tcp_accept_tls(rasta_transport_connection *transport_state, struct rasta_co
     if (ret != WOLFSSL_SUCCESS) {
         fprintf(stderr, "wolfSSL_accept error = %d\n",
                 wolfSSL_get_error(connectionState->ssl, ret));
-        exit(1);
+        abort();
     }
 
     tls_pin_certificate(connectionState->ssl, connectionState->tls_config->peer_tls_cert_path);
@@ -197,12 +197,12 @@ void tcp_connect(rasta_transport_connection *transport_state, char *host, uint16
     // convert host string to usable format
     if (inet_aton(host, &server.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
+        abort();
     }
 
     if (connect(transport_state->file_descriptor, (struct sockaddr *)&server, sizeof(server)) < 0) {
         perror("tcp connection failed");
-        exit(1);
+        abort();
     }
 
     if (transport_state->ctx == NULL) {
@@ -213,14 +213,14 @@ void tcp_connect(rasta_transport_connection *transport_state, char *host, uint16
     if (!transport_state->ssl) {
         const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
         fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
-        exit(1);
+        abort();
     }
 
     if (transport_state->tls_config->tls_hostname[0]) {
         int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
         if (ret != SSL_SUCCESS) {
             fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
-            exit(1);
+            abort();
         }
     } else {
         fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
@@ -228,7 +228,7 @@ void tcp_connect(rasta_transport_connection *transport_state, char *host, uint16
     /* Attach wolfSSL to the socket */
     if (wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor) != WOLFSSL_SUCCESS) {
         fprintf(stderr, "ERROR: Failed to set the file descriptor\n");
-        exit(1);
+        abort();
     }
 
     /* required for getting random used */
@@ -248,7 +248,7 @@ void tcp_connect(rasta_transport_connection *transport_state, char *host, uint16
     if (wolfSSL_connect(transport_state->ssl) != WOLFSSL_SUCCESS) {
         const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
         fprintf(stderr, "ERROR: failed to connect to wolfSSL %s.\n", error_str);
-        exit(1);
+        abort();
     }
 
     tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);

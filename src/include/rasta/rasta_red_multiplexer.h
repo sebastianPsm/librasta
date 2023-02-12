@@ -5,13 +5,12 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
+#include <arpa/inet.h>
 #include <stdint.h>
 
 #include <rasta/event_system.h>
 #include <rasta/rastamodule.h>
 #include <rasta/rastaredundancy.h>
-#include <rasta/tcp.h>
-#include <rasta/udp.h>
 
 #define UNUSED(x) (void)(x)
 
@@ -103,7 +102,7 @@ struct redundancy_mux {
     rasta_redundancy_channel *redundancy_channels;
 
     /**
-     * the amount of known redundancy channels, i.e. the length of redundancy_channels
+     * the amount of redundancy channels to remote entitites, i.e. the length of redundancy_channels
      */
     unsigned int channel_count;
 
@@ -233,11 +232,11 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
 struct rasta_receive_handle;
-int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
+int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct receive_event_data *data, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
 
-struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len);
+void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
 
-void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender);
+void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *channel, struct receive_event_data *data, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender);
 
 #ifdef __cplusplus
 }

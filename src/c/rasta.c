@@ -12,7 +12,6 @@
 #include <rasta/rastahandle.h>
 #include <rasta/rastaredundancy.h>
 #include <rasta/rmemory.h>
-#include <rasta/tcp.h>
 
 #include "experimental/handlers.h"
 #include "retransmission/handlers.h"
@@ -310,9 +309,9 @@ void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const cha
 struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Received ConnectionRequest from %d", receivedPacket->sender_id);
     // struct rasta_connection* con = rastalist_getConnectionByRemote(&h->connections, receivedPacket->sender_id);
-    if (connection == 0 || connection->current_state == RASTA_CONNECTION_CLOSED || connection->current_state == RASTA_CONNECTION_DOWN) {
+    if (connection == NULL || connection->current_state == RASTA_CONNECTION_CLOSED || connection->current_state == RASTA_CONNECTION_DOWN) {
         // new client
-        if (connection == 0) {
+        if (connection == NULL) {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Prepare new client");
         } else {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Reset existing client");
@@ -323,7 +322,7 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
 
         // initialize seq num
         new_con.sn_t = new_con.sn_i = receivedPacket->sequence_number;
-        // new_con.sn_t = 55;
+
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Using %lu as initial sequence number",
                    (long unsigned int)new_con.sn_t);
 

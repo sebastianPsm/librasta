@@ -244,7 +244,7 @@ struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket 
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return a RaSTA Redundancy layer packet containing all data that was in the @p data byte array
  */
-struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context);
+void bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context, struct RastaRedundancyPacket *packet);
 
 #ifdef __cplusplus
 }

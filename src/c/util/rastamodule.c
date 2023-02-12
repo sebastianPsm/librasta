@@ -262,18 +262,17 @@ struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket 
     return result;
 }
 
-struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context) {
-    struct RastaRedundancyPacket packet;
-    packet.checksum_type = checksum_type;
+void bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context, struct RastaRedundancyPacket *packet) {
+    packet->checksum_type = checksum_type;
 
     // length
-    packet.length = leShortToHost(&data.bytes[0]);
+    packet->length = leShortToHost(&data.bytes[0]);
 
     // reserved bytes
-    packet.reserve = leShortToHost(&data.bytes[2]);
+    packet->reserve = leShortToHost(&data.bytes[2]);
 
     // sequence number
-    packet.sequence_number = leLongToHost(&data.bytes[4]);
+    packet->sequence_number = leLongToHost(&data.bytes[4]);
 
     // length of the carried data (the rasta packet) is total length - 8 bytes of length, reserve and seq nr before
     // and the in the checksum_type specified amount of bytes for the checksum after the data (divided by 8 because
@@ -289,7 +288,7 @@ struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray 
     }
 
     // convert to rasta packet
-    packet.data = bytesToRastaPacket(internal_packet_bytes, hashing_context);
+    packet->data = bytesToRastaPacket(internal_packet_bytes, hashing_context);
 
     // free the packet bytes
     freeRastaByteArray(&internal_packet_bytes);
@@ -311,18 +310,16 @@ struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray 
     freeRastaByteArray(&data_wo_checksum);
 
     // checksum check
-    packet.checksum_correct = 1;
+    packet->checksum_correct = 1;
 
     if (data.length == data_wo_checksum_len) {
         // no checksum was used, nothing to check
-        return packet;
+        return;
     }
 
     // convert the previously calculated checksum into byte array for comparison with data checksum
     unsigned char data_checksum[4];
     hostLongToLe(calculated_checksum, data_checksum);
 
-    packet.checksum_correct = (rmemcmp(data_checksum, &data.bytes[8 + data_len], (checksum_type.width / 8)) == 0);
-
-    return packet;
+    packet->checksum_correct = (rmemcmp(data_checksum, &data.bytes[8 + data_len], (checksum_type.width / 8)) == 0);
 }

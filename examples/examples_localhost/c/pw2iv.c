@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define htole32(X) (X)
+#define rasta_htole32(X) (X)
 
 static void usage(const char *name) {
     fprintf(stderr, "Usage: %s <password>\n", name);
@@ -41,13 +41,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    output[0] = htole32(MD4_STD_A);
-    output[1] = htole32(MD4_STD_B);
-    output[2] = htole32(MD4_STD_C);
-    output[3] = htole32(MD4_STD_D);
+    output[0] = rasta_htole32(MD4_STD_A);
+    output[1] = rasta_htole32(MD4_STD_B);
+    output[2] = rasta_htole32(MD4_STD_C);
+    output[3] = rasta_htole32(MD4_STD_D);
 
     for (pw_written = 0; pw_written < pw_len - (pw_len % 4); pw_written += 4) {
-        output[pw_written / 4] = htole32(*(uint32_t *)&pw[pw_written]);
+        output[pw_written / 4] = rasta_htole32(*(uint32_t *)&pw[pw_written]);
     }
 
     last_word = (char *)&output[pw_len / 4];

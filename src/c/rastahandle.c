@@ -199,6 +199,7 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, s
     h->receive_handle->handle = h;
     h->receive_handle->logger = &h->logger;
     h->receive_handle->mux = &h->mux;
+    h->receive_handle->hashing_context = &h->mux.sr_hashing_context;
 
     // send
     h->send_handle->config = h->config.sending;
@@ -206,6 +207,7 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, s
     h->send_handle->handle = h;
     h->send_handle->logger = &h->logger;
     h->send_handle->mux = &h->mux;
+    h->send_handle->hashing_context = &h->mux.sr_hashing_context;
 
     // heartbeat
     h->heartbeat_handle->config = h->config.sending;
@@ -213,6 +215,7 @@ void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, s
     h->heartbeat_handle->handle = h;
     h->heartbeat_handle->logger = &h->logger;
     h->heartbeat_handle->mux = &h->mux;
+    h->heartbeat_handle->hashing_context = &h->mux.sr_hashing_context;
 }
 
 void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con) {

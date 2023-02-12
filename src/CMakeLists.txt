@@ -35,8 +35,6 @@ set(headers
     include/rasta/rastaredundancy.h
     include/rasta/rastautil.h
     include/rasta/rmemory.h
-    include/rasta/udp.h
-    include/rasta/tcp.h
     include/rasta/types.h
     include/rasta/bsd_utils.h
     include/rasta/ssl_utils.h

@@ -42,7 +42,6 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
 
     // init defer queue
     channel->defer_q = deferqueue_init(config.redundancy.n_deferqueue_size);
-    channel->fifo_recv = fifo_init(config.redundancy.n_deferqueue_size);
 
     // init diagnostics buffer
     channel->diagnostics_packet_buffer = deferqueue_init(10 * config.redundancy.n_deferqueue_size);
@@ -68,7 +67,7 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
     // init transport channel buffer;
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red init", "space for %d connected channels", transport_channel_count);
     channel->transport_channels = rmalloc(transport_channel_count * sizeof(rasta_transport_channel));
-    channel->connected_transport_channel_count = 0;
+    rmemset(channel->transport_channels, 0, transport_channel_count * sizeof(rasta_transport_channel));
     channel->transport_channel_count = transport_channel_count;
 }
 
@@ -242,17 +241,14 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "freeing connected channels");
     // free the channels
-    for (unsigned int i = 0; i < channel->connected_transport_channel_count; ++i) {
+    for (unsigned int i = 0; i < channel->transport_channel_count; ++i) {
+        // Not so sure about this.
         rfree(channel->transport_channels[i].ip_address);
     }
     rfree(channel->transport_channels);
     channel->transport_channel_count = 0;
-    channel->connected_transport_channel_count = 0;
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "freeing FIFO");
-
-    // free the receive FIFO
-    fifo_destroy(channel->fifo_recv);
 
     freeRastaByteArray(&channel->hashing_context.key);
 

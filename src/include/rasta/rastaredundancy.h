@@ -12,7 +12,6 @@ extern "C" { // only need to export C interface if
 #include "logging.h"
 #include "rastacrc.h"
 #include "rastadeferqueue.h"
-#include "udp.h"
 #include "transport.h"
 
 typedef struct rasta_transport_channel rasta_transport_channel;
@@ -80,20 +79,10 @@ typedef struct {
     struct defer_queue diagnostics_packet_buffer;
 
     /**
-     * the FIFO where the messages for the upper layer are stored
-     */
-    fifo_t *fifo_recv;
-
-    /**
      * the transport channels of the partner (client) when running in server mode.
-     * these are dynamically added when a message from the corresponding channel is received.
+     * these are dynamically initialzed when a message from the corresponding channel is received.
      */
     rasta_transport_channel *transport_channels;
-
-    /**
-     * the amount of discovered partner transport channels
-     */
-    unsigned int connected_transport_channel_count;
 
     /**
      * the total amount of transport channels

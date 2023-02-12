@@ -24,7 +24,7 @@ static void handle_port_unavailable(const uint16_t port) {
 
     // bind failed
     perror("warning_mbuf");
-    exit(1);
+    abort();
 }
 
 static void
@@ -37,7 +37,7 @@ get_client_addr_from_socket(const struct RastaState *transport_state, struct soc
 
     if (received_bytes < 0) {
         perror("No clients waiting to connect");
-        exit(1);
+        abort();
     }
 }
 
@@ -52,7 +52,7 @@ static void wolfssl_accept(struct RastaState *transport_state) {
 
     if (connect(transport_state->file_descriptor, (struct sockaddr *)&client_addr, sizeof(client_addr)) != 0) {
         perror("Could not connect to client");
-        exit(1);
+        abort();
     }
 
     if (wolfSSL_accept(transport_state->ssl) != SSL_SUCCESS) {
@@ -60,7 +60,7 @@ static void wolfssl_accept(struct RastaState *transport_state) {
         int e = wolfSSL_get_error(transport_state->ssl, 0);
 
         fprintf(stderr, "WolfSSL could not accept connection: %s\n", wolfSSL_ERR_reason_error_string(e));
-        exit(1);
+        abort();
     }
 
     tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
@@ -95,7 +95,7 @@ static size_t wolfssl_receive_dtls(rasta_transport_connection *transport_state, 
             int readErr = wolfSSL_get_error(transport_state->ssl, 0);
             if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE) {
                 fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
-                exit(1);
+                abort();
             }
         }
     }
@@ -125,7 +125,7 @@ static void handle_tls_mode(rasta_transport_connection *transport_state) {
     }
     default: {
         fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
-        exit(1);
+        abort();
     }
     }
 }
@@ -160,7 +160,7 @@ void udp_bind_device(rasta_transport_connection *transport_state, uint16_t port,
     if (bind(transport_state->file_descriptor, (struct sockaddr *)&local, sizeof(struct sockaddr_in)) == -1) {
         // bind failed
         handle_port_unavailable(port);
-        exit(1);
+        abort();
     }
     handle_tls_mode(transport_state);
 }
@@ -177,12 +177,12 @@ void udp_close(rasta_transport_connection *transport_state) {
         if (shutdown(file_descriptor, SHUT_RDWR) < 0)   // secondly, terminate the 'reliable' delivery
             if (errno != ENOTCONN && errno != EINVAL) { // SGI causes EINVAL
                 perror("shutdown");
-                exit(1);
+                abort();
             }
         if (close(file_descriptor) < 0) // finally call close()
         {
             perror("close");
-            exit(1);
+            abort();
         }
     }
 }
@@ -196,7 +196,7 @@ size_t udp_receive(rasta_transport_connection *transport_state, unsigned char *r
         // wait for incoming data
         if ((recv_len = recvfrom(transport_state->file_descriptor, received_message, max_buffer_len, 0, (struct sockaddr *)sender, &sender_len)) == -1) {
             perror("an error occured while trying to receive data");
-            exit(1);
+            abort();
         }
 
         return (size_t)recv_len;
@@ -224,7 +224,7 @@ void udp_send_sockaddr(rasta_transport_connection *transport_state, unsigned cha
         if (sendto(transport_state->file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) ==
             -1) {
             perror("failed to send data");
-            exit(1);
+            abort();
         }
     }
     else {
@@ -244,7 +244,7 @@ void udp_init(rasta_transport_connection *transport_state, const struct RastaCon
     if ((file_desc = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
         // creation failed, exit
         perror("The udp socket could not be initialized");
-        exit(1);
+        abort();
     }
     transport_state->file_descriptor = file_desc;
 }

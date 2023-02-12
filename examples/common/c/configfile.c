@@ -699,7 +699,7 @@ void config_setstd(struct RastaConfig *cfg) {
 #endif
         if (!accepted) {
             fprintf(stderr, "Unknown or unsupported TLS mode: %s\n", entr.value.string.c);
-            exit(1);
+            abort();
         }
     } else {
         cfg->values.tls.mode = TLS_MODE_DISABLED;
@@ -748,7 +748,7 @@ void config_setstd(struct RastaConfig *cfg) {
         }
         if (!accepted) {
             fprintf(stderr, "Unknown or unsupported KEX mode: %s\n", entr.value.string.c);
-            exit(1);
+            abort();
         }
     }
     entr = config_get(cfg, "RASTA_KEX_PSK");
@@ -782,7 +782,7 @@ void config_setstd(struct RastaConfig *cfg) {
 
         if (strncmp(record_header, CONFIGURATION_FILE_USER_RECORD_HEADER, record_header_length - 1) != 0) {
             fprintf(stderr, "Unknown psk record header: %s\n", record_header);
-            exit(1);
+            abort();
         }
         cfg->values.kex.has_psk_record = true;
 
@@ -970,12 +970,12 @@ void load_configfile(struct RastaConfigInfo *c, struct logger_t *logger, const c
                 logger_set_log_file(logger, logger_file.value.string.c);
             } else {
                 // error in config
-                exit(1);
+                abort();
             }
         }
     } else {
         // error in config
-        exit(1);
+        abort();
     }
 
     // get accepted versions from config

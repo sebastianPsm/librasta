@@ -21,7 +21,7 @@ void wolfssl_start_dtls_server(rasta_transport_connection *transport_state, cons
     transport_state->ssl = wolfSSL_new(transport_state->ctx);
     if (!transport_state->ssl) {
         fprintf(stderr, "Error allocating WolfSSL object.\n");
-        exit(1);
+        abort();
     }
     wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
 
@@ -39,31 +39,31 @@ void wolfssl_start_server(rasta_transport_connection *transport_state, const str
     transport_state->ctx = wolfSSL_CTX_new(server_method);
     if (!transport_state->ctx) {
         fprintf(stderr, "Could not allocate WolfSSL context!\n");
-        exit(1);
+        abort();
     }
 
     if (!tls_config->ca_cert_path[0] || !tls_config->cert_path[0] || !tls_config->key_path[0]) {
         fprintf(stderr, "CA certificate path, server certificate path or server private key path missing!\n");
-        exit(1);
+        abort();
     }
 
     /* Load CA certificates */
     if (wolfSSL_CTX_load_verify_locations(transport_state->ctx, tls_config->ca_cert_path, 0) !=
         SSL_SUCCESS) {
         fprintf(stderr, "Error loading CA certificate file %s.\n", tls_config->ca_cert_path);
-        exit(1);
+        abort();
     }
     /* Load server certificates */
     if (wolfSSL_CTX_use_certificate_file(transport_state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
         SSL_SUCCESS) {
         printf("Error loading server certificate file %s as PEM file.\n", tls_config->cert_path);
-        exit(1);
+        abort();
     }
     /* Load server Keys */
     if ((err = wolfSSL_CTX_use_PrivateKey_file(transport_state->ctx, tls_config->key_path,
                                                SSL_FILETYPE_PEM)) != SSL_SUCCESS) {
         printf("Error loading server private key file %s as PEM file: %d.\n", tls_config->key_path, err);
-        exit(1);
+        abort();
     }
     transport_state->tls_config = tls_config;
 }
@@ -78,12 +78,12 @@ void set_tls_async(int fd, WOLFSSL *ssl) {
     socket_flags = fcntl(fd, F_GETFL, 0);
     if (socket_flags < 0) {
         perror("Error getting socket flags");
-        exit(1);
+        abort();
     }
     socket_flags |= O_NONBLOCK;
     if (fcntl(fd, F_SETFL, socket_flags) != 0) {
         perror("Error setting socket non-blocking");
-        exit(1);
+        abort();
     }
 
     // inform wolfssl to expect read / write errors due to non-blocking nature of socket
@@ -96,12 +96,12 @@ void set_socket_async(rasta_transport_connection *transport_state, WOLFSSL_ASYNC
     socket_flags = fcntl(transport_state->file_descriptor, F_GETFL, 0);
     if (socket_flags < 0) {
         perror("Error getting socket flags");
-        exit(1);
+        abort();
     }
     socket_flags |= O_NONBLOCK;
     if (fcntl(transport_state->file_descriptor, F_SETFL, socket_flags) != 0) {
         perror("Error setting socket non-blocking");
-        exit(1);
+        abort();
     }
 
     // inform wolfssl to expect read / write errors due to non-blocking nature of socket
@@ -121,12 +121,12 @@ void wolfssl_start_client(rasta_transport_connection *transport_state, const str
     transport_state->ctx = wolfSSL_CTX_new(client_method);
     if (!transport_state->ctx) {
         fprintf(stderr, "Could not allocate WolfSSL context!\n");
-        exit(1);
+        abort();
     }
 
     if (!tls_config->ca_cert_path[0]) {
         fprintf(stderr, "CA certificate path missing!\n");
-        exit(1);
+        abort();
     }
 
     /* Load CA certificates */
@@ -134,7 +134,7 @@ void wolfssl_start_client(rasta_transport_connection *transport_state, const str
         SSL_SUCCESS) {
 
         fprintf(stderr, "Error loading CA certificate file %s\n", tls_config->ca_cert_path);
-        exit(1);
+        abort();
     }
 
     if (tls_config->cert_path[0] && tls_config->key_path[0]) {
@@ -142,14 +142,14 @@ void wolfssl_start_client(rasta_transport_connection *transport_state, const str
         if (wolfSSL_CTX_use_certificate_file(transport_state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
             SSL_SUCCESS) {
             printf("Error loading client certificate file %s as PEM file.\n", tls_config->cert_path);
-            exit(1);
+            abort();
         }
         /* Load client Keys */
         int err;
         if ((err = wolfSSL_CTX_use_PrivateKey_file(transport_state->ctx, tls_config->key_path,
                                                    SSL_FILETYPE_PEM)) != SSL_SUCCESS) {
             fprintf(stderr, "Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
-            exit(1);
+            abort();
         }
     }
 
@@ -158,14 +158,14 @@ void wolfssl_start_client(rasta_transport_connection *transport_state, const str
     if (!transport_state->ssl) {
         const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
         fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
-        exit(1);
+        abort();
     }
 
     if (transport_state->tls_config->tls_hostname[0]) {
         const int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
         if (ret != SSL_SUCCESS) {
             fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
-            exit(1);
+            abort();
         }
     } else {
         fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
@@ -179,7 +179,7 @@ void wolfssl_start_client(rasta_transport_connection *transport_state, const str
 void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     if (wolfSSL_write(ssl, message, (int)message_len) != (int)message_len) {
         fprintf(stderr, "WolfSSL write error!");
-        exit(1);
+        abort();
     }
 }
 
@@ -190,7 +190,7 @@ void wolfssl_send_dtls(rasta_transport_connection *transport_state, unsigned cha
         if (wolfSSL_connect(transport_state->ssl) != SSL_SUCCESS) {
             int connect_error = wolfSSL_get_error(transport_state->ssl, 0);
             fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
-            exit(1);
+            abort();
         }
 
         tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
@@ -226,7 +226,7 @@ ssize_t wolfssl_receive_tls(WOLFSSL *ssl, unsigned char *received_message, size_
             return -1;
         } else if (readErr != SSL_ERROR_WANT_READ && readErr != SSL_ERROR_WANT_WRITE) {
             fprintf(stderr, "WolfSSL decryption failed: %s.\n", wolfSSL_ERR_reason_error_string(readErr));
-            exit(1);
+            abort();
         }
     }
 
@@ -245,7 +245,7 @@ void wolfssl_cleanup(rasta_transport_connection *transport_state) {
     type *varname = invocation;                          \
     if (!(varname)) {                                    \
         fprintf(stderr, #invocation " failed!\n");       \
-        exit(1);                                         \
+        abort();                                         \
     }
 #define SHA256_BUFFER_LENGTH_BYTES 64
 
@@ -260,7 +260,7 @@ void generate_certificate_digest(WOLFSSL_X509 *peer_cert,
 
     if (ret != SSL_SUCCESS) {
         fprintf(stderr, "Could not generate peer certificate sha256 digest!\n");
-        exit(1);
+        abort();
     }
 }
 
@@ -275,14 +275,14 @@ void tls_pin_certificate(WOLFSSL *ssl, const char *peer_tls_cert_path) {
         generate_certificate_digest(pinned_cert, pinned_digest_buffer, &pinned_digest_buffer_size);
         if (peer_digest_buffer_size != pinned_digest_buffer_size) {
             fprintf(stderr, "Internal error - certificate digests do not have the same length\n (%d vs. %d bytes)!", peer_digest_buffer_size, pinned_digest_buffer_size);
-            exit(1);
+            abort();
         }
         if (memcmp(peer_digest_buffer, pinned_digest_buffer, pinned_digest_buffer_size) != 0) {
             struct logger_t sha_logger = logger_init(LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
             fprintf(stderr, "Certificate Pinning error - peer certificate hash does not match!\n");
             logger_hexdump(&sha_logger, LOG_LEVEL_DEBUG, peer_digest_buffer, peer_digest_buffer_size, "Peer certificate (digest)");
             logger_hexdump(&sha_logger, LOG_LEVEL_DEBUG, pinned_digest_buffer, pinned_digest_buffer_size, "Pinned certificate (digest)");
-            exit(1);
+            abort();
         }
     }
 }

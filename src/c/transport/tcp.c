@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <rasta/bsd_utils.h>
 #include <rasta/rmemory.h>
-#include <rasta/tcp.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +9,7 @@
 #include <unistd.h>
 
 #include "transport.h"
+#include "tcp.h"
 
 void tcp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
     transport_state->tls_config = tls_config;
@@ -24,7 +24,7 @@ static void apply_tls_mode(rasta_transport_socket *transport_state) {
         break;
     default:
         fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
-        exit(1);
+        abort();
     }
 }
 
@@ -44,7 +44,7 @@ void tcp_listen(rasta_transport_socket *transport_state) {
     if (listen(transport_state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0) {
         // listen failed
         fprintf(stderr, "error whe listening to file_descriptor %d", transport_state->file_descriptor);
-        exit(1);
+        abort();
     }
 
     handle_tls_mode_server(transport_state);
@@ -56,7 +56,7 @@ int tcp_accept(rasta_transport_socket *transport_state) {
     int socket;
     if ((socket = accept(transport_state->file_descriptor, (struct sockaddr *)&empty_sockaddr_in, &sender_len)) < 0) {
         perror("tcp failed to accept connection");
-        exit(1);
+        abort();
     }
 
     return socket;
@@ -72,7 +72,7 @@ int tcp_connect(rasta_transport_channel *channel) {
     // convert host string to usable format
     if (inet_aton(channel->ip_address, &server.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
-        exit(1);
+        abort();
     }
 
     if (connect(channel->fd, (struct sockaddr *)&server, sizeof(server)) < 0) {
@@ -102,7 +102,12 @@ ssize_t tcp_receive(rasta_transport_channel *transport_state, unsigned char *rec
 }
 
 void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port) {
-    bsd_send(transport_state->fd, message, message_len, host, port);
+    UNUSED(host);
+    UNUSED(port);
+    if (send(transport_state->fd, message, message_len, 0) < 0) {
+        perror("failed to send data");
+        abort();
+    }
 }
 
 void tcp_close(rasta_transport_channel *transport_state) {
@@ -121,6 +126,9 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
     channel->send_callback = send_callback;
     channel->activeMode = socket->activeMode;
     channel->fd = fd;
+
+    // connected_channel.ip_address = rmalloc(sizeof(char) * 15);
+    // sockaddr_to_host(*sender, connected_channel.ip_address);
 }
 
 int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port) {
@@ -139,7 +147,9 @@ int transport_redial(rasta_transport_channel* channel) {
 }
 
 void transport_close(rasta_transport_channel *channel) {
-    bsd_close(channel->fd);
+    if (channel->connected) {
+        bsd_close(channel->fd);
+    }
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
