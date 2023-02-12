@@ -23,6 +23,7 @@ int channel_accept_event(void *carry_data) {
 
     channel->id = data->socket->id;
 
+    // Previously, I thought:
     // We cannot decide yet which redundancy_channel this transport_channel belongs to.
     // The communication partner has to send some data first.
     // For now, just register the receive event listener for the new connection.

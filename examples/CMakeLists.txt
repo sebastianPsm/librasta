@@ -71,8 +71,7 @@ endif()
 
 # Copy RaSTA configs to build directory
 configure_file(config/rasta_server_local.cfg rasta_server_local.cfg COPYONLY)
-configure_file(config/rasta_client1_local.cfg rasta_client1_local.cfg COPYONLY)
-configure_file(config/rasta_client2_local.cfg rasta_client2_local.cfg COPYONLY)
+configure_file(config/rasta_client_local.cfg rasta_client_local.cfg COPYONLY)
 
 configure_file(config/rasta_server_local_dtls.cfg rasta_server_local_dtls.cfg COPYONLY)
 configure_file(config/rasta_client1_local_dtls.cfg rasta_client1_local_dtls.cfg COPYONLY)

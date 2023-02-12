@@ -126,7 +126,7 @@ void event_system_start(event_system *ev_sys) {
     for (timed_event *current = ev_sys->timed_events.first; current; current = current->next) {
         current->last_call = cur_time;
     }
-    while (1) {
+    for (;;) {
         timed_event *next_event;
         cur_time = get_nanotime();
         uint64_t time_to_wait = calc_next_timed_event(&ev_sys->timed_events, &next_event, cur_time);

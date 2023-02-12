@@ -88,6 +88,7 @@ int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_tr
         if (deferqueue_isfull(&channel->defer_q)) {
             // Discard incoming packet
         } else {
+            // TODO: If this turned out to be new application data, break from processing, i.e. return != 0
             red_f_receiveData(h, channel, receivedPacket, data->channel->id);
         }
 

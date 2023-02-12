@@ -47,21 +47,37 @@ void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket *r
     }
 }
 
+// HACK:
+static void* recv_buf;
+static size_t recv_buf_size;
+static size_t recv_len;
+
+void sr_set_receive_buffer(void *buf, size_t len) {
+    recv_buf = buf;
+    recv_buf_size = len;
+    recv_len = 0;
+}
+
+size_t sr_get_received_data_len() {
+    return recv_len;
+}
+
 void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket *packet) {
     struct RastaMessageData received_data;
     received_data = extractMessageData(packet);
 
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA add to buffer", "received %d application messages", received_data.count);
 
-    for (unsigned int i = 0; i < received_data.count; ++i) {
-        rastaApplicationMessage *elem = rmalloc(sizeof(rastaApplicationMessage));
-        elem->id = packet->sender_id;
-        allocateRastaByteArray(&elem->appMessage, received_data.data_array[i].length);
+    for (unsigned int i = 0; i < received_data.count && recv_buf_size; ++i) {
+        // TODO: What to do with possibly remaining data from received_data?
 
-        rmemcpy(elem->appMessage.bytes, received_data.data_array[i].bytes, received_data.data_array[i].length);
-        if (!fifo_push(con->fifo_app_msg, elem)) {
-            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA add to buffer", "discarding data because fifo is full");
-        }
+        size_t copy_size = recv_buf_size < received_data.data_array[i].length ? recv_buf_size : received_data.data_array[i].length;
+        rmemcpy(recv_buf, received_data.data_array[i].bytes, copy_size);
+
+        recv_buf_size -= copy_size;
+        recv_buf = ((uint8_t*)recv_buf) + copy_size;
+        recv_len += copy_size;
+
         // fire onReceive event
         fire_on_receive(sr_create_notification_result(h->handle, con));
 
@@ -295,9 +311,6 @@ void sr_init_connection(struct rasta_connection *connection, unsigned long id, s
     // initalize diagnostic interval and store it in connection
     sr_diagnostic_interval_init(connection, cfg);
 
-    // create receive queue
-    connection->fifo_app_msg = fifo_init(cfg.send_max);
-
     // init retransmission fifo
     connection->fifo_retransmission = fifo_init(MAX_QUEUE_SIZE);
 
@@ -494,27 +507,6 @@ void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessag
     }
 }
 
-rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rasta_connection *connection) {
-    rastaApplicationMessage message;
-    rastaApplicationMessage *element;
-
-    element = fifo_pop(connection->fifo_app_msg);
-
-    message.id = element->id;
-    message.appMessage = element->appMessage;
-
-    logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA retrieve", "application message with l %d", message.appMessage.length);
-    // logger_log(&h->logger, LOG_LEVEL_DEBUG, "RETRIEVE DATA", "Convert bytes to packet");
-
-    logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA retrieve", "Packets in fifo remaining: %d", fifo_get_size(connection->fifo_app_msg));
-
-    rfree(element);
-
-    // struct RastaPacket packet = bytesToRastaPacket(msg);
-    // return packet;
-    return message;
-}
-
 /**
  * cleanup a connection after a disconnect
  * @param h
@@ -549,7 +541,6 @@ void sr_cleanup(struct rasta_handle *h) {
         rfree(connection->diagnostic_intervals);
 
         // free FIFOs
-        fifo_destroy(connection->fifo_app_msg);
         fifo_destroy(connection->fifo_send);
         fifo_destroy(connection->fifo_retransmission);
     }
@@ -607,7 +598,7 @@ bool sr_rekeying_skipped(struct rasta_connection *connection, struct RastaConfig
 // TODO: Find a suitable header file for this
 int rasta_receive(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket *receivedPacket);
 
-void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacket) {
+int sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Received packet %d from %d to %d %u", receivedPacket->type, receivedPacket->sender_id, receivedPacket->receiver_id, receivedPacket->length);
 
     struct rasta_connection *con;
@@ -620,7 +611,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         con = handle_conreq(h, con, receivedPacket);
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     if (con == NULL) {
@@ -629,7 +620,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         // TODO: can these packets be ignored?
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     // handle response
@@ -637,7 +628,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         handle_conresp(h, con, receivedPacket);
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Checking packet ...");
@@ -649,7 +640,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         con->errors.safety++;
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     // check for plausible ids
@@ -659,7 +650,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         con->errors.address++;
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     // check sequency number range
@@ -670,7 +661,7 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         con->errors.sn++;
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     // check confirmed sequence number
@@ -681,15 +672,15 @@ void sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPack
         con->errors.cs++;
 
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
     if (sr_rekeying_skipped(con, &h->handle->config.kex)) {
         logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA KEX", "Did not receive key exchange request for rekeying in time at %" PRIu64 " - disconnecting!", get_current_time_ms());
         sr_close_connection(con, h->handle, h->mux, h->info, RASTA_DISC_REASON_TIMEOUT, 0);
         freeRastaByteArray(&receivedPacket->data);
-        return;
+        return 0;
     }
 
-    rasta_receive(h, con, receivedPacket);
+    return rasta_receive(h, con, receivedPacket);
 }

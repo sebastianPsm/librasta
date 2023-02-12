@@ -171,11 +171,6 @@ struct rasta_connection {
     rasta_sr_state current_state;
 
     /**
-     * the name of the receiving message queue
-     */
-    fifo_t *fifo_app_msg;
-
-    /**
      * the name of the sending message queue
      */
     fifo_t *fifo_send;

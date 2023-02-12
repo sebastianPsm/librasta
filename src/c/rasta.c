@@ -121,33 +121,24 @@ int send_timed_key_exchange(void *arg) {
 int rasta_receive(struct rasta_receive_handle *h, struct rasta_connection *con, struct RastaPacket *receivedPacket) {
     switch (receivedPacket->type) {
         case RASTA_TYPE_RETRDATA:
-            handle_retrdata(h, con, receivedPacket);
-            break;
+            return handle_retrdata(h, con, receivedPacket);
         case RASTA_TYPE_DATA:
-            handle_data(h, con, receivedPacket);
-            break;
+            return handle_data(h, con, receivedPacket);
         case RASTA_TYPE_RETRREQ:
-            handle_retrreq(h, con, receivedPacket);
-            break;
+            return handle_retrreq(h, con, receivedPacket);
         case RASTA_TYPE_RETRRESP:
-            handle_retrresp(h, con, receivedPacket);
-            break;
+            return handle_retrresp(h, con, receivedPacket);
         case RASTA_TYPE_DISCREQ:
-            handle_discreq(h, con, receivedPacket);
-            break;
+            return handle_discreq(h, con, receivedPacket);
         case RASTA_TYPE_HB:
-            handle_hb(h, con, receivedPacket);
-            break;
+            return handle_hb(h, con, receivedPacket);
 #ifdef ENABLE_OPAQUE
         case RASTA_TYPE_KEX_REQUEST:
-            handle_kex_request(h, con, receivedPacket);
-            break;
+            return handle_kex_request(h, con, receivedPacket);
         case RASTA_TYPE_KEX_RESPONSE:
-            handle_kex_response(h, con, receivedPacket);
-            break;
+            return handle_kex_response(h, con, receivedPacket);
         case RASTA_TYPE_KEX_AUTHENTICATION:
-            handle_kex_auth(h, con, receivedPacket);
-            break;
+            return handle_kex_auth(h, con, receivedPacket);
 #endif
         default:
             logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received unexpected packet type %d", receivedPacket->type);
@@ -497,7 +488,8 @@ struct rasta_connection *handle_conresp(struct rasta_receive_handle *h, struct r
     return con;
 }
 
-void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+// TODO: Move to handlers
+int handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "Received heartbeat from %d", receivedPacket->sender_id);
 
     if (connection->current_state == RASTA_CONNECTION_START) {
@@ -550,13 +542,13 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
 
             // arm the timeout timer
             enable_timed_event(&connection->timeout_event);
-            return;
+            return 0;
         } else {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "Heartbeat is invalid");
 
             // sequence number check failed -> disconnect
             sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_PROTOCOLERROR, 0);
-            return;
+            return 0;
         }
     }
 
@@ -609,6 +601,7 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
         }
     }
+    return 0;
 }
 
 // TODO: This should be moved into safety_retransmission, and not be called from the outside
@@ -700,9 +693,11 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
 // See section 5.5.10
 #define IO_INTERVAL 10000
 
-void rasta_recv(rasta_lib_configuration_t user_configuration) {
+int rasta_recv(rasta_lib_configuration_t user_configuration, void *buf, size_t len) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
+
+    sr_set_receive_buffer(buf, len);
 
     timed_event send_event;
 
@@ -719,6 +714,23 @@ void rasta_recv(rasta_lib_configuration_t user_configuration) {
 
     // Remove all stack entries from linked lists...
     remove_timed_event(event_system, &send_event);
+
+    // if (con->current_state != RASTA_CONNECTION_UP) {
+    //     return -1;
+    // }
+
+    return sr_get_received_data_len();
+}
+
+int rasta_send(rasta_lib_configuration_t user_configuration, uint32_t remote_id, void *buf, size_t len) {
+    struct RastaMessageData messageData1;
+    allocateRastaMessageData(&messageData1, 1);
+    messageData1.data_array[0].bytes = buf;
+    messageData1.data_array[0].length = len;
+
+    sr_send(&user_configuration->h, remote_id, messageData1);
+    rfree(messageData1.data_array);
+    return 0;
 }
 
 void rasta_bind(struct rasta_handle *h) {

@@ -10,7 +10,7 @@
  * @param con the used connection
  * @param packet the received Key Exchange Request packet
  */
-void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+int handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Request", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -26,7 +26,7 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
                 if (h->handle->config.kex.mode == KEY_EXCHANGE_MODE_NONE) {
                     logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Req", "Key exchange request received when not activated!");
                     sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-                    return;
+                    return 0;
                 }
 #ifdef ENABLE_OPAQUE
 
@@ -90,6 +90,7 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
         // received key exchange request in phase during which I should not have received one -> disconnect and close
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
+    return 0;
 }
 
 /**
@@ -97,7 +98,7 @@ void handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection 
  * @param con the used connection
  * @param packet the received Key Exchange Response packet
  */
-void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+int handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Response", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -112,7 +113,7 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
                 if (h->handle->config.kex.mode == KEY_EXCHANGE_MODE_NONE) {
                     logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Key exchange response received when not activated!");
                     sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-                    return;
+                    return 0;
                 }
 #ifdef ENABLE_OPAQUE
 
@@ -169,6 +170,7 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
         // received key exchange response in phase during which I should not have received one -> disconnect and close
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
+    return 0;
 }
 
 /**
@@ -176,7 +178,7 @@ void handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection
  * @param con the used connection
  * @param packet the received Key Exchange Authentication packet
  */
-void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+int handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Key Exchange Authentication", "received Data");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -193,7 +195,7 @@ void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *co
                 if (h->handle->config.kex.mode == KEY_EXCHANGE_MODE_NONE) {
                     logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Auth", "Key exchange Authentication received when not activated!");
                     sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-                    return;
+                    return 0;
                 }
 #ifdef ENABLE_OPAQUE
                 int ret;
@@ -239,4 +241,5 @@ void handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *co
         // received key exchange response in phase during which I should not have received one -> disconnect and close
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
+    return 0;
 }

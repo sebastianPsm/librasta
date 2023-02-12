@@ -127,7 +127,7 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
  * @param packet the packet that has been received over UDP
  * @param channel_id the index of the transport channel, the @p packet has been received
  */
-void red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+int red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
 
 /**
  * the f_deferTmo function of the redundancy layer
