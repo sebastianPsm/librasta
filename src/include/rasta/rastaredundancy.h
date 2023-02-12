@@ -12,11 +12,11 @@ extern "C" { // only need to export C interface if
 #include "logging.h"
 #include "rastacrc.h"
 #include "rastadeferqueue.h"
-#include "transport.h"
 
 typedef struct rasta_transport_channel rasta_transport_channel;
 typedef struct rasta_transport_socket rasta_transport_socket;
 struct rasta_receive_handle;
+struct rasta_handle;
 
 /**
  * maximum size of messages in the defer queue in bytes
@@ -147,7 +147,7 @@ void rasta_red_wait_for_close(rasta_redundancy_channel *channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-int rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
+int rasta_red_add_transport_channel(struct rasta_handle *h, rasta_redundancy_channel *channel,
                                      rasta_transport_socket *transport_state,
                                      char *ip, uint16_t port);
 

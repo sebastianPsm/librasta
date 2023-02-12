@@ -3,6 +3,7 @@
 #include <rasta/logging.h>
 #include <rasta/rmemory.h>
 #include <rasta/rastahandle.h>
+
 #include "transport.h"
 #include "diagnostics.h"
 
@@ -13,6 +14,13 @@ int channel_accept_event(void *carry_data) {
 
     rasta_transport_channel *channel = rmalloc(sizeof(rasta_transport_channel));
     transport_accept(data->socket, channel);
+
+    // TODO: As a server, we have to maintain a list of known communication partners.
+    // Actually, we should initialize the redundancy channels on startup using this knowledge.
+    // Each redundancy (and safety/retransmission channel) could use an entirely different config...
+    // Using the TCP port, we can already assign the correct redundancy channel from this list.
+    // If no such channel is found, reject the connection.
+
     channel->id = data->socket->id;
 
     // We cannot decide yet which redundancy_channel this transport_channel belongs to.
@@ -32,6 +40,7 @@ int channel_accept_event(void *carry_data) {
 #endif
 
     // TODO: channel might be leaked
+    // If channel was connected previously, it may already be added to the linked list
     add_fd_event(data->h->ev_sys, &channel->receive_event, EV_READABLE);
 
     return 0;
@@ -40,32 +49,27 @@ int channel_accept_event(void *carry_data) {
 int channel_receive_event(void *carry_data) {
     struct receive_event_data *data = carry_data;
     struct rasta_handle *h = data->h;
-    unsigned int mux_channel_count = h->mux.channel_count;
 
-    run_channel_diagnostics(h, mux_channel_count, data->channel->id);
+    run_channel_diagnostics(h, h->mux.channel_count, data->channel->id);
 
-    // channel count might have changed due to removal of channels
-    mux_channel_count = h->mux.channel_count;
-
-    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive thread", "Channel %d calling receive",
+    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Channel %d calling receive",
                data->channel->id);
 
     unsigned char buffer[MAX_DEFER_QUEUE_MSG_SIZE] = {0};
     struct sockaddr_in sender = {0};
-
-    logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Receive called");
-
     ssize_t len = receive_callback(&h->mux, data, buffer, &sender);
 
     if (len == 0) {
+        // Peer has performed an orderly shutdown
+        disable_fd_event(&data->channel->receive_event);
         return 0;
     }
 
     if (len < 0) {
-        // TODO: Disable receive event, remove this channel from
-        // connected_transport_channels since socket is broken
-        // If this is a RaSTA client, try to re-establish a connection somewhere else
+        // Disable receive event
+        disable_fd_event(&data->channel->receive_event);
 
+        // TODO: If this is a RaSTA client, try to re-establish a connection somewhere else
         // transport_redial(data->channel);
         return 0;
     }

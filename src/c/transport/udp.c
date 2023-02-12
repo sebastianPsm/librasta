@@ -157,7 +157,7 @@ void transport_close(rasta_transport_channel *channel) {
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
-    udp_send(&mux->transport_sockets[channel_index], data_to_send.bytes, data_to_send.length, channel->ip_address, channel->port);
+    udp_send(&mux->transport_sockets[channel_index], data_to_send.bytes, data_to_send.length, channel->remote_ip_address, channel->remote_port);
 }
 
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
@@ -166,8 +166,8 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
 
 void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection transport_state, char *ip, uint16_t port) {
     (void)transport_state;
-    channel->port = port;
-    channel->ip_address = rmalloc(sizeof(char) * 15);
+    channel->remote_port = port;
+    channel->remote_ip_address = rmalloc(sizeof(char) * 15);
     channel->send_callback = send_callback;
-    rmemcpy(channel->ip_address, ip, 15);
+    rmemcpy(channel->remote_ip_address, ip, 15);
 }

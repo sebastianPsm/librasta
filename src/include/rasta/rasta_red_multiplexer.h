@@ -19,6 +19,7 @@ extern "C" { // only need to export C interface if
  */
 typedef struct redundancy_mux redundancy_mux;
 struct receive_event_data;
+struct rasta_handle;
 
 typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
 
@@ -63,18 +64,12 @@ typedef struct
     on_new_connection_ptr on_new_connection;
 } rasta_redundancy_notifications;
 
-struct timeout_event_data {
-    timed_event *event;
-    redundancy_mux *mux;
-};
-
 /**
  * initialize the event handling channel timeouts and the corresponding carry data
  * @param event the event to initialize
- * @param carry_data the carry data to initialize
  * @param mux the redundancy_mux that will contain channels
  */
-void init_channel_timeout_events(timed_event *event, struct timeout_event_data *t_data, struct redundancy_mux *mux, int channel_timeout_ms);
+void init_handshake_timeout_event(timed_event *event, int channel_timeout_ms);
 
 /**
  * representation of a redundancy layer multiplexer.
@@ -214,7 +209,7 @@ void redundancy_mux_listen_channels(redundancy_mux *mux, struct RastaConfigTLS *
  * @param mux the multiplexer where the new redundancy channel is added
  * @param transport_channels the transport channels of the new redundancy channel
  */
-int redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels, unsigned transport_channels_length);
+int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels, unsigned transport_channels_length);
 
 /**
  * removes an existing redundancy channel from the multiplexer if the channels exists. If the channel with the given

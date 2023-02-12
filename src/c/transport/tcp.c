@@ -43,7 +43,7 @@ void tcp_bind_device(rasta_transport_socket *transport_state, const char *ip, ui
 void tcp_listen(rasta_transport_socket *transport_state) {
     if (listen(transport_state->file_descriptor, MAX_PENDING_CONNECTIONS) < 0) {
         // listen failed
-        fprintf(stderr, "error whe listening to file_descriptor %d", transport_state->file_descriptor);
+        fprintf(stderr, "error when listening to file_descriptor %d", transport_state->file_descriptor);
         abort();
     }
 
@@ -67,25 +67,25 @@ int tcp_connect(rasta_transport_channel *channel) {
 
     rmemset((char *)&server, 0, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_port = htons(channel->port);
+    server.sin_port = htons(channel->remote_port);
 
     // convert host string to usable format
-    if (inet_aton(channel->ip_address, &server.sin_addr) == 0) {
+    if (inet_aton(channel->remote_ip_address, &server.sin_addr) == 0) {
         fprintf(stderr, "inet_aton() failed\n");
         abort();
     }
 
     if (connect(channel->fd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-        channel->connected = 0;
+        channel->connected = false;
         return 1;
     }
 
-    channel->connected = 1;
+    channel->connected = true;
     return 0;
 }
 
 ssize_t tcp_receive(rasta_transport_channel *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender) {
-    if (transport_state->activeMode == TLS_MODE_DISABLED) {
+    if (transport_state->tls_mode == TLS_MODE_DISABLED) {
         ssize_t recv_len;
         struct sockaddr_in empty_sockaddr_in;
         socklen_t sender_len = sizeof(empty_sockaddr_in);
@@ -101,9 +101,7 @@ ssize_t tcp_receive(rasta_transport_channel *transport_state, unsigned char *rec
     return 0;
 }
 
-void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port) {
-    UNUSED(host);
-    UNUSED(port);
+void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len) {
     if (send(transport_state->fd, message, message_len, 0) < 0) {
         perror("failed to send data");
         abort();
@@ -121,23 +119,32 @@ void transport_listen(rasta_transport_socket *socket) {
 void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
     int fd = tcp_accept(socket);
     channel->id = socket->id;
-    channel->port = 0;
-    channel->ip_address = NULL;
+    channel->remote_port = 0;
+    channel->remote_ip_address = NULL;
     channel->send_callback = send_callback;
-    channel->activeMode = socket->activeMode;
+    channel->tls_mode = socket->activeMode;
     channel->fd = fd;
+    channel->connected = true;
 
-    // connected_channel.ip_address = rmalloc(sizeof(char) * 15);
-    // sockaddr_to_host(*sender, connected_channel.ip_address);
+    struct sockaddr_in addr;
+    socklen_t addr_size = sizeof(struct sockaddr_in);
+    if (getpeername(fd, (struct sockaddr *)&addr, &addr_size) != 0) {
+        perror("tcp failed to resolve peer name");
+        abort();
+    }
+
+    channel->remote_ip_address = rmalloc(sizeof(char) * 20);
+    strcpy(channel->remote_ip_address, inet_ntoa(addr.sin_addr));
+    channel->remote_port = ntohs(addr.sin_port);
 }
 
 int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port) {
     channel->id = socket->id;
-    channel->port = port;
-    channel->ip_address = rmalloc(sizeof(char) * 15);
+    channel->remote_port = port;
+    channel->remote_ip_address = rmalloc(sizeof(char) * 15);
     channel->send_callback = send_callback;
-    rmemcpy(channel->ip_address, host, 15);
-    channel->activeMode = socket->activeMode;
+    rmemcpy(channel->remote_ip_address, host, 15);
+    channel->tls_mode = socket->activeMode;
     channel->fd = socket->file_descriptor;
     return tcp_connect(channel);
 }
@@ -155,7 +162,7 @@ void transport_close(rasta_transport_channel *channel) {
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
     UNUSED(mux);
     UNUSED(channel_index);
-    tcp_send(channel, data_to_send.bytes, data_to_send.length, channel->ip_address, channel->port);
+    tcp_send(channel, data_to_send.bytes, data_to_send.length);
 }
 
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
@@ -163,8 +170,9 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return tcp_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void transport_create_socket(rasta_transport_socket *socket, const struct RastaConfigTLS *tls_config) {
+void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config) {
     // init socket
+    socket->id = id;
     tcp_init(socket, tls_config);
 }
 

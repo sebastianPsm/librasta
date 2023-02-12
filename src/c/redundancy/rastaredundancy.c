@@ -12,18 +12,6 @@
 void _deliver_message_to_upper_layer(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaByteArray message) {
     struct RastaPacket packet = bytesToRastaPacket(message, &channel->hashing_context);
     sr_receive(h, &packet);
-
-    // // add to queue
-    // struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
-    // allocateRastaByteArray(to_fifo, message->length);
-    // rmemcpy(to_fifo->bytes, message->bytes, message->length);
-
-    // if (fifo_push(channel->fifo_recv, to_fifo) == 0) {
-    //     logger_log(&channel->logger, LOG_LEVEL_INFO, "RaSTA Red deliver deferq", "discarded packet because receive buffer was full");
-    // }
-
-    // Other side:
-    // struct RastaPacket packet = bytesToRastaPacket(*element, &target->hashing_context);
 }
 
 void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
@@ -243,7 +231,7 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
     // free the channels
     for (unsigned int i = 0; i < channel->transport_channel_count; ++i) {
         // Not so sure about this.
-        rfree(channel->transport_channels[i].ip_address);
+        rfree(channel->transport_channels[i].remote_ip_address);
     }
     rfree(channel->transport_channels);
     channel->transport_channel_count = 0;

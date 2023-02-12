@@ -286,8 +286,6 @@ int data_send_event(void *carry_data) {
                 con->is_sending = 0;
             }
         }
-
-        usleep(50);
     }
     return 0;
 }
@@ -369,7 +367,6 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
                                                                   h->config.send_max,
                                                                   version, h->hashing_context);
 
-            // printf("SENDING ConResp with SN_T=%lu\n", conresp.sequence_number);
             new_con.sn_t = new_con.sn_t + 1;
 
             new_con.current_state = RASTA_CONNECTION_START;
@@ -395,6 +392,8 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
             }
 
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Send Connection Response - waiting for Heartbeat");
+
+            // Send connection response immediately (don't go through packet batching)
             redundancy_mux_send(h->mux, conresp);
 
             freeRastaByteArray(&conresp.data);
@@ -564,7 +563,9 @@ void handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connecti
     if (sr_sn_in_seq(connection, receivedPacket)) {
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "SN in SEQ");
         // heartbeats also permissible during key exchange phase, since computation could exceed heartbeat interval
-        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN || connection->current_state == RASTA_CONNECTION_KEX_REQ || connection->current_state == RASTA_CONNECTION_KEX_RESP || connection->current_state == RASTA_CONNECTION_KEX_AUTH) {
+        if (connection->current_state == RASTA_CONNECTION_UP || connection->current_state == RASTA_CONNECTION_RETRRUN ||
+            connection->current_state == RASTA_CONNECTION_KEX_REQ || connection->current_state == RASTA_CONNECTION_KEX_RESP ||
+            connection->current_state == RASTA_CONNECTION_KEX_AUTH) {
             // check cts_in_seq
             if (sr_cts_in_seq(connection, h->config, receivedPacket)) {
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Heartbeat", "CTS in SEQ");
@@ -616,7 +617,7 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
     if (connection_exists(h, id))
         return 0;
 
-    if (redundancy_mux_add_channel(&h->mux, id, channels, channels_length) != 0) {
+    if (redundancy_mux_add_channel(h, &h->mux, id, channels, channels_length) != 0) {
         return 1;
     }
 
@@ -627,7 +628,7 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
 
     // initialize seq nums and timestamps
     new_con.sn_t = h->config.initial_sequence_number;
-    // new_con.sn_t = 66;
+
     logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "Using %lu as initial sequence number",
                (long unsigned int)new_con.sn_t);
 
@@ -646,6 +647,7 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
                                                         version, &h->hashing_context);
     new_con.sn_i = new_con.sn_t;
 
+    // Send connection request immediately (don't go through packet batching)
     redundancy_mux_send(&h->mux, conreq);
 
     // increase sequence number
@@ -671,6 +673,26 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
 
     init_connection_events(h, con);
 
+    // Wait for connection response
+
+    timed_event handshake_timeout_event;
+    init_handshake_timeout_event(&handshake_timeout_event, h->config.sending.t_max);
+    enable_timed_event(&handshake_timeout_event);
+    add_timed_event(h->ev_sys, &handshake_timeout_event);
+
+    logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "awaiting connection response from %d", new_con.remote_id);
+    log_main_loop_state(h, h->ev_sys, "event-system started");
+    event_system_start(h->ev_sys);
+
+    remove_timed_event(h->ev_sys, &handshake_timeout_event);
+
+    // What happened? Timeout, or user abort, or success?
+    if (con->current_state != RASTA_CONNECTION_UP) {
+        return 1;
+    }
+
+    logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA CONNECT", "handshake completed with %d", new_con.remote_id);
+
     return 0;
 }
 
@@ -678,13 +700,11 @@ int sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *cha
 // See section 5.5.10
 #define IO_INTERVAL 10000
 
-void rasta_recv(rasta_lib_configuration_t user_configuration, int channel_timeout_ms) {
+void rasta_recv(rasta_lib_configuration_t user_configuration) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
 
     timed_event send_event;
-    timed_event channel_timeout_event;
-    struct timeout_event_data timeout_data;
 
     // batch outgoing packets
     memset(&send_event, 0, sizeof(timed_event));
@@ -694,20 +714,11 @@ void rasta_recv(rasta_lib_configuration_t user_configuration, int channel_timeou
     enable_timed_event(&send_event);
     add_timed_event(event_system, &send_event);
 
-    // Handshake timeout event
-    // TODO: Shouldn't this be t_max?
-    init_channel_timeout_events(&channel_timeout_event, &timeout_data, &h->mux, channel_timeout_ms);
-    if (channel_timeout_ms) {
-        enable_timed_event(&channel_timeout_event);
-    }
-    add_timed_event(event_system, &channel_timeout_event);
-
     log_main_loop_state(h, event_system, "event-system started");
     event_system_start(event_system);
 
     // Remove all stack entries from linked lists...
     remove_timed_event(event_system, &send_event);
-    remove_timed_event(event_system, &channel_timeout_event);
 }
 
 void rasta_bind(struct rasta_handle *h) {

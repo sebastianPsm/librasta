@@ -24,7 +24,7 @@ typedef struct rasta_transport_channel {
 
     int id;
 
-    int connected;
+    bool connected;
 
     fd_event receive_event;
 
@@ -33,9 +33,9 @@ typedef struct rasta_transport_channel {
     /**
      * IPv4 address in format a.b.c.d
      */
-    char *ip_address;
+    char *remote_ip_address;
 
-    enum RastaTLSMode activeMode;
+    enum RastaTLSMode tls_mode;
 
 #ifdef USE_TCP
     /**
@@ -50,7 +50,7 @@ typedef struct rasta_transport_channel {
     /**
      * port number
      */
-    uint16_t port;
+    uint16_t remote_port;
 
     /**
      * data used for transport channel diagnostics as in 6.6.3.2
@@ -99,7 +99,7 @@ struct rasta_connected_transport_channel_state {
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index);
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
 
-void transport_create_socket(rasta_transport_socket *socket, const struct RastaConfigTLS *tls_config);
+void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config);
 void transport_bind(rasta_transport_socket *socket, const char *ip, uint16_t port);
 // void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection *transport_state, char *local_ip, uint16_t local_port, char *remote_ip, uint16_t remote_port, const struct RastaConfigTLS *tls_config);
 void transport_listen(rasta_transport_socket *socket);

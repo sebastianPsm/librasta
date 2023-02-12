@@ -307,8 +307,8 @@ void transport_initialize(rasta_transport_channel *channel, rasta_transport_conn
     channel->fd = transport_state.file_descriptor;
     channel->ssl = transport_state.ssl;
 
-    channel->port = port;
-    channel->ip_address = rmalloc(sizeof(char) * 15);
+    channel->remote_port = port;
+    channel->remote_ip_address = rmalloc(sizeof(char) * 15);
     channel->send_callback = send_callback;
-    rmemcpy(channel->ip_address, ip, 15);
+    rmemcpy(channel->remote_ip_address, ip, 15);
 }

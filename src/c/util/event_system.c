@@ -198,6 +198,9 @@ void disable_fd_event(fd_event *event) {
  * @param event the event to add
  */
 void add_timed_event(event_system *ev_sys, timed_event *event) {
+    assert(event->prev == NULL);
+    assert(event->next == NULL);
+
     // simple linked list add
     if (ev_sys->timed_events.last) {
         event->prev = ev_sys->timed_events.last;
@@ -239,6 +242,9 @@ void remove_timed_event(event_system *ev_sys, timed_event *event) {
  * @param options set how the event should be triggered. (EV_READABLE | EV_WRITEABLE | EV_CHANGE)
  */
 void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
+    assert(event->prev == NULL);
+    assert(event->next == NULL);
+
     // simple linked list add
     if (ev_sys->fd_events.last) {
         event->prev = ev_sys->fd_events.last;

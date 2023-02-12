@@ -87,25 +87,13 @@ void tcp_accept_tls(rasta_transport_connection *transport_state, struct rasta_co
  */
 int tcp_connect(rasta_transport_channel *channel);
 
-#ifdef ENABLE_TLS
-/**
- * Sends a message via tls
- * @param ssl the wolfssl session object
- * @param message the message that which will be send
- * @param message_len the length of the @p message
- */
-void tls_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
-#else
 /**
  * Sends a message via the given file descriptor to a @p host and @p port
  * @param file_descriptor the file descriptor which is used to send the message
  * @param message the message that which will be send
  * @param message_len the length of the @p message
- * @param host the host where the message will be send to. This has to be an IPv4 address in the format a.b.c.d
- * @param port the target port on the host
  */
-void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, char *host, uint16_t port);
-#endif
+void tcp_send(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len);
 
 /**
  * Closes the tcp socket
