@@ -55,7 +55,8 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s *fd_
         }
     }
     // wait
-    int result = select(nfds, &on_readable, &on_writable, &on_exceptional, &tv);
+    struct timeval* timeout = time_to_wait == UINT64_MAX ? NULL : &tv;
+    int result = select(nfds, &on_readable, &on_writable, &on_exceptional, timeout);
     if (result == -1) {
         perror("select failed");
         // syscall error or error on select()
@@ -133,7 +134,7 @@ void event_system_start(event_system *ev_sys) {
         uint64_t time_to_wait = calc_next_timed_event(&ev_sys->timed_events, &next_event, cur_time);
         if (time_to_wait == UINT64_MAX) {
             // there are no active events - just wait for fd events
-            int result = event_system_sleep(~0, &ev_sys->fd_events);
+            int result = event_system_sleep(time_to_wait, &ev_sys->fd_events);
             if (result == -1) {
                 break;
             }
@@ -144,7 +145,7 @@ void event_system_start(event_system *ev_sys) {
                 // select failed, exit loop
                 return;
             } else if (result >= 0) {
-                // the sleep didn't time out, but a fd event occured
+                // the sleep didn't time out, but a fd event occurred
                 // recalculate next timed event in case one got rescheduled
                 continue;
             }
