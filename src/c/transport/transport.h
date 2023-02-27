@@ -6,6 +6,8 @@
 #include "diagnostics.h"
 #include "events.h"
 
+#define MAX_PENDING_CONNECTIONS 5
+
 #ifdef ENABLE_TLS
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
@@ -76,25 +78,25 @@ typedef struct rasta_transport_socket {
 
     WOLFSSL *ssl;
 
-    enum rasta_tls_connection_state state;
+    enum rasta_tls_connection_state tls_state;
 #endif
 
 } rasta_transport_socket;
 
-typedef struct rasta_transport_connection {
-    rasta_transport_channel fixme;
-} rasta_transport_connection;
+// typedef struct rasta_transport_connection {
+//     rasta_transport_channel fixme;
+// } rasta_transport_connection;
 
-#ifdef ENABLE_TLS
-struct rasta_connected_transport_channel_state {
-    const struct RastaConfigTLS *tls_config;
-    enum RastaTLSMode activeMode;
-    WOLFSSL_CTX *ctx;
-    int file_descriptor;
-    WOLFSSL *ssl;
-    enum rasta_tls_connection_state state;
-};
-#endif
+// #ifdef ENABLE_TLS
+// struct rasta_connected_transport_channel_state {
+//     const struct RastaConfigTLS *tls_config;
+//     enum RastaTLSMode activeMode;
+//     WOLFSSL_CTX *ctx;
+//     int file_descriptor;
+//     WOLFSSL *ssl;
+//     enum rasta_tls_connection_state state;
+// };
+// #endif
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index);
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);

@@ -6,8 +6,6 @@
 typedef struct rasta_transport_socket rasta_transport_socket;
 typedef struct rasta_transport_channel rasta_transport_channel;
 
-#define MAX_PENDING_CONNECTIONS 5
-
 /**
  * This function will initialise a tcp socket and return its file descriptor, which is used to reference it in later
  * function calls

@@ -37,7 +37,6 @@ set(headers
     include/rasta/rmemory.h
     include/rasta/types.h
     include/rasta/bsd_utils.h
-    include/rasta/ssl_utils.h
     include/rasta/rastablake2.h
     include/rasta/rastasiphash24.h
     include/rasta/rastahashing.h
@@ -83,7 +82,7 @@ set(sources
 
 if(ENABLE_RASTA_TLS)
     set(RASTA_VARIANTS udp tcp dtls tls)
-    set(sources ${sources} c/transport/ssl_utils.c)
+    set(sources ${sources} c/transport/ssl_utils.h c/transport/ssl_utils.c)
 else()
     set(RASTA_VARIANTS udp tcp)
 endif(ENABLE_RASTA_TLS)

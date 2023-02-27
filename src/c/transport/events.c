@@ -36,9 +36,6 @@ int channel_accept_event(void *carry_data) {
 
     channel->receive_event_data.channel = channel;
     channel->receive_event_data.h = data->h;
-#ifdef ENABLE_TLS
-    channel->receive_event_data.ssl = data->socket->ssl;
-#endif
 
     // TODO: channel might be leaked
     // If channel was connected previously, it may already be added to the linked list

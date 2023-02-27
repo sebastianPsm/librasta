@@ -249,8 +249,8 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, str
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading listen from config");
 
         // init sockets
-        mux->transport_sockets = rmalloc(mux->port_count * sizeof(rasta_transport_connection));
-        memset(mux->transport_sockets, 0, mux->port_count * sizeof(rasta_transport_connection));
+        mux->transport_sockets = rmalloc(mux->port_count * sizeof(rasta_transport_socket));
+        memset(mux->transport_sockets, 0, mux->port_count * sizeof(rasta_transport_socket));
         for (unsigned i = 0; i < mux->port_count; i++) {
             transport_create_socket(&mux->transport_sockets[i], i, &mux->config.tls);
         }
@@ -455,9 +455,6 @@ int rasta_red_add_transport_channel(struct rasta_handle *h, rasta_redundancy_cha
 
         transport_connection->receive_event_data.channel = transport_connection;
         transport_connection->receive_event_data.h = h;
-    #ifdef ENABLE_TLS
-        channel->receive_event_data.ssl = data->socket->ssl;
-    #endif
 
         add_fd_event(h->ev_sys, &transport_connection->receive_event, EV_READABLE);
     }
