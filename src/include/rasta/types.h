@@ -20,7 +20,7 @@ struct rasta_transport_state {
 #ifdef ENABLE_TLS
     WOLFSSL_CTX *ctx;
     WOLFSSL *ssl;
-    enum rasta_tls_connection_state state;
+    enum rasta_tls_connection_state tls_state;
 #endif
 };
 
@@ -32,6 +32,6 @@ struct rasta_connected_transport_channel_state {
     WOLFSSL_CTX *ctx;
     int file_descriptor;
     WOLFSSL *ssl;
-    enum rasta_tls_connection_state state;
+    enum rasta_tls_connection_state tls_state;
 };
 #endif
