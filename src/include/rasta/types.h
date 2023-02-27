@@ -1,10 +1,11 @@
 #pragma once
 
 #include <rasta/config.h>
+
+#ifdef ENABLE_TLS
 #include <wolfssl/options.h>
 #include <wolfssl/ssl.h>
 
-#ifdef ENABLE_TLS
 enum rasta_tls_connection_state {
     RASTA_TLS_CONNECTION_READY,
     RASTA_TLS_CONNECTION_ESTABLISHED,

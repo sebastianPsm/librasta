@@ -1,4 +1,5 @@
 #include <endian.h>
+#include <errno.h>
 #include <sys/mman.h>
 
 #include <rasta/logging.h>
