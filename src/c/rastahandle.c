@@ -155,7 +155,7 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result) {
     on_heartbeat_timeout_call(&result);
 }
 
-void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, struct logger_t *logger) {
+void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct logger_t *logger) {
     h->config = *config;
     h->logger = h->redlogger = *logger;
 

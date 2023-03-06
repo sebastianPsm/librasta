@@ -12,7 +12,7 @@ void wolfssl_initialize_if_necessary() {
     }
 }
 
-void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     wolfssl_start_server(transport_state, tls_config, wolfDTLSv1_2_server_method());
 
     // TODO: remove duplicated code in tcp_accept
@@ -27,11 +27,11 @@ void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const st
     // transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
-void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     wolfssl_start_server(transport_state, tls_config, wolfTLSv1_3_server_method());
 }
 
-void wolfssl_start_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *server_method) {
+void wolfssl_start_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *server_method) {
     int err;
     wolfssl_initialize_if_necessary();
     transport_state->ctx = wolfSSL_CTX_new(server_method);
@@ -111,15 +111,15 @@ void set_socket_async(rasta_transport_channel *transport_state, WOLFSSL_ASYNC_ME
     #endif
 }
 
-void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfDTLSv1_2_client_method());
 }
 
-void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfTLSv1_3_client_method());
 }
 
-void wolfssl_start_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method) {
+void wolfssl_start_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method) {
     wolfssl_initialize_if_necessary();
     transport_state->ctx = wolfSSL_CTX_new(client_method);
     if (!transport_state->ctx) {

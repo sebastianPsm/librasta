@@ -24,7 +24,7 @@ extern "C" { // only need to export C interface if
  * @param transport_state the udp socket's transport_state buffer
  * @param tls_config TLS options
  */
-void udp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void udp_init(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
 /**
  * Binds a given file descriptor to the given @p port

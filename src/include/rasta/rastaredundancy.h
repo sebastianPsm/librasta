@@ -102,7 +102,7 @@ typedef struct {
     /**
      * configuration parameters of the redundancy layer
      */
-    struct RastaConfigInfoRedundancy configuration_parameters;
+    rasta_config_redundancy configuration_parameters;
 
     /**
      * Hashing context for en/decoding SR layer PDUs
@@ -118,7 +118,7 @@ typedef struct {
  * @param id the RaSTA ID that is associated with this redundancy channel
  * @return an initialized redundancy channel
  */
-void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
+void red_f_init(struct logger_t logger, rasta_config_info config, unsigned int transport_channel_count,
                 unsigned long id, rasta_redundancy_channel *channel);
 
 /**

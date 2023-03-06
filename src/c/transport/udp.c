@@ -26,7 +26,7 @@ static void handle_port_unavailable(const uint16_t port) {
 }
 
 static void handle_tls_mode(rasta_transport_socket *transport_state) {
-    const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+    const rasta_config_tls *tls_config = transport_state->tls_config;
     switch (tls_config->mode) {
     case TLS_MODE_DISABLED: {
         transport_state->activeMode = TLS_MODE_DISABLED;
@@ -127,7 +127,7 @@ void udp_send_sockaddr(rasta_transport_channel *transport_state, unsigned char *
     }
 }
 
-void udp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void udp_init(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     // the file descriptor of the socket
     int file_desc;
 
@@ -142,7 +142,7 @@ void udp_init(rasta_transport_socket *transport_state, const struct RastaConfigT
     transport_state->file_descriptor = file_desc;
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config) {
+void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init and bind sockets
     socket->id = id;
     udp_init(socket, tls_config);

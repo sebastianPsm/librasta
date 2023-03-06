@@ -72,7 +72,7 @@ void handle_connection_state_change(struct rasta_notification_result *result) {
 }
 
 void rasta_listen(rasta_lib_configuration_t rc, const char *config_file_path) {
-    struct RastaConfigInfo config;
+    rasta_config_info config;
     struct logger_t logger;
     load_configfile(&config, &logger, config_file_path);
     rasta_lib_init_configuration(rc, config, &logger);

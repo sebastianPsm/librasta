@@ -30,8 +30,8 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 
-    struct RastaConfigInfo info;
-    struct RastaConfigInfoRedundancy configInfoRedundancy;
+    rasta_config_info info;
+    rasta_config_redundancy configInfoRedundancy;
     configInfoRedundancy.t_seq = 100;
     configInfoRedundancy.n_diagnose = 10;
     configInfoRedundancy.crc_type = crc_init_opt_a();
@@ -82,8 +82,8 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 
-    struct RastaConfigInfo info;
-    struct RastaConfigInfoRedundancy configInfoRedundancy;
+    rasta_config_info info;
+    rasta_config_redundancy configInfoRedundancy;
     configInfoRedundancy.t_seq = 100;
     configInfoRedundancy.n_diagnose = 10;
     configInfoRedundancy.crc_type = crc_init_opt_a();

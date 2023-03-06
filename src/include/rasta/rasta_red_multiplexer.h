@@ -109,7 +109,7 @@ struct redundancy_mux {
     /**
      * configuration data for the multiplexer and redundancy channels
      */
-    struct RastaConfigInfo config;
+    rasta_config_info config;
 
     /**
      * the notifications of this multiplexer and it's redundancy channels
@@ -135,7 +135,7 @@ struct redundancy_mux {
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config);
+redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config);
 
 /**
  * initializes an redundancy layer multiplexer. The ports and interfaces to listen on are read from the config.
@@ -143,7 +143,7 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, struct RastaConfigInfo config);
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, rasta_config_info config);
 
 void redundancy_mux_bind(redundancy_mux *mux);
 
@@ -200,7 +200,7 @@ void redundancy_mux_wait_for_notifications(redundancy_mux *mux);
  */
 void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_listen_channels(redundancy_mux *mux, struct RastaConfigTLS *tls_config);
+void redundancy_mux_listen_channels(redundancy_mux *mux, rasta_config_tls *tls_config);
 
 /**
  * adds a new redundancy channel to the multiplexer id and given transport channels.

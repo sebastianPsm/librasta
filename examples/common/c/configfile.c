@@ -951,7 +951,7 @@ uint32_t get_initial_seq_num(struct RastaConfig *config) {
     return long_random();
 }
 
-void load_configfile(struct RastaConfigInfo *c, struct logger_t *logger, const char *config_file_path) {
+void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *config_file_path) {
     struct RastaConfig config;
     config_load(&config, config_file_path);
     *c = config.values;

@@ -91,14 +91,14 @@ static int Tls13SecretCallback(WOLFSSL *ssl, int id, const unsigned char *secret
 }
 #endif
 
-void tcp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void tcp_init(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     transport_state->tls_config = tls_config;
     transport_state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
 static void apply_tls_mode(rasta_transport_channel *transport_state) {
     UNUSED(transport_state);
-    // const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+    // const rasta_config_tls *tls_config = transport_state->tls_config;
     // switch (tls_config->mode) {
     // case TLS_MODE_DISABLED:
     //     transport_state->activeMode = TLS_MODE_DISABLED;
@@ -338,7 +338,7 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return tls_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config) {
+void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init socket
     socket->id = id;
     tcp_init(socket, tls_config);

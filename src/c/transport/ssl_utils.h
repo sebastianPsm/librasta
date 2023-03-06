@@ -10,11 +10,11 @@ typedef int(WOLFSSL_SET_PEER_METHOD)(WOLFSSL *, void *, unsigned int);
 
 void wolfssl_initialize_if_necessary();
 
-void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *server_method);
+void wolfssl_start_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *server_method);
 
 void set_dtls_async(rasta_transport_socket *transport_state);
 
@@ -22,11 +22,11 @@ void set_tls_async(int fd, WOLFSSL *ssl);
 
 void set_socket_async(rasta_transport_channel *transport_state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method);
 
-void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config, WOLFSSL_METHOD *client_method);
+void wolfssl_start_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method);
 
 void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
 

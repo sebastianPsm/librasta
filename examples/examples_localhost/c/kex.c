@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
         rasta_lib_init_configuration(rc, config, &logger);
@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
         fifo_destroy(server_fifo);
     } else if (strcmp(argv[1], "s1") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_S1);
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C1);
         rasta_lib_init_configuration(rc, config, &logger);
@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
         rasta_recv(rc, 0, false);
     } else if (strcmp(argv[1], "s2") == 0) {
         printf("->   S2 (ID = 0x%lX)\n", (unsigned long)ID_S2);
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C2);
         rasta_lib_init_configuration(rc, config, &logger);

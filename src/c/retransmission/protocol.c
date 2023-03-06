@@ -85,7 +85,7 @@ int compare_version(const char local_version[4], const char remote_version[4]) {
  * @param version the version of the remote
  * @return 1 if the remote version is accepted, else 0
  */
-int version_accepted(struct RastaConfigInfo *config, const char version[4]) {
+int version_accepted(rasta_config_info *config, const char version[4]) {
     /*struct DictionaryEntry accepted_version = config_get(&con->configuration_parameters, RASTA_CONFIG_KEY_ACCEPTED_VERSIONS);
     if (accepted_version.type == DICTIONARY_ARRAY){
         for (int i = 0; i < accepted_version.value.array.count; ++i) {

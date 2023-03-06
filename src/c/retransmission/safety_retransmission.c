@@ -8,7 +8,7 @@
 #include "../transport/transport.h"
 #include "../retransmission/handlers.h"
 
-void updateTimeoutInterval(long confirmed_timestamp, struct rasta_connection *con, struct RastaConfigInfoSending cfg) {
+void updateTimeoutInterval(long confirmed_timestamp, struct rasta_connection *con, rasta_config_sending cfg) {
     unsigned long t_local = cur_timestamp();
     unsigned long t_rtd = t_local + (1000 / sysconf(_SC_CLK_TCK)) - confirmed_timestamp;
     con->t_i = (uint32_t)(cfg.t_max - t_rtd);
@@ -24,7 +24,7 @@ void resetDiagnostic(struct rasta_connection *connection) {
     }
 }
 
-void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket *receivedPacket, struct RastaConfigInfoSending cfg, struct rasta_handle *h) {
+void updateDiagnostic(struct rasta_connection *connection, struct RastaPacket *receivedPacket, rasta_config_sending cfg, struct rasta_handle *h) {
     unsigned long t_local = cur_timestamp();
     unsigned long t_rtd = t_local + (1000 / sysconf(_SC_CLK_TCK)) - receivedPacket->confirmed_timestamp;
     unsigned long t_alive = t_local - connection->cts_r;
@@ -129,7 +129,7 @@ void sr_remove_confirmed_messages(struct rasta_receive_handle *h, struct rasta_c
  * @param packet the packet
  * @return cts_in_seq (bool)
  */
-int sr_cts_in_seq(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket *packet) {
+int sr_cts_in_seq(struct rasta_connection *con, rasta_config_sending cfg, struct RastaPacket *packet) {
 
     if (packet->type == RASTA_TYPE_HB || packet->type == RASTA_TYPE_DATA || packet->type == RASTA_TYPE_RETRDATA) {
         // Workaround rs 05.04.22
@@ -172,7 +172,7 @@ int sr_sn_in_seq(struct rasta_connection *con, struct RastaPacket *packet) {
  * @param packet the packet
  * @return 1 if the sequency number of the @p packet is in range
  */
-int sr_sn_range_valid(struct rasta_connection *con, struct RastaConfigInfoSending cfg, struct RastaPacket *packet) {
+int sr_sn_range_valid(struct rasta_connection *con, rasta_config_sending cfg, struct RastaPacket *packet) {
     // for types ConReq, ConResp and RetrResp return true
     if (packet->type == RASTA_TYPE_CONNREQ || packet->type == RASTA_TYPE_CONNRESP || packet->type == RASTA_TYPE_RETRRESP) {
         return 1;
@@ -214,7 +214,7 @@ int sr_message_authentic(struct rasta_connection *con, struct RastaPacket *packe
     return (packet->sender_id == con->remote_id && packet->receiver_id == con->my_id);
 }
 
-int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struct RastaConfigInfoSending cfg, struct RastaPacket *receivedPacket, char *location) {
+int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, rasta_config_sending cfg, struct RastaPacket *receivedPacket, char *location) {
     // check received packet (5.5.2)
     if (!(receivedPacket->checksum_correct &&
           sr_message_authentic(con, receivedPacket) &&
@@ -238,7 +238,7 @@ int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, struc
     return 1;
 }
 
-void sr_reset_connection(struct rasta_connection *connection, unsigned long id, struct RastaConfigInfoGeneral info) {
+void sr_reset_connection(struct rasta_connection *connection, unsigned long id, rasta_config_general info) {
     connection->remote_id = (uint32_t)id;
     connection->current_state = RASTA_CONNECTION_CLOSED;
     connection->my_id = (uint32_t)info.rasta_id;
@@ -259,7 +259,7 @@ void sr_reset_connection(struct rasta_connection *connection, unsigned long id, 
 }
 
 void sr_close_connection(struct rasta_connection *connection, struct rasta_handle *handle, redundancy_mux *mux,
-                         struct RastaConfigInfoGeneral info, rasta_disconnect_reason reason, unsigned short details) {
+                         rasta_config_general info, rasta_disconnect_reason reason, unsigned short details) {
     if (connection->current_state == RASTA_CONNECTION_DOWN || connection->current_state == RASTA_CONNECTION_CLOSED) {
         sr_reset_connection(connection, connection->remote_id, info);
 
@@ -281,7 +281,7 @@ void sr_close_connection(struct rasta_connection *connection, struct rasta_handl
     }
 }
 
-void sr_diagnostic_interval_init(struct rasta_connection *connection, struct RastaConfigInfoSending cfg) {
+void sr_diagnostic_interval_init(struct rasta_connection *connection, rasta_config_sending cfg) {
     connection->received_diagnostic_message_count = 0;
 
     unsigned int diagnostic_interval_length = cfg.t_max / DIAGNOSTIC_INTERVAL_SIZE;
@@ -303,7 +303,7 @@ void sr_diagnostic_interval_init(struct rasta_connection *connection, struct Ras
     }
 }
 
-void sr_init_connection(struct rasta_connection *connection, unsigned long id, struct RastaConfigInfoGeneral info, struct RastaConfigInfoSending cfg, struct logger_t *logger, rasta_role role) {
+void sr_init_connection(struct rasta_connection *connection, unsigned long id, rasta_config_general info, rasta_config_sending cfg, struct logger_t *logger, rasta_role role) {
     (void)logger;
     sr_reset_connection(connection, id, info);
     connection->role = role;
@@ -406,7 +406,7 @@ unsigned int sr_send_queue_item_count(struct rasta_connection *connection) {
     return fifo_get_size(connection->fifo_send);
 }
 
-void rasta_socket(struct rasta_handle *handle, struct RastaConfigInfo *config, struct logger_t *logger) {
+void rasta_socket(struct rasta_handle *handle, rasta_config_info *config, struct logger_t *logger) {
     rasta_handle_init(handle, config, logger);
 
     // init the redundancy layer

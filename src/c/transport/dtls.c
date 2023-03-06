@@ -102,13 +102,13 @@ static size_t wolfssl_receive_dtls(rasta_transport_socket *transport_state, unsi
     return received_total;
 }
 
-static bool is_dtls_server(const struct RastaConfigTLS *tls_config) {
+static bool is_dtls_server(const rasta_config_tls *tls_config) {
     // client has CA cert but no server certs
     return tls_config->cert_path[0] && tls_config->key_path[0];
 }
 
 static void handle_tls_mode(rasta_transport_socket *transport_state) {
-    const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+    const rasta_config_tls *tls_config = transport_state->tls_config;
     switch (tls_config->mode) {
     case TLS_MODE_DISABLED: {
         transport_state->activeMode = TLS_MODE_DISABLED;
@@ -229,13 +229,13 @@ void udp_send_sockaddr(rasta_transport_channel *transport_state, unsigned char *
     }
     else {
         // TODO
-        // const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+        // const rasta_config_tls *tls_config = transport_state->tls_config;
         // transport_state->tls_config = tls_config;
         // wolfssl_send_dtls(transport_state, message, message_len, &receiver);
     }
 }
 
-void udp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+void udp_init(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
     // the file descriptor of the socket
     int file_desc;
 
@@ -250,7 +250,7 @@ void udp_init(rasta_transport_socket *transport_state, const struct RastaConfigT
     transport_state->file_descriptor = file_desc;
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config) {
+void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init and bind sockets
     socket->id = id;
     udp_init(socket, tls_config);

@@ -12,7 +12,7 @@ typedef struct rasta_transport_channel rasta_transport_channel;
  * @param transport_state the tcp socket's tls_transport_state buffer
  * @param tls_config TLS options
  */
-void tcp_init(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config);
+void tcp_init(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
 /**
  * Binds a given file descriptor to the given @p port

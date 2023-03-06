@@ -70,7 +70,7 @@ typedef struct rasta_transport_socket {
 
     enum RastaTLSMode activeMode;
 
-    const struct RastaConfigTLS *tls_config;
+    const rasta_config_tls *tls_config;
 
 #ifdef ENABLE_TLS
 
@@ -83,27 +83,12 @@ typedef struct rasta_transport_socket {
 
 } rasta_transport_socket;
 
-// typedef struct rasta_transport_connection {
-//     rasta_transport_channel fixme;
-// } rasta_transport_connection;
-
-// #ifdef ENABLE_TLS
-// struct rasta_connected_transport_channel_state {
-//     const struct RastaConfigTLS *tls_config;
-//     enum RastaTLSMode activeMode;
-//     WOLFSSL_CTX *ctx;
-//     int file_descriptor;
-//     WOLFSSL *ssl;
-//     enum rasta_tls_connection_state state;
-// };
-// #endif
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index);
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config);
+void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config);
 void transport_bind(rasta_transport_socket *socket, const char *ip, uint16_t port);
-// void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection *transport_state, char *local_ip, uint16_t local_port, char *remote_ip, uint16_t remote_port, const struct RastaConfigTLS *tls_config);
 void transport_listen(rasta_transport_socket *socket);
 void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel);
 int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port);

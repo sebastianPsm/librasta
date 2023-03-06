@@ -41,7 +41,7 @@ typedef struct rasta_lib_configuration_s {
 typedef fd_event rasta_lib_fd_event;
 typedef timed_event rasta_lib_timed_event;
 
-void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, struct RastaConfigInfo *config, struct logger_t *logger);
+void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, rasta_config_info *config, struct logger_t *logger);
 
 struct rasta_connection * rasta_accept(rasta_lib_configuration_t user_configuration);
 int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len);

@@ -372,8 +372,8 @@ struct rasta_sending_handle {
     /**
      * configuration values
      */
-    struct RastaConfigInfoSending config;
-    struct RastaConfigInfoGeneral info;
+    rasta_config_sending config;
+    rasta_config_general info;
 
     struct logger_t *logger;
 
@@ -394,8 +394,8 @@ struct rasta_heartbeat_handle {
     /**
      * configuration values
      */
-    struct RastaConfigInfoSending config;
-    struct RastaConfigInfoGeneral info;
+    rasta_config_sending config;
+    rasta_config_general info;
 
     struct logger_t *logger;
 
@@ -416,8 +416,8 @@ struct rasta_receive_handle {
     /**
      * configuration values
      */
-    struct RastaConfigInfoSending config;
-    struct RastaConfigInfoGeneral info;
+    rasta_config_sending config;
+    rasta_config_general info;
 
     struct logger_t *logger;
 
@@ -465,7 +465,7 @@ struct rasta_handle {
     /**
      * RaSTA parameters
      */
-    struct RastaConfigInfo config;
+    rasta_config_info config;
 
     /**
      * versions that this RaSTA entity will accept during the handshake
@@ -550,7 +550,7 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result);
  * @param h
  * @param config_file_path
  */
-void rasta_handle_init(struct rasta_handle *h, struct RastaConfigInfo *config, struct logger_t *logger);
+void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct logger_t *logger);
 
 void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con);
 void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con);

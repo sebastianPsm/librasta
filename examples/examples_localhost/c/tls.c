@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
         prepare_certs(CONFIG_PATH_S);
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
         rasta_lib_init_configuration(rc, &config, &logger);
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
         }
     } else if (strcmp(argv[1], "s") == 0) {
         printf("->   S (ID = 0x%lX)\n", (unsigned long)ID_S);
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C);
         rasta_lib_init_configuration(rc, &config, &logger);

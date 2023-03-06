@@ -227,7 +227,7 @@ void init_handshake_timeout_event(timed_event *event, int channel_timeout_ms) {
 
 /* ----------------------------*/
 
-void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, struct RastaConfigInfo config) {
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, rasta_config_info config) {
     mux->logger = logger;
     mux->port_count = config.redundancy.connections.count;
     mux->listen_ports = rmalloc(sizeof(uint16_t) * mux->port_count);
@@ -279,7 +279,7 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, str
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
 }
 
-redundancy_mux redundancy_mux_init_(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config) {
+redundancy_mux redundancy_mux_init_(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config) {
     redundancy_mux mux;
 
     mux.logger = logger;
@@ -294,7 +294,7 @@ redundancy_mux redundancy_mux_init_(struct logger_t logger, uint16_t *listen_por
     return mux;
 }
 
-redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config) {
+redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config) {
     redundancy_mux mux = redundancy_mux_init_(logger, listen_ports, port_count, config);
     mux.transport_sockets = rmalloc(port_count * sizeof(int));
 
@@ -432,7 +432,7 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id) {
     logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux wait", "entity with id=0x%lX available", id);
 }
 
-void redundancy_mux_listen_channels(redundancy_mux *mux, struct RastaConfigTLS *tls_config) {
+void redundancy_mux_listen_channels(redundancy_mux *mux, rasta_config_tls *tls_config) {
     for (unsigned i = 0; i < mux->port_count; ++i) {
         // TODO: We should have a transport_socket initialize constructor
         mux->transport_sockets[i].id = i;

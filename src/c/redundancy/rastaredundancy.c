@@ -16,7 +16,7 @@ int _deliver_message_to_upper_layer(struct rasta_receive_handle *h, rasta_redund
     return sr_receive(h, &packet);
 }
 
-void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
+void red_f_init(struct logger_t logger, rasta_config_info config, unsigned int transport_channel_count,
                 unsigned long id, rasta_redundancy_channel *channel) {
 
     channel->associated_id = id;

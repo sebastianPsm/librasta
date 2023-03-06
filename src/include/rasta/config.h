@@ -18,7 +18,7 @@ extern "C" {  // only need to export C interface if
 /**
  * defined in 7.2
  */
-struct RastaConfigInfoSending {
+typedef struct rasta_config_sending {
     unsigned int t_max;
     unsigned int t_h;
     rasta_checksum_type md4_type;
@@ -32,7 +32,7 @@ struct RastaConfigInfoSending {
     unsigned int diag_window;
     unsigned int sr_hash_key;
     rasta_hash_algorithm sr_hash_algorithm;
-};
+} rasta_config_sending;
 
 /**
  * represents an IP and Port
@@ -53,21 +53,21 @@ struct RastaConfigRedundancyConnections {
 /**
  * defined in 7.3
  */
-struct RastaConfigInfoRedundancy {
+typedef struct rasta_config_redundancy {
     struct RastaConfigRedundancyConnections connections;
     struct crc_options crc_type;
     unsigned int t_seq;
     int n_diagnose;
     unsigned int n_deferqueue_size;
-};
+} rasta_config_redundancy;
 
 /**
  * defined in 8.1
  */
-struct RastaConfigInfoGeneral {
+typedef struct rasta_config_general {
     unsigned long rasta_network;
     unsigned long rasta_id;
-};
+} rasta_config_general;
 
 enum RastaTLSMode
 {
@@ -81,7 +81,7 @@ enum RastaTLSMode
 /**
  * Non-standard extension
  */
-struct RastaConfigTLS {
+typedef struct rasta_config_tls {
     enum RastaTLSMode mode;
 
     /**
@@ -104,13 +104,13 @@ struct RastaConfigTLS {
      * path to peer certificate for certificate pinning. Optional.
      */
     char peer_tls_cert_path[PATH_MAX];
-};
+} rasta_config_tls;
 
 
 /**
  * stores all presets after load
  */
-struct RastaConfigInfo {
+typedef struct rasta_config_info {
     uint32_t initial_sequence_number;
 
     size_t accepted_version_count;
@@ -119,27 +119,27 @@ struct RastaConfigInfo {
     /**
      * all values for the sending part
      */
-    struct RastaConfigInfoSending sending;
+    rasta_config_sending sending;
     /**
      * all values for the redundancy part
      */
-    struct RastaConfigInfoRedundancy redundancy;
+    rasta_config_redundancy redundancy;
     /**
      * includes rastanetwork, receiver and sender id
      * values are 0 if not set in config
      */
-    struct RastaConfigInfoGeneral general;
+    rasta_config_general general;
     /**
      * Configuration for TLS / dTLS setup.
      * Must set mode, and for mode != TLS_MODE_DISABLED, paths to certificate and keys must be set as required
      */
-    struct RastaConfigTLS tls;
+    rasta_config_tls tls;
     /**
      * Configuration for Key Exchange.
      * Must set mode, and for mode != KEX_EXCHANGE_MODE_NONE also psk.
      */
     struct RastaConfigKex kex;
-};
+} rasta_config_info;
 
 #ifdef __cplusplus
 }
