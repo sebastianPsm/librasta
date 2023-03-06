@@ -12,20 +12,20 @@ void wolfssl_initialize_if_necessary() {
     }
 }
 
-// void wolfssl_start_dtls_server(rasta_transport_channel *transport_state, const struct RastaConfigTLS *tls_config) {
-//     wolfssl_start_server(transport_state, tls_config, wolfDTLSv1_2_server_method());
+void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+    wolfssl_start_server(transport_state, tls_config, wolfDTLSv1_2_server_method());
 
-//     // TODO: remove duplicated code in tcp_accept
-//     transport_state->ssl = wolfSSL_new(transport_state->ctx);
-//     if (!transport_state->ssl) {
-//         fprintf(stderr, "Error allocating WolfSSL object.\n");
-//         abort();
-//     }
-//     wolfSSL_set_fd(transport_state->ssl, transport_state->fd);
+    // TODO: remove duplicated code in tcp_accept
+    // transport_state->ssl = wolfSSL_new(transport_state->ssl);
+    // if (!transport_state->ssl) {
+    //     fprintf(stderr, "Error allocating WolfSSL object.\n");
+    //     abort();
+    // }
+    // wolfSSL_set_fd(transport_state->ssl, transport_state->fd);
 
-//     // wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
-//     transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
-// }
+    // wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
+    // transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
+}
 
 void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_server(transport_state, tls_config, wolfTLSv1_3_server_method());
@@ -66,9 +66,10 @@ void wolfssl_start_server(rasta_transport_socket *transport_state, const struct 
     transport_state->tls_config = tls_config;
 }
 
-// void set_dtls_async(rasta_transport_channel *transport_state) {
-//     set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
-// }
+void set_dtls_async(rasta_transport_socket *transport_state) {
+    UNUSED(transport_state);
+    // set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
+}
 
 void set_tls_async(int fd, WOLFSSL *ssl) {
     int socket_flags;
@@ -103,12 +104,16 @@ void set_socket_async(rasta_transport_channel *transport_state, WOLFSSL_ASYNC_ME
     }
 
     // inform wolfssl to expect read / write errors due to non-blocking nature of socket
+    #ifdef USE_TCP
     (*wolfssl_async_method)(transport_state->ssl, 1);
+    #else
+    UNUSED(wolfssl_async_method);
+    #endif
 }
 
-// void wolfssl_start_dtls_client(rasta_transport_connection *transport_state, const struct RastaConfigTLS *tls_config) {
-//     wolfssl_start_client(transport_state, tls_config, wolfDTLSv1_2_client_method());
-// }
+void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
+    wolfssl_start_client(transport_state, tls_config, wolfDTLSv1_2_client_method());
+}
 
 void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const struct RastaConfigTLS *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfTLSv1_3_client_method());
@@ -181,24 +186,25 @@ void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     }
 }
 
-// void wolfssl_send_dtls(rasta_transport_connection *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver) {
-//     if (transport_state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED) {
-//         wolfSSL_dtls_set_peer(transport_state->ssl, receiver, sizeof(*receiver));
+void wolfssl_send_dtls(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver) {
+    // if (transport_state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED) {
+    //     wolfSSL_dtls_set_peer(transport_state->ssl, receiver, sizeof(*receiver));
 
-//         if (wolfSSL_connect(transport_state->ssl) != SSL_SUCCESS) {
-//             int connect_error = wolfSSL_get_error(transport_state->ssl, 0);
-//             fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
-//             abort();
-//         }
+    //     if (wolfSSL_connect(transport_state->ssl) != SSL_SUCCESS) {
+    //         int connect_error = wolfSSL_get_error(transport_state->ssl, 0);
+    //         fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
+    //         abort();
+    //     }
 
-//         tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
+    //     tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
 
-//         transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
-//         set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
-//     }
+    //     transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
+    //     set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
+    // }
+    UNUSED(receiver);
 
-//     wolfssl_send(transport_state->ssl, message, message_len);
-// }
+    wolfssl_send(transport_state->ssl, message, message_len);
+}
 
 void wolfssl_send_tls(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     wolfssl_send(ssl, message, message_len);

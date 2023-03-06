@@ -51,7 +51,7 @@ struct RastaConfig {
  * @param filename
  * @return 0 if success
  */
-int config_load(struct RastaConfig *config, const char filename[256]);
+int config_load(struct RastaConfig *config, const char *filename);
 
 /**
  * returns the entry behind the key

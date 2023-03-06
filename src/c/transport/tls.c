@@ -96,32 +96,35 @@ void tcp_init(rasta_transport_socket *transport_state, const struct RastaConfigT
     transport_state->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
 
-static void apply_tls_mode(rasta_transport_socket *transport_state) {
-    const struct RastaConfigTLS *tls_config = transport_state->tls_config;
-    switch (tls_config->mode) {
-    case TLS_MODE_DISABLED:
-        transport_state->activeMode = TLS_MODE_DISABLED;
-        break;
-    case TLS_MODE_TLS_1_3:
-        transport_state->activeMode = TLS_MODE_TLS_1_3;
-        break;
-    default:
-        fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
+static void apply_tls_mode(rasta_transport_channel *transport_state) {
+    UNUSED(transport_state);
+    // const struct RastaConfigTLS *tls_config = transport_state->tls_config;
+    // switch (tls_config->mode) {
+    // case TLS_MODE_DISABLED:
+    //     transport_state->activeMode = TLS_MODE_DISABLED;
+    //     break;
+    // case TLS_MODE_TLS_1_3:
+    //     transport_state->activeMode = TLS_MODE_TLS_1_3;
+    //     break;
+    // default:
+        // fprintf(stderr, "Unknown or unsupported TLS mode: %u", tls_config->mode);
         abort();
-    }
+    // }
 }
 
-static void handle_tls_mode_server(rasta_transport_socket *transport_state) {
-    apply_tls_mode(transport_state);
-    if (transport_state->activeMode == TLS_MODE_TLS_1_3) {
-        wolfssl_start_tls_server(transport_state, transport_state->tls_config);
-    }
-}
+// static void handle_tls_mode_server(rasta_transport_channel *transport_state) {
+    // apply_tls_mode(transport_state);
+    // if (transport_state->tls_mode == TLS_MODE_TLS_1_3) {
+    //     wolfssl_start_tls_server(transport_state, transport_state->tls_config);
+    // }
+//     UNUSED(transport_state);
+// }
 
-static void handle_tls_mode_client(rasta_transport_socket *transport_state) {
+static void handle_tls_mode_client(rasta_transport_channel *transport_state) {
     apply_tls_mode(transport_state);
-    if (transport_state->activeMode == TLS_MODE_TLS_1_3) {
-        wolfssl_start_tls_client(transport_state, transport_state->tls_config);
+    if (transport_state->tls_mode == TLS_MODE_TLS_1_3) {
+        // TODO
+        // wolfssl_start_tls_client(transport_state, transport_state->tls_config);
     }
 }
 
@@ -129,7 +132,7 @@ void tcp_bind(rasta_transport_socket *transport_state, uint16_t port) {
     bsd_bind_port(transport_state->file_descriptor, port);
 }
 
-void tcp_bind_device(rasta_transport_socket *transport_state, uint16_t port, char *ip) {
+void tcp_bind_device(rasta_transport_socket *transport_state, const char *ip, uint16_t port) {
     bsd_bind_device(transport_state->file_descriptor, port, ip);
 }
 
@@ -140,7 +143,7 @@ void tcp_listen(rasta_transport_socket *transport_state) {
         abort();
     }
 
-    handle_tls_mode_server(transport_state);
+    // handle_tls_mode_server(transport_state);
 }
 
 int tls_accept(rasta_transport_socket *transport_state) {
@@ -217,6 +220,10 @@ void tcp_close(rasta_transport_socket *transport_state) {
     bsd_close(transport_state->file_descriptor);
 }
 
+void transport_listen(rasta_transport_socket *socket) {
+    tcp_listen(socket);
+}
+
 void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
     int fd = tls_accept(socket);
     channel->id = socket->id;
@@ -248,58 +255,61 @@ int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *c
     channel->tls_mode = socket->activeMode;
     channel->fd = socket->file_descriptor;
     channel->ssl = socket->ssl;
-    tcp_connect(&mux->transport_sockets[channel], host, port);
+    channel->ctx = socket->ctx;
+    tcp_connect(channel);
 
     if (channel->ctx == NULL) {
         handle_tls_mode_client(channel);
     }
 
-    channel->ssl = wolfSSL_new(transport_state->ctx);
-    if (!transport_state->ssl) {
-        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
+    channel->ssl = wolfSSL_new(channel->ctx);
+    if (!channel->ssl) {
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(channel->ssl, 0));
         fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
-        abort();
+        return -1;
     }
 
-    if (transport_state->tls_config->tls_hostname[0]) {
-        int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
-        if (ret != SSL_SUCCESS) {
-            fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
-            abort();
-        }
+    if (false) { // transport_state->tls_config->tls_hostname[0]) {
+        // int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
+        // if (ret != SSL_SUCCESS) {
+        //     fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
+        //     return -1;
+        // }
     } else {
         fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
     }
     /* Attach wolfSSL to the socket */
-    if (wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor) != WOLFSSL_SUCCESS) {
+    if (wolfSSL_set_fd(channel->ssl, channel->fd) != WOLFSSL_SUCCESS) {
         fprintf(stderr, "ERROR: Failed to set the file descriptor\n");
-        abort();
+        return -1;
     }
 
     /* required for getting random used */
-    wolfSSL_KeepArrays(transport_state->ssl);
+    wolfSSL_KeepArrays(channel->ssl);
 #ifdef WOLFSSL_SET_TLS13_SECRET_CB_EXISTS
     /* optional logging for wireshark */
     char* sslkeylogfile_path = getenv("TLS_SECRET_LOGFILE_PATH");
     if (sslkeylogfile_path != NULL) {
-        wolfSSL_set_tls13_secret_cb(transport_state->ssl, Tls13SecretCallback,
+        wolfSSL_set_tls13_secret_cb(channel->ssl, Tls13SecretCallback,
                                     sslkeylogfile_path);
     }
 #endif
     /* Connect to wolfSSL on the server side */
-    if (wolfSSL_connect(transport_state->ssl) != WOLFSSL_SUCCESS) {
-        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
+    if (wolfSSL_connect(channel->ssl) != WOLFSSL_SUCCESS) {
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(channel->ssl, 0));
         fprintf(stderr, "ERROR: failed to connect to wolfSSL %s.\n", error_str);
-        abort();
+        return -1;
     }
 
-    tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
+    // tls_pin_certificate(channel->ssl, transport_state->tls_config->peer_tls_cert_path);
 
-    wolfSSL_FreeArrays(transport_state->ssl);
-    set_tls_async(transport_state->file_descriptor, transport_state->ssl);
+    wolfSSL_FreeArrays(channel->ssl);
+    set_tls_async(channel->fd, channel->ssl);
+    return 0;
 }
 
 int transport_redial(rasta_transport_channel* channel) {
+    UNUSED(channel);
     return 0;
     // return tcp_connect(channel);
 }
@@ -317,7 +327,7 @@ void transport_close(rasta_transport_channel *channel) {
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
     UNUSED(mux);
     UNUSED(channel_index);
-    tls_send(channel->ssl, data_to_send.bytes, data_to_send.length);
+    tls_send(channel, data_to_send.bytes, data_to_send.length);
 }
 
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
@@ -325,7 +335,7 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     // TODO: exchange MAX_DEFER_QUEUE_MSG_SIZE by something depending on send_max (i.e. the receive buffer size)
     // search for connected_recv_buffer_size
     // TODO: Manage possible remaining data in the receive buffer on next call to rasta_recv
-    return tls_receive(data->ssl, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
+    return tls_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
 void transport_create_socket(rasta_transport_socket *socket, int id, const struct RastaConfigTLS *tls_config) {

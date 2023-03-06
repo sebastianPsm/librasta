@@ -8,7 +8,6 @@ set(EXAMPLES_COMMON_SRC
     common/c/dictionary.c)
 
 if(BUILD_LOCAL_EXAMPLES)
-# rasta_example_new on localhost
 add_executable(rasta_example_udp
                 ${EXAMPLES_COMMON_SRC}
                 examples_localhost/c/rasta.c)
@@ -122,18 +121,18 @@ set(SCI_COMMON
 )
 
 # scip_example
-add_executable(scip_example ${SCI_COMMON} sci/scip/main.c)
-target_include_directories(scip_example PRIVATE sci/common common/headers)
-set_target_properties(scip_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
-target_compile_options(scip_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(scip_example rasta_udp)
+# add_executable(scip_example ${SCI_COMMON} sci/scip/main.c)
+# target_include_directories(scip_example PRIVATE sci/common common/headers)
+# set_target_properties(scip_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+# target_compile_options(scip_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+# target_link_libraries(scip_example rasta_udp)
 
 # scils_example
-add_executable(scils_example ${SCI_COMMON} sci/scils/main.c)
-target_include_directories(scils_example PRIVATE sci/common common/headers)
-set_target_properties(scils_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
-target_compile_options(scils_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
-target_link_libraries(scils_example rasta_udp)
+# add_executable(scils_example ${SCI_COMMON} sci/scils/main.c)
+# target_include_directories(scils_example PRIVATE sci/common common/headers)
+# set_target_properties(scils_example PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
+# target_compile_options(scils_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
+# target_link_libraries(scils_example rasta_udp)
 
 add_executable(sciTest
     ${SCI_COMMON}

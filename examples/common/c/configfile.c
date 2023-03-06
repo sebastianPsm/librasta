@@ -797,7 +797,7 @@ void config_setstd(struct RastaConfig *cfg) {
 /*
  * Public functions
  */
-int config_load(struct RastaConfig *config, const char filename[256]) {
+int config_load(struct RastaConfig *config, const char* filename) {
 
     memset(config, 0, sizeof(struct RastaConfig));
 

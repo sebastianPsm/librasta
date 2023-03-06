@@ -82,7 +82,6 @@ set(sources
 
 if(ENABLE_RASTA_TLS)
     set(RASTA_VARIANTS udp tcp dtls tls)
-    set(sources ${sources} c/transport/ssl_utils.h c/transport/ssl_utils.c)
 else()
     set(RASTA_VARIANTS udp tcp)
 endif(ENABLE_RASTA_TLS)
@@ -90,6 +89,11 @@ endif(ENABLE_RASTA_TLS)
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
     set(variant_sources ${sources} c/transport/${RASTA_VARIANT}.c)
+
+    # TODO: Remove ssl_utils
+    if(RASTA_VARIANT STREQUAL "dtls" OR RASTA_VARIANT STREQUAL "tls")
+        set(variant_sources ${variant_sources} c/transport/ssl_utils.h c/transport/ssl_utils.c)
+    endif()
 
     # Shared object for RaSTA protocol
     add_library(${target}_${RASTA_VARIANT} SHARED ${variant_sources} ${headers})

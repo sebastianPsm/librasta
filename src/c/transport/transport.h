@@ -39,14 +39,14 @@ typedef struct rasta_transport_channel {
 
     enum RastaTLSMode tls_mode;
 
-#ifdef USE_TCP
     /**
      * filedescriptor
      * */
     int fd;
+
 #ifdef ENABLE_TLS
+    WOLFSSL_CTX *ctx;
     WOLFSSL *ssl;
-#endif
 #endif
 
     /**
