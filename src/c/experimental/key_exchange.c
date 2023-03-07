@@ -1,5 +1,9 @@
+#include <sys/mman.h>
+#include <errno.h>
+
 #include <rasta/logging.h>
 #include <rasta/rastahandle.h>
+
 
 #ifdef ENABLE_OPAQUE
 #include <rasta/key_exchange.h>
@@ -97,7 +101,7 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
     if (munlock_ret) {
         logger_log(logger, LOG_LEVEL_ERROR, "kex_exchange:kex_recover_credential", "munlock failed: %s", strerror(errno));
     }
-    rfree(kex_state->client_secret);
+    free(kex_state->client_secret);
     kex_state->client_secret = NULL;
 
     return ret;

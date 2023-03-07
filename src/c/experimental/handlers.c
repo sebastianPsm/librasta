@@ -43,21 +43,21 @@ int handle_kex_request(struct rasta_receive_handle *h, struct rasta_connection *
                 // valid Key Exchange request packet received
 
                 response = createKexResponse(connection->remote_id, connection->my_id, connection->sn_t,
-                                             receivedPacket.sequence_number, current_ts(),
-                                             receivedPacket.timestamp, h->hashing_context, h->handle->config.kex.psk,
-                                             (uint8_t *)receivedPacket.data.bytes, receivedPacket.data.length, connection->sn_i,
+                                             receivedPacket->sequence_number, current_ts(),
+                                             receivedPacket->timestamp, h->hashing_context, h->handle->config.kex.psk,
+                                             (uint8_t *)receivedPacket->data.bytes, receivedPacket->data.length, connection->sn_i,
                                              &connection->kex_state,
                                              &h->handle->config.kex, h->logger);
 
                 redundancy_mux_send(h->mux, response);
 
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
+                connection->sn_r = receivedPacket->sequence_number + 1;
                 connection->sn_t += 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->cs_r = receivedPacket.confirmed_sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
-                connection->cts_r = receivedPacket.confirmed_timestamp;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->cs_r = receivedPacket->confirmed_sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
+                connection->cts_r = receivedPacket->confirmed_timestamp;
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
@@ -122,24 +122,24 @@ int handle_kex_response(struct rasta_receive_handle *h, struct rasta_connection 
 
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Resp", "CTS in SEQ");
                 // valid Key Exchange response packet received
-                ret = kex_recover_credential(&connection->kex_state, (const uint8_t *)receivedPacket.data.bytes, receivedPacket.data.length, connection->my_id, connection->remote_id, connection->sn_i, h->logger);
+                ret = kex_recover_credential(&connection->kex_state, (const uint8_t *)receivedPacket->data.bytes, receivedPacket->data.length, connection->my_id, connection->remote_id, connection->sn_i, h->logger);
 
                 if (ret) {
                     logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Could not recover credentials!");
                     sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-                    return;
+                    return 1;
                 }
-                response = createKexAuthentication(connection->remote_id, connection->my_id, connection->sn_t, receivedPacket.sequence_number, current_ts(), receivedPacket.timestamp, h->hashing_context, connection->kex_state.user_auth_server, sizeof(connection->kex_state.user_auth_server), h->logger);
+                response = createKexAuthentication(connection->remote_id, connection->my_id, connection->sn_t, receivedPacket->sequence_number, current_ts(), receivedPacket->timestamp, h->hashing_context, connection->kex_state.user_auth_server, sizeof(connection->kex_state.user_auth_server), h->logger);
 
                 redundancy_mux_send(h->mux, response);
 
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
+                connection->sn_r = receivedPacket->sequence_number + 1;
                 connection->sn_t += 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->cs_r = receivedPacket.confirmed_sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
-                connection->cts_r = receivedPacket.confirmed_timestamp;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->cs_r = receivedPacket->confirmed_sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
+                connection->cts_r = receivedPacket->confirmed_timestamp;
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
@@ -201,20 +201,20 @@ int handle_kex_auth(struct rasta_receive_handle *h, struct rasta_connection *con
                 int ret;
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: KEX Auth", "CTS in SEQ");
                 // valid Key Exchange Authentication packet received
-                ret = kex_authenticate_user(&connection->kex_state, (const uint8_t *)receivedPacket.data.bytes, receivedPacket.data.length, h->logger);
+                ret = kex_authenticate_user(&connection->kex_state, (const uint8_t *)receivedPacket->data.bytes, receivedPacket->data.length, h->logger);
 
                 if (ret) {
                     logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Auth", "Could not authenticate user");
                     sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
-                    return;
+                    return 1;
                 }
 
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->cs_r = receivedPacket.confirmed_sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
-                connection->cts_r = receivedPacket.confirmed_timestamp;
+                connection->sn_r = receivedPacket->sequence_number + 1;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->cs_r = receivedPacket->confirmed_sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
+                connection->cts_r = receivedPacket->confirmed_timestamp;
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
