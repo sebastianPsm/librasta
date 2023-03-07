@@ -458,7 +458,7 @@ int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsi
 
     // add transport channels
     int success = 0;
-    for (unsigned int i = 0; i < mux->port_count; i++) {
+    for (unsigned int i = 0; i < transport_channels_length; i++) {
         // Provided transport channels have to match with local ports configured
         success |= rasta_red_add_transport_channel(h, channel,
                                         &mux->transport_sockets[i],
