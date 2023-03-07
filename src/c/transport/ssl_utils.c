@@ -12,19 +12,18 @@ void wolfssl_initialize_if_necessary() {
     }
 }
 
-void wolfssl_start_dtls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
-    wolfssl_start_server(transport_state, tls_config, wolfDTLSv1_2_server_method());
+void wolfssl_start_dtls_server(rasta_transport_socket *transport_socket, const rasta_config_tls *tls_config) {
+    wolfssl_start_server(transport_socket, tls_config, wolfDTLSv1_2_server_method());
 
     // TODO: remove duplicated code in tcp_accept
-    // transport_state->ssl = wolfSSL_new(transport_state->ssl);
-    // if (!transport_state->ssl) {
-    //     fprintf(stderr, "Error allocating WolfSSL object.\n");
-    //     abort();
-    // }
-    // wolfSSL_set_fd(transport_state->ssl, transport_state->fd);
+    transport_socket->ssl = wolfSSL_new(transport_socket->ctx);
+    if (!transport_socket->ssl) {
+        fprintf(stderr, "Error allocating WolfSSL object.\n");
+        abort();
+    }
 
-    // wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
-    // transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
+    wolfSSL_set_fd(transport_socket->ssl, transport_socket->file_descriptor);
+    transport_socket->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
 void wolfssl_start_tls_server(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
@@ -67,8 +66,21 @@ void wolfssl_start_server(rasta_transport_socket *transport_state, const rasta_c
 }
 
 void set_dtls_async(rasta_transport_socket *transport_state) {
-    UNUSED(transport_state);
-    // set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
+    int socket_flags;
+    // set socket to non-blocking so we can select() on it
+    socket_flags = fcntl(transport_state->file_descriptor, F_GETFL, 0);
+    if (socket_flags < 0) {
+        perror("Error getting socket flags");
+        abort();
+    }
+    socket_flags |= O_NONBLOCK;
+    if (fcntl(transport_state->file_descriptor, F_SETFL, socket_flags) != 0) {
+        perror("Error setting socket non-blocking");
+        abort();
+    }
+
+    // inform wolfssl to expect read / write errors due to non-blocking nature of socket
+    (*wolfSSL_dtls_set_using_nonblock)(transport_state->ssl, 1);
 }
 
 void set_tls_async(int fd, WOLFSSL *ssl) {
@@ -92,34 +104,84 @@ void set_tls_async(int fd, WOLFSSL *ssl) {
 void set_socket_async(rasta_transport_channel *transport_state, WOLFSSL_ASYNC_METHOD *wolfssl_async_method) {
     int socket_flags;
     // set socket to non-blocking so we can select() on it
-    socket_flags = fcntl(transport_state->fd, F_GETFL, 0);
+    socket_flags = fcntl(transport_state->file_descriptor, F_GETFL, 0);
     if (socket_flags < 0) {
         perror("Error getting socket flags");
         abort();
     }
     socket_flags |= O_NONBLOCK;
-    if (fcntl(transport_state->fd, F_SETFL, socket_flags) != 0) {
+    if (fcntl(transport_state->file_descriptor, F_SETFL, socket_flags) != 0) {
         perror("Error setting socket non-blocking");
         abort();
     }
 
     // inform wolfssl to expect read / write errors due to non-blocking nature of socket
-    #ifdef USE_TCP
     (*wolfssl_async_method)(transport_state->ssl, 1);
-    #else
-    UNUSED(wolfssl_async_method);
-    #endif
 }
 
 void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
-    wolfssl_start_client(transport_state, tls_config, wolfDTLSv1_2_client_method());
+    wolfssl_initialize_if_necessary();
+    transport_state->ctx = wolfSSL_CTX_new(wolfDTLSv1_2_client_method());
+    if (!transport_state->ctx) {
+        fprintf(stderr, "Could not allocate WolfSSL context!\n");
+        abort();
+    }
+
+    if (!tls_config->ca_cert_path[0]) {
+        fprintf(stderr, "CA certificate path missing!\n");
+        abort();
+    }
+
+    /* Load CA certificates */
+    if (wolfSSL_CTX_load_verify_locations(transport_state->ctx, tls_config->ca_cert_path, 0) !=
+        SSL_SUCCESS) {
+
+        fprintf(stderr, "Error loading CA certificate file %s\n", tls_config->ca_cert_path);
+        abort();
+    }
+
+    if (tls_config->cert_path[0] && tls_config->key_path[0]) {
+        /* Load client certificates */
+        if (wolfSSL_CTX_use_certificate_file(transport_state->ctx, tls_config->cert_path, SSL_FILETYPE_PEM) !=
+            SSL_SUCCESS) {
+            printf("Error loading client certificate file %s as PEM file.\n", tls_config->cert_path);
+            abort();
+        }
+        /* Load client Keys */
+        int err;
+        if ((err = wolfSSL_CTX_use_PrivateKey_file(transport_state->ctx, tls_config->key_path,
+                                                   SSL_FILETYPE_PEM)) != SSL_SUCCESS) {
+            fprintf(stderr, "Error loading client private key file %s as PEM file: %d.\n", tls_config->key_path, err);
+            abort();
+        }
+    }
+
+    transport_state->ssl = wolfSSL_new(transport_state->ctx);
+    if (!transport_state->ssl) {
+        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
+        fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
+        abort();
+    }
+
+    if (transport_state->tls_config->tls_hostname[0]) {
+        const int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
+        if (ret != SSL_SUCCESS) {
+            fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
+            abort();
+        }
+    } else {
+        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
+    }
+
+    wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
+    transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
 }
 
-void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config) {
+void wolfssl_start_tls_client(rasta_transport_channel *transport_state, const rasta_config_tls *tls_config) {
     wolfssl_start_client(transport_state, tls_config, wolfTLSv1_3_client_method());
 }
 
-void wolfssl_start_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method) {
+void wolfssl_start_client(rasta_transport_channel *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method) {
     wolfssl_initialize_if_necessary();
     transport_state->ctx = wolfSSL_CTX_new(client_method);
     if (!transport_state->ctx) {
@@ -155,53 +217,30 @@ void wolfssl_start_client(rasta_transport_socket *transport_state, const rasta_c
             abort();
         }
     }
-
-#ifdef USE_UDP
-    transport_state->ssl = wolfSSL_new(transport_state->ctx);
-    if (!transport_state->ssl) {
-        const char *error_str = wolfSSL_ERR_reason_error_string(wolfSSL_get_error(transport_state->ssl, 0));
-        fprintf(stderr, "Error allocating WolfSSL session: %s.\n", error_str);
-        abort();
-    }
-
-    if (transport_state->tls_config->tls_hostname[0]) {
-        const int ret = wolfSSL_check_domain_name(transport_state->ssl, transport_state->tls_config->tls_hostname);
-        if (ret != SSL_SUCCESS) {
-            fprintf(stderr, "Could not add domain name check for domain %s: %d", transport_state->tls_config->tls_hostname, ret);
-            abort();
-        }
-    } else {
-        fprintf(stderr, "No TLS hostname specified. Will accept ANY valid TLS certificate. Double-check configuration file.\n");
-    }
-
-    wolfSSL_set_fd(transport_state->ssl, transport_state->file_descriptor);
-    transport_state->tls_state = RASTA_TLS_CONNECTION_READY;
-#endif
 }
 
 void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     if (wolfSSL_write(ssl, message, (int)message_len) != (int)message_len) {
-        fprintf(stderr, "WolfSSL write error!");
+        fprintf(stderr, "WolfSSL write error!\n");
         abort();
     }
 }
 
 void wolfssl_send_dtls(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in *receiver) {
-    // if (transport_state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED) {
-    //     wolfSSL_dtls_set_peer(transport_state->ssl, receiver, sizeof(*receiver));
+    if (transport_state->tls_state != RASTA_TLS_CONNECTION_ESTABLISHED) {
+        wolfSSL_dtls_set_peer(transport_state->ssl, receiver, sizeof(*receiver));
 
-    //     if (wolfSSL_connect(transport_state->ssl) != SSL_SUCCESS) {
-    //         int connect_error = wolfSSL_get_error(transport_state->ssl, 0);
-    //         fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
-    //         abort();
-    //     }
+        if (wolfSSL_connect(transport_state->ssl) != SSL_SUCCESS) {
+            int connect_error = wolfSSL_get_error(transport_state->ssl, 0);
+            fprintf(stderr, "WolfSSL connect error: %s\n", wolfSSL_ERR_reason_error_string(connect_error));
+            abort();
+        }
 
-    //     tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
+        tls_pin_certificate(transport_state->ssl, transport_state->tls_config->peer_tls_cert_path);
 
-    //     transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
-    //     set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
-    // }
-    UNUSED(receiver);
+        transport_state->tls_state = RASTA_TLS_CONNECTION_ESTABLISHED;
+        set_socket_async(transport_state, wolfSSL_dtls_set_using_nonblock);
+    }
 
     wolfssl_send(transport_state->ssl, message, message_len);
 }

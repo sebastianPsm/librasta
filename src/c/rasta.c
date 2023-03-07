@@ -606,8 +606,7 @@ int handle_hb(struct rasta_receive_handle *h, struct rasta_connection *connectio
     return 0;
 }
 
-// TODO: This should be moved into safety_retransmission, and not be called from the outside
-// Add rasta_connect
+// TODO: This should be moved into safety_retransmission, and not be called from the outside. Instead, add rasta_connect.
 struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length) {
     // TODO: Remove linked lists of connections
     // if (connection_exists(h, id))
@@ -743,7 +742,7 @@ int rasta_send(rasta_lib_configuration_t user_configuration, struct rasta_connec
 }
 
 void rasta_bind(struct rasta_handle *h) {
-    redundancy_mux_bind(&h->mux);
+    redundancy_mux_bind(h);
 }
 
 struct rasta_connection * rasta_accept(rasta_lib_configuration_t user_configuration) {

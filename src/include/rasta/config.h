@@ -69,12 +69,13 @@ typedef struct rasta_config_general {
     unsigned long rasta_id;
 } rasta_config_general;
 
-enum RastaTLSMode
+typedef enum rasta_tls_mode
 {
     TLS_MODE_DISABLED,
     TLS_MODE_DTLS_1_2,
     TLS_MODE_TLS_1_3
-};
+} rasta_tls_mode;
+
 // max length of CN in ASN.1
 #define MAX_DOMAIN_LENGTH 64
 
@@ -82,7 +83,7 @@ enum RastaTLSMode
  * Non-standard extension
  */
 typedef struct rasta_config_tls {
-    enum RastaTLSMode mode;
+    rasta_tls_mode mode;
 
     /**
      * Path to CA certificate to use, required for server and client operation

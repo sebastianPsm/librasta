@@ -24,9 +24,9 @@ void set_socket_async(rasta_transport_channel *transport_state, WOLFSSL_ASYNC_ME
 
 void wolfssl_start_dtls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_tls_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config);
+void wolfssl_start_tls_client(rasta_transport_channel *transport_state, const rasta_config_tls *tls_config);
 
-void wolfssl_start_client(rasta_transport_socket *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method);
+void wolfssl_start_client(rasta_transport_channel *transport_state, const rasta_config_tls *tls_config, WOLFSSL_METHOD *client_method);
 
 void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len);
 

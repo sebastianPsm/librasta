@@ -35,18 +35,21 @@ typedef struct rasta_transport_channel {
     /**
      * IPv4 address in format a.b.c.d
      */
-    char *remote_ip_address;
+    char remote_ip_address[INET_ADDRSTRLEN];
 
-    enum RastaTLSMode tls_mode;
+    rasta_tls_mode tls_mode;
+
+    const rasta_config_tls * tls_config;
 
     /**
      * filedescriptor
      * */
-    int fd;
+    int file_descriptor;
 
 #ifdef ENABLE_TLS
     WOLFSSL_CTX *ctx;
     WOLFSSL *ssl;
+    enum rasta_tls_connection_state tls_state;
 #endif
 
     /**
@@ -68,7 +71,15 @@ typedef struct rasta_transport_socket {
 
     int file_descriptor;
 
-    enum RastaTLSMode activeMode;
+    fd_event accept_event;
+
+    struct accept_event_data accept_event_data;
+
+    fd_event receive_event;
+
+    struct receive_event_data receive_event_data;
+
+    rasta_tls_mode tls_mode;
 
     const rasta_config_tls *tls_config;
 
@@ -88,9 +99,9 @@ void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rast
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
 
 void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config);
-void transport_bind(rasta_transport_socket *socket, const char *ip, uint16_t port);
-void transport_listen(rasta_transport_socket *socket);
+void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port);
+void transport_listen(struct rasta_handle *h, rasta_transport_socket *socket);
 void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel);
-int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port);
+int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config);
 int transport_redial(rasta_transport_channel* channel);
 void transport_close(rasta_transport_channel *channel);

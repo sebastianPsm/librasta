@@ -29,7 +29,7 @@ static void handle_tls_mode(rasta_transport_socket *transport_state) {
     const rasta_config_tls *tls_config = transport_state->tls_config;
     switch (tls_config->mode) {
     case TLS_MODE_DISABLED: {
-        transport_state->activeMode = TLS_MODE_DISABLED;
+        transport_state->tls_mode = TLS_MODE_DISABLED;
         break;
     }
     default: {
@@ -92,7 +92,7 @@ void udp_close(rasta_transport_socket *transport_state) {
 }
 
 size_t udp_receive(rasta_transport_socket *transport_state, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender) {
-    if (transport_state->activeMode == TLS_MODE_DISABLED) {
+    if (transport_state->tls_mode == TLS_MODE_DISABLED) {
         ssize_t recv_len;
         struct sockaddr_in empty_sockaddr_in;
         socklen_t sender_len = sizeof(empty_sockaddr_in);
@@ -119,7 +119,7 @@ void udp_send(rasta_transport_channel *transport_state, unsigned char *message, 
 
 void udp_send_sockaddr(rasta_transport_channel *transport_state, unsigned char *message, size_t message_len, struct sockaddr_in receiver) {
     if (transport_state->tls_mode == TLS_MODE_DISABLED) {
-        if (sendto(transport_state->fd, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) ==
+        if (sendto(transport_state->file_descriptor, message, message_len, 0, (struct sockaddr *)&receiver, sizeof(receiver)) ==
             -1) {
             perror("failed to send data");
             abort();
@@ -148,8 +148,20 @@ void transport_create_socket(rasta_transport_socket *socket, int id, const rasta
     udp_init(socket, tls_config);
 }
 
-int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port) {
-    (void)socket; (void)channel; (void)host; (void) port;
+int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config) {
+    UNUSED(tls_config);
+    UNUSED(h);
+
+    channel->id = socket->id;
+    channel->remote_port = port;
+    channel->send_callback = send_callback;
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN);
+    channel->tls_mode = socket->tls_mode;
+    channel->file_descriptor = socket->file_descriptor;
+
+    // We can regard UDP channels as 'always connected' (no re-dial possible)
+    channel->connected = true;
+
     return 0;
 }
 
@@ -163,20 +175,30 @@ void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rast
 }
 
 ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender) {
-    UNUSED(mux); UNUSED(data); UNUSED(buffer); UNUSED(sender);
-    // return udp_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
-    return 0;
+    UNUSED(mux);
+    return udp_receive(data->socket, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-
-void transport_listen(rasta_transport_socket *socket) {
-    // tcp_listen(socket);
+void transport_listen(struct rasta_handle *h, rasta_transport_socket *socket) {
+    UNUSED(h);
     UNUSED(socket);
 }
 
-void transport_bind(rasta_transport_socket *socket, const char *ip, uint16_t port) {
+void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port) {
     UNUSED(ip);
     udp_bind(socket, port);
+
+    memset(&socket->receive_event, 0, sizeof(fd_event));
+    socket->receive_event.enabled = 1;
+    socket->receive_event.carry_data = &socket->receive_event_data;
+    socket->receive_event.callback = channel_receive_event;
+    socket->receive_event.fd = socket->file_descriptor;
+
+    socket->receive_event_data.channel = NULL;
+    socket->receive_event_data.socket = socket;
+    socket->receive_event_data.h = h;
+
+    add_fd_event(h->ev_sys, &socket->receive_event, EV_READABLE);
 }
 
 void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
@@ -187,7 +209,7 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
     // channel->remote_port = 0;
     // channel->remote_ip_address = NULL;
     // channel->send_callback = send_callback;
-    // channel->tls_mode = socket->activeMode;
+    // channel->tls_mode = socket->tls_mode;
     // channel->fd = fd;
     // channel->connected = true;
 

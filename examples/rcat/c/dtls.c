@@ -12,8 +12,8 @@
 #include "configfile.h"
 #include "wolfssl_certificate_helper.h"
 
-#define CONFIG_PATH_S "rasta_server_local_tls.cfg"
-#define CONFIG_PATH_C "rasta_client_local_tls.cfg"
+#define CONFIG_PATH_S "rasta_server_local_dtls.cfg"
+#define CONFIG_PATH_C "rasta_client_local_dtls.cfg"
 
 #define ID_R 0x61
 #define ID_S 0x60

@@ -17,5 +17,9 @@ struct accept_event_data {
 
 struct receive_event_data {
     struct rasta_handle *h;
+    // #ifdef USE_UDP
+    rasta_transport_socket *socket;
+    // #elif USE_TCP
     rasta_transport_channel *channel;
+    // #endif
 };

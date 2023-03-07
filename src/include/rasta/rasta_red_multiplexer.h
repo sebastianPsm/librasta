@@ -145,7 +145,7 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
  */
 void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, rasta_config_info config);
 
-void redundancy_mux_bind(redundancy_mux *mux);
+void redundancy_mux_bind(struct rasta_handle *h);
 
 /**
  * starts the redundancy layer multiplexer and opens (if specified) all redundancy channels
@@ -200,7 +200,7 @@ void redundancy_mux_wait_for_notifications(redundancy_mux *mux);
  */
 void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_listen_channels(redundancy_mux *mux, rasta_config_tls *tls_config);
+void redundancy_mux_listen_channels(struct rasta_handle *h, redundancy_mux *mux, rasta_config_tls *tls_config);
 
 /**
  * adds a new redundancy channel to the multiplexer id and given transport channels.
@@ -227,11 +227,11 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
 struct rasta_receive_handle;
-int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct receive_event_data *data, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
+int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
 
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
 
-void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *channel, struct receive_event_data *data, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender);
+void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *channel, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender);
 
 #ifdef __cplusplus
 }

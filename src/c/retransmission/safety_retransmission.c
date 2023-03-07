@@ -417,29 +417,7 @@ void rasta_socket(struct rasta_handle *handle, rasta_config_info *config, struct
 }
 
 void sr_listen(struct rasta_handle *h) {
-    redundancy_mux_listen_channels(&h->mux, &h->config.tls);
-
-    // Register accept events
-
-    int accept_event_data_len = h->mux.port_count;
-    fd_event *accept_events = rmalloc(sizeof(fd_event) * accept_event_data_len);
-    struct accept_event_data *accept_event_data = rmalloc(sizeof(struct accept_event_data) * accept_event_data_len);
-
-    for (int i = 0; i < accept_event_data_len; i++) {
-        memset(&accept_events[i], 0, sizeof(fd_event));
-        accept_events[i].carry_data = accept_event_data + i;
-
-        accept_events[i].callback = channel_accept_event;
-        accept_events[i].fd = h->mux.transport_sockets[i].file_descriptor;
-        accept_events[i].enabled = 1;
-
-        accept_event_data[i].socket = &h->mux.transport_sockets[i];
-        accept_event_data[i].event = accept_events + i;
-        accept_event_data[i].h = h;
-
-        // TODO: accept_events and accept_event_data is leaked
-        add_fd_event(h->ev_sys, &accept_events[i], EV_READABLE);
-    }
+    redundancy_mux_listen_channels(h, &h->mux, &h->config.tls);
 }
 
 // HACK
