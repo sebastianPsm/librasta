@@ -132,7 +132,7 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
 
     char str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
-    strncpy(channel->remote_ip_address, str, INET_ADDRSTRLEN-1);
+    memcpy(channel->remote_ip_address, str, INET_ADDRSTRLEN);
     channel->remote_port = ntohs(addr.sin_port);
 }
 

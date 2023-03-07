@@ -77,7 +77,7 @@ int channel_receive_event(void *carry_data) {
         transport_channel->id = data->socket->id;
         transport_channel->remote_port = ntohs(sender.sin_port);
         transport_channel->send_callback = send_callback;
-        strncpy(transport_channel->remote_ip_address, str, INET_ADDRSTRLEN-1);
+        memcpy(transport_channel->remote_ip_address, str, INET_ADDRSTRLEN);
         transport_channel->tls_mode = data->socket->tls_mode;
         transport_channel->file_descriptor = data->socket->file_descriptor;
 #ifdef ENABLE_TLS
