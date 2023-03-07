@@ -5,6 +5,8 @@
 #include <rasta/rastautil.h>
 #include <rasta/rmemory.h>
 
+#include "../../../src/c/transport/transport.h"
+
 #define SERVER_ID 0xA
 
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection *connection);
@@ -50,8 +52,8 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.redundancy_channels = &transport;
-    fake_channel.connected_transport_channel_count = 1;
+    fake_channel.transport_channels = &transport;
+    fake_channel.transport_channel_count = 1;
 
     mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;
@@ -102,8 +104,8 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.redundancy_channels = &transport;
-    fake_channel.connected_transport_channel_count = 1;
+    fake_channel.transport_channels = &transport;
+    fake_channel.transport_channel_count = 1;
 
     mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;

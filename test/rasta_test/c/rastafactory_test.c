@@ -28,7 +28,7 @@ void checkConnectionPacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_CONNREQ);
 
         // check specific data
-        struct RastaConnectionData con = extractRastaConnectionData(r);
+        struct RastaConnectionData con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(con.send_max, 7);
 
         for (int i = 0; i < 4; i++) {
@@ -47,7 +47,7 @@ void checkConnectionPacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_CONNRESP);
 
-        con = extractRastaConnectionData(r);
+        con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(con.send_max, 7);
 
         for (int i = 0; i < 4; i++) {
@@ -55,7 +55,7 @@ void checkConnectionPacket() {
         }
 
         r.data.length -= 1;
-        con = extractRastaConnectionData(r);
+        con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
@@ -129,12 +129,12 @@ void checkDisconnectionRequest() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DISCREQ);
 
         // check special values
-        data = extractRastaDisconnectionData(r);
+        data = extractRastaDisconnectionData(&r);
         CU_ASSERT_EQUAL(data.reason, 7);
         CU_ASSERT_EQUAL(data.details, 8);
 
         r.data.length -= 1;
-        data = extractRastaDisconnectionData(r);
+        data = extractRastaDisconnectionData(&r);
         CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
@@ -180,7 +180,7 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DATA);
 
         // check messagedata
-        m = extractMessageData(r);
+        m = extractMessageData(&r);
         CU_ASSERT_EQUAL(m.count, 2);
         CU_ASSERT_EQUAL(m.data_array[0].length, 2);
         CU_ASSERT_EQUAL(m.data_array[1].length, 2);
@@ -205,7 +205,7 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_RETRDATA);
 
         // check messagedata
-        m = extractMessageData(r);
+        m = extractMessageData(&r);
         CU_ASSERT_EQUAL(m.count, 2);
         CU_ASSERT_EQUAL(m.data_array[0].length, 2);
         CU_ASSERT_EQUAL(m.data_array[1].length, 2);

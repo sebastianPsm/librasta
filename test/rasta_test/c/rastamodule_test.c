@@ -105,7 +105,7 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
     convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context, &convertedFromBytes);
 
     CU_ASSERT_EQUAL(convertedFromBytes.length, packet_to_test.length);
     CU_ASSERT_EQUAL(convertedFromBytes.reserve, packet_to_test.reserve);
@@ -164,7 +164,7 @@ void testRedundancyConversionWithoutChecksum() {
     convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_a(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_a(), &context, &convertedFromBytes);
 
     CU_ASSERT_EQUAL(convertedFromBytes.length, packet_to_test.length);
     CU_ASSERT_EQUAL(convertedFromBytes.reserve, packet_to_test.reserve);
@@ -225,7 +225,7 @@ void testRedundancyConversionIncorrectChecksum() {
     convertedToBytes.bytes[16] = 0x42;
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context, &convertedFromBytes);
 
     // check if internal packet checksum is incorrect
     CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct, 0);
