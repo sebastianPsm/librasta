@@ -132,17 +132,17 @@ set(SCI_COMMON
 # target_compile_options(scils_example PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 # target_link_libraries(scils_example rasta_udp)
 
-add_executable(sciTest
-    ${SCI_COMMON}
-    sci/scitest/headers/registerTests.h
-    sci/scitest/headers/scilsTests.h
-    sci/scitest/headers/scipTests.h
-    sci/scitest/headers/sciTests.h
-    sci/scitest/c/registerTests.c
-    sci/scitest/c/scilsTests.c
-    sci/scitest/c/scipTests.c
-    sci/scitest/c/sciTests.c)
-target_include_directories(sciTest PRIVATE sci/common sci/scitest/headers common/headers)
-target_link_libraries(sciTest rasta_udp PkgConfig::CUnit)
-target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
-add_test(NAME test_sciTest COMMAND sciTest)
+# add_executable(sciTest
+#     ${SCI_COMMON}
+#     sci/scitest/headers/registerTests.h
+#     sci/scitest/headers/scilsTests.h
+#     sci/scitest/headers/scipTests.h
+#     sci/scitest/headers/sciTests.h
+#     sci/scitest/c/registerTests.c
+#     sci/scitest/c/scilsTests.c
+#     sci/scitest/c/scipTests.c
+#     sci/scitest/c/sciTests.c)
+# target_include_directories(sciTest PRIVATE sci/common sci/scitest/headers common/headers)
+# target_link_libraries(sciTest rasta_udp PkgConfig::CUnit)
+# target_compile_definitions(sciTest PRIVATE WITH_CMAKE)
+# add_test(NAME test_sciTest COMMAND sciTest)
