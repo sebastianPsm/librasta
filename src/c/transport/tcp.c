@@ -132,7 +132,7 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
 
     char str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
-    strncpy(channel->remote_ip_address, str, INET_ADDRSTRLEN);
+    strncpy(channel->remote_ip_address, str, INET_ADDRSTRLEN-1);
     channel->remote_port = ntohs(addr.sin_port);
 }
 
@@ -140,7 +140,7 @@ int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, ra
     UNUSED(tls_config);
     channel->id = socket->id;
     channel->remote_port = port;
-    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN);
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
     channel->send_callback = send_callback;
     channel->tls_mode = socket->tls_mode;
     channel->file_descriptor = socket->file_descriptor;

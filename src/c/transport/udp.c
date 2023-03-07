@@ -155,7 +155,7 @@ int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, ra
     channel->id = socket->id;
     channel->remote_port = port;
     channel->send_callback = send_callback;
-    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN);
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
     channel->tls_mode = socket->tls_mode;
     channel->file_descriptor = socket->file_descriptor;
 
