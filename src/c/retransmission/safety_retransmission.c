@@ -514,8 +514,8 @@ void sr_cleanup(struct rasta_handle *h) {
         rfree(connection->diagnostic_intervals);
 
         // free FIFOs
-        fifo_destroy(connection->fifo_send);
-        fifo_destroy(connection->fifo_retransmission);
+        fifo_destroy(&connection->fifo_send);
+        fifo_destroy(&connection->fifo_retransmission);
     }
 
     // set notification pointers to NULL

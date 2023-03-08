@@ -53,7 +53,7 @@ fifo_t *fifo_init(unsigned int max_size);
  * Note: the data of the elements is NOT freed
  * @param fifo the FIFO to free
  */
-void fifo_destroy(fifo_t *fifo);
+void fifo_destroy(fifo_t **fifo);
 
 /**
  * Retrieves the first (oldest) element from the FIFO and removes it from the FIFO.

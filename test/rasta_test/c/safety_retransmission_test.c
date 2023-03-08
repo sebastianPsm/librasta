@@ -26,7 +26,7 @@ void fake_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send,
 }
 
 void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
-    fifo_destroy(test_send_fifo);
+    fifo_destroy(&test_send_fifo);
 
     struct rasta_receive_handle h;
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
@@ -68,7 +68,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     sr_retransmit_data(&h, &connection);
 
     // One message should be sent
-    CU_ASSERT_NOT_EQUAL(NULL, test_send_fifo);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(test_send_fifo);
     CU_ASSERT_EQUAL(1, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* hb_message = fifo_pop(test_send_fifo);
@@ -76,12 +76,12 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     // 8 bytes retransmission header, 2 bytes offset for message type
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
-    fifo_destroy(connection.fifo_retransmission);
+    fifo_destroy(&connection.fifo_retransmission);
     logger_destroy(&logger);
 }
 
 void test_sr_retransmit_data_shouldRetransmitPackage() {
-    fifo_destroy(test_send_fifo);
+    fifo_destroy(&test_send_fifo);
 
     // Arrange
     struct rasta_receive_handle h;
@@ -110,6 +110,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
+    transport.connected = true;
     fake_channel.transport_channels = &transport;
     fake_channel.transport_channel_count = 1;
 
@@ -148,10 +149,11 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(1, fifo_get_size(connection.fifo_retransmission));
 
     // Two messages should be sent
-    CU_ASSERT_NOT_EQUAL(NULL, test_send_fifo);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(test_send_fifo);
     CU_ASSERT_EQUAL(2, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* retrdata_message = fifo_pop(test_send_fifo);
+    CU_ASSERT_PTR_NOT_NULL(retrdata_message);
     CU_ASSERT_EQUAL(8 + 42, retrdata_message->length);
     CU_ASSERT_EQUAL(RASTA_TYPE_RETRDATA, leShortToHost(retrdata_message->bytes + 8 + 2));
     // Contains 'Hello world'
@@ -162,6 +164,6 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(8 + 28, hb_message->length);
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
-    fifo_destroy(connection.fifo_retransmission);
+    fifo_destroy(&connection.fifo_retransmission);
     logger_destroy(&logger);
 }

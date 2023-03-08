@@ -237,5 +237,5 @@ void logger_destroy(struct logger_t *logger) {
         rfree(elem);
     }
 
-    fifo_destroy(logger->buffer);
+    fifo_destroy(&logger->buffer);
 }

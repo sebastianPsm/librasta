@@ -182,7 +182,7 @@ void processRasta(std::string config,
             close(s_data_fd);
             close(s_terminator_fd);
 
-            fifo_destroy(s_message_fifo);
+            fifo_destroy(&s_message_fifo);
         }
 
         // Give the remote the chance to notice the possibly broken connection
