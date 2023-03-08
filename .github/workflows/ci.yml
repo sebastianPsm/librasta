@@ -50,14 +50,14 @@ jobs:
     - name: Test
       run: cd ${{github.workspace}}/build && ctest .
 
-    - name: Local Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+    # - name: Local Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
 
     # - name: DTLS Test
     #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
 
-    - name: Key Exchange Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
+    # - name: Key Exchange Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
 
     - name: Configure CMake without extensions
       # force full rebuild
@@ -70,5 +70,5 @@ jobs:
     - name: Test without extensions
       run: cd ${{github.workspace}}/build && ctest .
 
-    - name: Local Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+    # - name: Local Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh

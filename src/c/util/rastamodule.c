@@ -128,16 +128,10 @@ struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket *packet, r
 
     // pack data
     unsigned int len = getDataLength(packet, hashing_context);
-    /*for (int i = 0; i < len; i++) {
-        result.bytes[28+i] = packet.data.bytes[i];
-    }*/
     rmemcpy(&result.bytes[28], packet->data.bytes, len);
 
     // pack checksum
     unsigned int checksum_len = hashing_context->hash_length * 8;
-    /*for (int j = 0; j < checksum_len; ++j) {
-        result.bytes[28+len+j] = packet->checksum.bytes[j];
-    }*/
     rmemcpy(&result.bytes[28 + len], packet->checksum.bytes, checksum_len);
 
     return result;
