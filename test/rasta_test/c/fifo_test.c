@@ -45,7 +45,7 @@ void test_push() {
 
     CU_ASSERT_EQUAL(fifo_get_size(fifo), 3);
 
-    fifo_destroy(fifo);
+    fifo_destroy(&fifo);
     rfree(test_str);
     rfree(struct_elem);
 }
@@ -96,7 +96,7 @@ void test_pop() {
     void *emtpy_pop_res = fifo_pop(fifo);
     CU_ASSERT_EQUAL(emtpy_pop_res, NULL);
 
-    fifo_destroy(fifo);
+    fifo_destroy(&fifo);
     rfree(test_str);
     rfree(struct_elem);
 }

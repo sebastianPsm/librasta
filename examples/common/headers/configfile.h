@@ -18,7 +18,7 @@ extern "C" { // only need to export C interface if
 #define RASTA_CONFIG_KEY_LOGGER_MAX_LEVEL "LOGGER_MAX_LEVEL"
 #define RASTA_CONFIG_KEY_ACCEPTED_VERSIONS "RASTA_ACCEPTED_VERSIONS"
 
-void load_configfile(struct RastaConfigInfo *config, struct logger_t *logger, const char *config_file_path);
+void load_configfile(rasta_config_info *config, struct logger_t *logger, const char *config_file_path);
 
 /**
  * represents a rasta config
@@ -42,15 +42,16 @@ struct RastaConfig {
     /*
      * the standard values
      */
-    struct RastaConfigInfo values;
+    rasta_config_info values;
 };
 
 /**
- * loads a config file and returns the config representing the values in the file
+ * loads a config file and fills the config with the values in the file
+ * @param config the loaded config
  * @param filename
- * @return
+ * @return 0 if success
  */
-struct RastaConfig config_load(const char filename[256]);
+int config_load(struct RastaConfig *config, const char *filename);
 
 /**
  * returns the entry behind the key

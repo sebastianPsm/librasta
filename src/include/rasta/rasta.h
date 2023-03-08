@@ -41,7 +41,9 @@ typedef struct {
  * @param listenports
  * @param port_count
  */
-void sr_init_handle(struct rasta_handle *handle, struct RastaConfigInfo config, struct logger_t *logger);
+void rasta_socket(struct rasta_handle *handle, rasta_config_info *config, struct logger_t *logger);
+
+void rasta_bind(struct rasta_handle *handle);
 
 void sr_listen(struct rasta_handle *h);
 
@@ -50,7 +52,7 @@ void sr_listen(struct rasta_handle *h);
  * @param handle
  * @param id
  */
-void sr_connect(struct rasta_handle *handle, unsigned long id, struct RastaIPData *channels);
+struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length);
 
 /**
  * send data to another instance
@@ -58,7 +60,7 @@ void sr_connect(struct rasta_handle *handle, unsigned long id, struct RastaIPDat
  * @param remote_id
  * @param app_messages
  */
-void sr_send(struct rasta_handle *h, unsigned long remote_id, struct RastaMessageData app_messages);
+void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages);
 
 /**
  * get data from message buffer
@@ -83,7 +85,7 @@ void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con);
  */
 void sr_cleanup(struct rasta_handle *h);
 
-void sr_begin(struct rasta_handle *h, event_system *event_system, int wait_for_handshake, int listen);
+void sr_recv(struct rasta_handle *h, event_system *event_system, int wait_for_handshake, int listen);
 
 #ifdef __cplusplus
 }

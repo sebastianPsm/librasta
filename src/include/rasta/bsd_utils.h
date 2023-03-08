@@ -21,18 +21,7 @@ void bsd_bind_port(int file_descriptor, uint16_t port);
  * @param port the port the socket will listen on
  * @param ip the IPv4 address of the network interface the socket will listen on.
  */
-void bsd_bind_device(int file_descriptor, uint16_t port, char *ip);
-
-/**
- * Receive data on the given @p file descriptor and store it in the given buffer.
- * This function will block until data is received!
- * @param file_descriptor the file descriptor which should be used to receive data
- * @param received_message a buffer where the received data will be written too. Has to be at least \p max_buffer_len long
- * @param max_buffer_len the amount of data which will be received in bytes
- * @param sender information about the sender of the data will be stored here
- * @return the amount of received bytes
- */
-size_t bsd_receive(int file_descriptor, unsigned char *received_message, size_t max_buffer_len, struct sockaddr_in *sender);
+void bsd_bind_device(int file_descriptor, uint16_t port, const char *ip);
 
 /**
  * Sends a message via the given file descriptor to a @p host and @p port

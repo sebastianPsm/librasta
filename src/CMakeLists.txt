@@ -35,9 +35,6 @@ set(headers
     include/rasta/rastaredundancy.h
     include/rasta/rastautil.h
     include/rasta/rmemory.h
-    include/rasta/udp.h
-    include/rasta/tcp.h
-    include/rasta/types.h
     include/rasta/bsd_utils.h
     include/rasta/rastablake2.h
     include/rasta/rastasiphash24.h
@@ -46,14 +43,13 @@ set(headers
 )
 
 set(sources
+    c/logging.c
     c/rastafactory.c
-    c/transport
-    c/transport/rasta_transport_callbacks.h
-    c/transport/rasta_transport_callbacks.c
-    c/transport/tcp.c
-    c/transport/udp.c
     c/transport/bsd_utils.c
-    c/retransmission
+    c/transport/diagnostics.c
+    c/transport/diagnostics.h
+    c/transport/events.c
+    c/transport/events.h
     c/retransmission/handlers.c
     c/retransmission/safety_retransmission.h
     c/retransmission/messages.c
@@ -62,14 +58,11 @@ set(sources
     c/retransmission/protocol.c
     c/retransmission/handlers.h
     c/retransmission/protocol.h
-    c/redundancy
     c/redundancy/rasta_red_multiplexer.c
     c/redundancy/rastaredundancy.c
-    c/experimental
     c/experimental/handlers.c
     c/experimental/key_exchange.c
     c/experimental/handlers.h
-    c/util
     c/util/rastamodule.c
     c/util/rastacrc.c
     c/util/rastautil.c
@@ -94,21 +87,21 @@ endif(ENABLE_RASTA_TLS)
 
 foreach(RASTA_VARIANT ${RASTA_VARIANTS})
 
-    # Shared object for RaSTA protocol
-    if(RASTA_VARIANT MATCHES "tls")
-        add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers}
-            include/rasta/ssl_utils.h
-            c/transport/ssl_utils.c
-        )
-    else()
-        add_library(${target}_${RASTA_VARIANT} SHARED ${sources} ${headers})
+    set(variant_sources ${sources} c/transport/${RASTA_VARIANT}.c)
+
+    # TODO: Remove ssl_utils
+    if(RASTA_VARIANT STREQUAL "dtls" OR RASTA_VARIANT STREQUAL "tls")
+        set(variant_sources ${variant_sources} c/transport/ssl_utils.h c/transport/ssl_utils.c)
     endif()
 
-    # Link system libraries for librasta
-    target_link_libraries(${target}_${RASTA_VARIANT} rt pthread)
+    # Shared object for RaSTA protocol
+    add_library(${target}_${RASTA_VARIANT} SHARED ${variant_sources} ${headers})
 
-    # if USE_OPENSSL parameter is passed to cmake or if architecture is ARM -> use openssl md4 implementation
-    if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${USE_OPENSSL})
+    # Link system libraries for librasta
+    target_link_libraries(${target}_${RASTA_VARIANT} pthread)
+
+    # if USE_OPENSSL parameter is passed to cmake -> use openssl md4 implementation
+    if(${USE_OPENSSL})
         message("Using OpenSSL MD4 implementation (only standard IV)")
 
         # define flag to use openssl in rastamd4

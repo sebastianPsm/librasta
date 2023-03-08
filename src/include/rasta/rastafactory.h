@@ -142,7 +142,7 @@ struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender
  * @param p
  * @return
  */
-struct RastaConnectionData extractRastaConnectionData(struct RastaPacket p);
+struct RastaConnectionData extractRastaConnectionData(struct RastaPacket *p);
 
 /**
  * creates a retransmission request package
@@ -189,7 +189,7 @@ struct RastaPacket createDisconnectionRequest(uint32_t receiver_id, uint32_t sen
  * @param p
  * @return
  */
-struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket p);
+struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket *p);
 
 /**
  * creates a heartbeat package
@@ -237,7 +237,7 @@ struct RastaPacket createRetransmittedDataMessage(uint32_t receiver_id, uint32_t
  * @param p
  * @return
  */
-struct RastaMessageData extractMessageData(struct RastaPacket p);
+struct RastaMessageData extractMessageData(struct RastaPacket *p);
 
 /**
  * creates a redundancy PDU carrying the specified @p inner_data
@@ -246,7 +246,7 @@ struct RastaMessageData extractMessageData(struct RastaPacket p);
  * @param checksum_type the options for the CRC algorithm that will be used to calculate the checksum
  * @return a RaSTA redundancy layer PDU
  */
-struct RastaRedundancyPacket createRedundancyPacket(uint32_t sequence_number, struct RastaPacket inner_data, struct crc_options checksum_type);
+void createRedundancyPacket(uint32_t sequence_number, struct RastaPacket *inner_data, struct crc_options checksum_type, struct RastaRedundancyPacket *packet);
 
 #ifdef __cplusplus
 }

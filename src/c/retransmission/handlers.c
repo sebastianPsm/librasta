@@ -2,7 +2,7 @@
 #include "safety_retransmission.h"
 #include "protocol.h"
 
-void handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+int handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: DisconnectionRequest", "received DiscReq");
 
     connection->current_state = RASTA_CONNECTION_CLOSED;
@@ -18,6 +18,8 @@ void handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *con
     // fire disconnection request received event
     struct RastaDisconnectionData data = extractRastaDisconnectionData(receivedPacket);
     fire_on_discrequest_state_change(sr_create_notification_result(h->handle, connection), data);
+
+    return 0;
 }
 
 /**
@@ -25,8 +27,10 @@ void handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *con
  * @param con the used connection
  * @param packet the received data packet
  */
-void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+int handle_data(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "received Data");
+
+    int result = 0;
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
         if (connection->current_state == RASTA_CONNECTION_START || connection->current_state == RASTA_CONNECTION_KEX_REQ || connection->current_state == RASTA_CONNECTION_KEX_RESP || connection->current_state == RASTA_CONNECTION_KEX_AUTH) {
@@ -39,17 +43,18 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
 
             if (sr_cts_in_seq(connection, h->config, receivedPacket)) {
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "CTS in SEQ");
+
                 // valid data packet received
                 // read application messages and push into queue
                 sr_add_app_messages_to_buffer(h, connection, receivedPacket);
+                result = 1;
 
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->cs_r = receivedPacket.confirmed_sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
-                connection->cts_r = receivedPacket.confirmed_timestamp;
-                // con->cts_r = current_timestamp();
+                connection->sn_r = receivedPacket->sequence_number + 1;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->cs_r = receivedPacket->confirmed_sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
+                connection->cts_r = receivedPacket->confirmed_timestamp;
 
                 // cs_r updated, remove confirmed messages
                 sr_remove_confirmed_messages(h, connection);
@@ -66,10 +71,11 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
         } else if (connection->current_state == RASTA_CONNECTION_RETRRUN) {
             if (sr_cts_in_seq(connection, h->config, receivedPacket)) {
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
+                connection->sn_r = receivedPacket->sequence_number + 1;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
             } else {
+                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "retransmission failed, disconnect and close");
                 // retransmission failed, disconnect and close
                 sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_PROTOCOLERROR, 0);
             }
@@ -95,6 +101,8 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
             logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "package is ignored - waiting for RETRResponse");
         }
     }
+
+    return result;
 }
 
 /**
@@ -102,7 +110,7 @@ void handle_data(struct rasta_receive_handle *h, struct rasta_connection *connec
  * @param con the used connection
  * @param packet the received RetrReq packet
  */
-void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+int handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA receive", "received RetrReq");
 
     if (sr_sn_in_seq(connection, receivedPacket)) {
@@ -119,12 +127,10 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
 
         // FIXME: update connection attr (copy from RASTA_TYPE_DATA case, DRY)
         // set values according to 5.6.2 [3]
-        connection->sn_r = receivedPacket.sequence_number + 1;
-        connection->cs_t = receivedPacket.sequence_number;
-        connection->cs_r = receivedPacket.confirmed_sequence_number;
-        connection->ts_r = receivedPacket.timestamp;
-
-        // con->cts_r = current_timestamp();
+        connection->sn_r = receivedPacket->sequence_number + 1;
+        connection->cs_t = receivedPacket->sequence_number;
+        connection->cs_r = receivedPacket->confirmed_sequence_number;
+        connection->ts_r = receivedPacket->timestamp;
 
         // cs_r updated, remove confirmed messages
         sr_remove_confirmed_messages(h, connection);
@@ -147,7 +153,7 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
         fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     } else {
         // sn_in_seq == false
-        connection->cs_r = receivedPacket.confirmed_sequence_number;
+        connection->cs_r = receivedPacket->confirmed_sequence_number;
 
         // cs_r updated, remove confirmed messages
         sr_remove_confirmed_messages(h, connection);
@@ -163,6 +169,8 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
         // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     }
+
+    return 0;
 }
 
 /**
@@ -170,7 +178,7 @@ void handle_retrreq(struct rasta_receive_handle *h, struct rasta_connection *con
  * @param con the used connection
  * @param packet the received RetrResp packet
  */
-void handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+int handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     if (connection->current_state == RASTA_CONNECTION_RETRREQ) {
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA receive", "starting receive retransmitted data");
         // check cts_in_seq
@@ -180,16 +188,18 @@ void handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *co
         connection->current_state = RASTA_CONNECTION_RETRRUN;
 
         // set values according to 5.6.2 [3]
-        connection->sn_r = receivedPacket.sequence_number + 1;
-        connection->cs_t = receivedPacket.sequence_number;
-        connection->cs_r = receivedPacket.confirmed_sequence_number;
-        connection->ts_r = receivedPacket.timestamp;
+        connection->sn_r = receivedPacket->sequence_number + 1;
+        connection->cs_t = receivedPacket->sequence_number;
+        connection->cs_r = receivedPacket->confirmed_sequence_number;
+        connection->ts_r = receivedPacket->timestamp;
 
-        connection->cts_r = receivedPacket.confirmed_timestamp;
+        connection->cts_r = receivedPacket->confirmed_timestamp;
     } else {
         logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA receive", "received packet type retr_resp, but not in state retr_req");
         sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
     }
+
+    return 0;
 }
 
 /**
@@ -197,7 +207,9 @@ void handle_retrresp(struct rasta_receive_handle *h, struct rasta_connection *co
  * @param con the used connection
  * @param packet the received data packet
  */
-void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket receivedPacket) {
+int handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+    int result = 0;
+
     if (sr_sn_in_seq(connection, receivedPacket)) {
 
         if (connection->current_state == RASTA_CONNECTION_UP) {
@@ -211,19 +223,20 @@ void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *co
                 // cts is in seq -> add data to receive buffer
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "Process RetrData", "CTS in seq, adding messages to buffer");
                 sr_add_app_messages_to_buffer(h, connection, receivedPacket);
+                result = 1;
 
                 // set values according to 5.6.2 [3]
-                connection->sn_r = receivedPacket.sequence_number + 1;
-                connection->cs_t = receivedPacket.sequence_number;
-                connection->cs_r = receivedPacket.confirmed_sequence_number;
-                connection->ts_r = receivedPacket.timestamp;
+                connection->sn_r = receivedPacket->sequence_number + 1;
+                connection->cs_t = receivedPacket->sequence_number;
+                connection->cs_r = receivedPacket->confirmed_sequence_number;
+                connection->ts_r = receivedPacket->timestamp;
             }
         }
     } else {
         // sn not in seq
         logger_log(h->logger, LOG_LEVEL_DEBUG, "Process RetrData", "SN not in Seq");
         logger_log(h->logger, LOG_LEVEL_DEBUG, "Process RetrData", "SN_PDU=%lu, SN_R=%lu",
-                   (long unsigned int)receivedPacket.sequence_number, (long unsigned int)connection->sn_r);
+                   (long unsigned int)receivedPacket->sequence_number, (long unsigned int)connection->sn_r);
         if (connection->current_state == RASTA_CONNECTION_UP) {
             // close connection
             sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
@@ -235,4 +248,6 @@ void handle_retrdata(struct rasta_receive_handle *h, struct rasta_connection *co
             fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
         }
     }
+
+    return result;
 }

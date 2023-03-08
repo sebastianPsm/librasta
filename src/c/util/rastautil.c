@@ -1,8 +1,11 @@
-#include <endian.h>
 #include <stdlib.h>
 #include <time.h>
 
+#include <rasta/rmemory.h>
 #include <rasta/rastautil.h>
+
+#define rasta_htole32(X) (X)
+#define rasta_le32toh(X) (X)
 
 uint32_t current_ts() {
     long ms;
@@ -24,11 +27,11 @@ uint32_t current_ts() {
 
 void freeRastaByteArray(struct RastaByteArray *data) {
     data->length = 0;
-    free(data->bytes);
+    rfree(data->bytes);
 }
 
 void allocateRastaByteArray(struct RastaByteArray *data, unsigned int length) {
-    data->bytes = malloc(length);
+    data->bytes = rmalloc(length);
     data->length = length;
 }
 
@@ -41,10 +44,10 @@ int isBigEndian() {
 
 void hostLongToLe(uint32_t v, unsigned char *result) {
     uint32_t *target = (uint32_t *)result;
-    *target = htole32(v);
+    *target = rasta_htole32(v);
 }
 
 uint32_t leLongToHost(const unsigned char v[4]) {
     uint32_t *result = (uint32_t *)v;
-    return le32toh(*result);
+    return rasta_le32toh(*result);
 }

@@ -5,13 +5,12 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
+#include <arpa/inet.h>
 #include <stdint.h>
 
 #include <rasta/event_system.h>
 #include <rasta/rastamodule.h>
 #include <rasta/rastaredundancy.h>
-#include <rasta/tcp.h>
-#include <rasta/udp.h>
 
 #define UNUSED(x) (void)(x)
 
@@ -19,19 +18,12 @@ extern "C" { // only need to export C interface if
  * define struct as type here to allow usage in notification pointers
  */
 typedef struct redundancy_mux redundancy_mux;
-
-struct receive_event_data {
-    fd_event *event;
-    struct rasta_handle *h;
-    int channel_index;
-#ifdef ENABLE_TLS
-    WOLFSSL *ssl;
-#endif
-};
+struct receive_event_data;
+struct rasta_handle;
 
 typedef void (*RedundancyChannelExtensionFunction)(rasta_transport_channel *channel, struct receive_event_data *data);
 
-typedef int (*RastaReceiveFunction)(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
+typedef ssize_t (*RastaReceiveFunction)(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender);
 
 typedef void (*RastaSendFunction)(redundancy_mux *mux, struct RastaByteArray bytes_to_send, rasta_transport_channel channel, unsigned int channel_index);
 
@@ -72,18 +64,12 @@ typedef struct
     on_new_connection_ptr on_new_connection;
 } rasta_redundancy_notifications;
 
-struct timeout_event_data {
-    timed_event *event;
-    redundancy_mux *mux;
-};
-
 /**
  * initialize the event handling channel timeouts and the corresponding carry data
  * @param event the event to initialize
- * @param carry_data the carry data to initialize
  * @param mux the redundancy_mux that will contain channels
  */
-void init_channel_timeout_events(timed_event *event, struct timeout_event_data *t_data, struct redundancy_mux *mux, int channel_timeout_ms);
+void init_handshake_timeout_event(timed_event *event, int channel_timeout_ms);
 
 /**
  * representation of a redundancy layer multiplexer.
@@ -103,15 +89,15 @@ struct redundancy_mux {
     /**
      * the rasta transport state of each used socket. The array has a length of port_count
      */
-    struct rasta_transport_state *transport_states;
+    rasta_transport_socket *transport_sockets;
 
     /**
      * the redundancy channels to remote entities this multiplexer is aware of
      */
-    rasta_redundancy_channel *connected_channels;
+    rasta_redundancy_channel *redundancy_channels;
 
     /**
-     * the amount of known redundancy channels, i.e. the length of connected_channels
+     * the amount of redundancy channels to remote entitites, i.e. the length of redundancy_channels
      */
     unsigned int channel_count;
 
@@ -123,7 +109,7 @@ struct redundancy_mux {
     /**
      * configuration data for the multiplexer and redundancy channels
      */
-    struct RastaConfigInfo config;
+    rasta_config_info config;
 
     /**
      * the notifications of this multiplexer and it's redundancy channels
@@ -149,7 +135,7 @@ struct redundancy_mux {
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, struct RastaConfigInfo config);
+redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config);
 
 /**
  * initializes an redundancy layer multiplexer. The ports and interfaces to listen on are read from the config.
@@ -157,7 +143,10 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, struct RastaConfigInfo config);
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, rasta_config_info config);
+
+void redundancy_mux_bind(struct rasta_handle *h);
+
 /**
  * starts the redundancy layer multiplexer and opens (if specified) all redundancy channels
  * @param mux the multiplexer that will be opened
@@ -169,10 +158,6 @@ void redundancy_mux_open(redundancy_mux *mux);
  * @param mux the multiplexer that will be closed
  */
 void redundancy_mux_close(redundancy_mux *mux);
-
-int channel_accept_event_tls(void *carry_data);
-int channel_accept_event(void *carry_data);
-int channel_receive_event(void *carry_data);
 
 /**
  * getter for a redundancy channel
@@ -190,7 +175,7 @@ rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsign
  */
 void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data);
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data);
 
 /**
  * retrieves a message from the queue of the redundancy channel to entity with RaSTA ID @p id.
@@ -215,8 +200,7 @@ void redundancy_mux_wait_for_notifications(redundancy_mux *mux);
  */
 void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
 
-int redundancy_mux_listen_channels(redundancy_mux *mux);
-void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *host, uint16_t port);
+void redundancy_mux_listen_channels(struct rasta_handle *h, redundancy_mux *mux, rasta_config_tls *tls_config);
 
 /**
  * adds a new redundancy channel to the multiplexer id and given transport channels.
@@ -225,7 +209,7 @@ void redundancy_mux_connect(redundancy_mux *mux, unsigned int channel, char *hos
  * @param mux the multiplexer where the new redundancy channel is added
  * @param transport_channels the transport channels of the new redundancy channel
  */
-void redundancy_mux_add_channel(redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels);
+int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels, unsigned transport_channels_length);
 
 /**
  * removes an existing redundancy channel from the multiplexer if the channels exists. If the channel with the given
@@ -243,13 +227,11 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
 struct rasta_receive_handle;
-int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, struct receive_event_data *data);
+int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
 
-ssize_t abstract_receive_packet(redundancy_mux *mux, struct receive_event_data *data, unsigned char *buffer, struct sockaddr_in *sender, RastaReceiveFunction receive_callback);
+void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
 
-struct RastaRedundancyPacket handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len);
-
-void update_redundancy_channels(redundancy_mux *mux, struct receive_event_data *data, struct RastaRedundancyPacket receivedPacket, struct sockaddr_in *sender, RedundancyChannelExtensionFunction extension_callback);
+void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *channel, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender);
 
 #ifdef __cplusplus
 }

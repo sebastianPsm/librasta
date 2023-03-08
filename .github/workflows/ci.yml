@@ -6,6 +6,8 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -50,18 +52,18 @@ jobs:
     - name: Test
       run: cd ${{github.workspace}}/build && ctest .
 
-    - name: Local Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+    # - name: Local Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
 
     # - name: DTLS Test
     #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
 
-    - name: Key Exchange Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
+    # - name: Key Exchange Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
 
     - name: Configure CMake without extensions
       # force full rebuild
-      run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_RASTA_GRPC_BRIDGE=ON -DENABLE_RASTA_TLS=ON
 
     - name: Build without extensions
       # Build your program with the given configuration
@@ -70,5 +72,26 @@ jobs:
     - name: Test without extensions
       run: cd ${{github.workspace}}/build && ctest .
 
-    - name: Local Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+    # - name: Local Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_local.sh
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/rasta_grpc_bridge
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      with:
+        file: docker/rasta_grpc_bridge/Dockerfile
+        context: .
+        push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}

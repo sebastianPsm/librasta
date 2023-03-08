@@ -12,8 +12,11 @@ extern "C" { // only need to export C interface if
 #include "logging.h"
 #include "rastacrc.h"
 #include "rastadeferqueue.h"
-#include "udp.h"
-#include "transport.h"
+
+typedef struct rasta_transport_channel rasta_transport_channel;
+typedef struct rasta_transport_socket rasta_transport_socket;
+struct rasta_receive_handle;
+struct rasta_handle;
 
 /**
  * maximum size of messages in the defer queue in bytes
@@ -76,22 +79,10 @@ typedef struct {
     struct defer_queue diagnostics_packet_buffer;
 
     /**
-     * the FIFO where the messages for the upper layer are stored
-     */
-    fifo_t *fifo_recv;
-
-    /**
      * the transport channels of the partner (client) when running in server mode.
-     * these are dynamically added when a message from the corresponding channel is received.
+     * these are dynamically initialzed when a message from the corresponding channel is received.
      */
-    rasta_transport_channel *connected_channels;
-
-
-
-    /**
-     * the amount of discovered partner transport channels
-     */
-    unsigned int connected_channel_count;
+    rasta_transport_channel *transport_channels;
 
     /**
      * the total amount of transport channels
@@ -111,7 +102,7 @@ typedef struct {
     /**
      * configuration parameters of the redundancy layer
      */
-    struct RastaConfigInfoRedundancy configuration_parameters;
+    rasta_config_redundancy configuration_parameters;
 
     /**
      * Hashing context for en/decoding SR layer PDUs
@@ -127,7 +118,7 @@ typedef struct {
  * @param id the RaSTA ID that is associated with this redundancy channel
  * @return an initialized redundancy channel
  */
-void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned int transport_channel_count,
+void red_f_init(struct logger_t logger, rasta_config_info config, unsigned int transport_channel_count,
                 unsigned long id, rasta_redundancy_channel *channel);
 
 /**
@@ -136,13 +127,13 @@ void red_f_init(struct logger_t logger, struct RastaConfigInfo config, unsigned 
  * @param packet the packet that has been received over UDP
  * @param channel_id the index of the transport channel, the @p packet has been received
  */
-void red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+int red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
 
 /**
  * the f_deferTmo function of the redundancy layer
  * @param channel the redundancy channel that is used
  */
-void red_f_deferTmo(rasta_redundancy_channel *channel);
+void red_f_deferTmo(struct rasta_receive_handle *h, rasta_redundancy_channel *channel);
 
 /**
  * blocks until the state is closed and all notification threads terminate
@@ -156,10 +147,8 @@ void rasta_red_wait_for_close(rasta_redundancy_channel *channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-void rasta_red_add_transport_channel(rasta_redundancy_channel *channel,
-#ifdef USE_TCP
-                                     struct rasta_transport_state transport_state,
-#endif
+int rasta_red_add_transport_channel(struct rasta_handle *h, rasta_redundancy_channel *channel,
+                                     rasta_transport_socket *transport_state,
                                      char *ip, uint16_t port);
 
 /**

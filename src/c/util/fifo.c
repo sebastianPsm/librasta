@@ -68,12 +68,13 @@ int fifo_full(fifo_t *fifo) {
     return fifo->size == fifo->max_size;
 }
 
-void fifo_destroy(fifo_t *fifo) {
-    if (fifo != NULL) {
-        for (unsigned int i = 0; i < fifo->size; ++i) {
-            fifo_pop(fifo);
+void fifo_destroy(fifo_t **fifo) {
+    if (*fifo != NULL) {
+        for (unsigned int i = 0; i < (*fifo)->size; ++i) {
+            fifo_pop(*fifo);
         }
 
-        rfree(fifo);
+        rfree(*fifo);
     }
+    *fifo = NULL;
 }

@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <syscall.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -238,5 +237,5 @@ void logger_destroy(struct logger_t *logger) {
         rfree(elem);
     }
 
-    fifo_destroy(logger->buffer);
+    fifo_destroy(&logger->buffer);
 }

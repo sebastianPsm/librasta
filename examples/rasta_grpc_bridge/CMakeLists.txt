@@ -46,7 +46,6 @@ add_custom_command(
 
 add_executable(rasta_grpc_bridge
     cpp/main.cpp
-    ../common/c/logging.c
     ../common/c/configfile.c
     ../common/c/dictionary.c
     ${hw_grpc_srcs}

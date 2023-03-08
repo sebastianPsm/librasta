@@ -17,7 +17,8 @@ void check_std_config() {
     fclose(f);
 
     // load the empty file as config
-    struct RastaConfig cfg = config_load("config.cfg");
+    struct RastaConfig cfg;
+    config_load(&cfg, "config.cfg");
 
     // check that there are no entries in dictionary
     CU_ASSERT_EQUAL(cfg.dictionary.size, 0);
@@ -78,7 +79,8 @@ void check_var_config() {
 
     fclose(f);
 
-    struct RastaConfig cfg = config_load("config.cfg");
+    struct RastaConfig cfg;
+    config_load(&cfg, "config.cfg");
 
     // check sending standarts
     CU_ASSERT_EQUAL(cfg.values.sending.t_max, 1700);

@@ -16,4 +16,4 @@ uint32_t cur_timestamp();
 uint64_t get_current_time_ms();
 
 int compare_version(const char local_version[4], const char remote_version[4]);
-int version_accepted(struct RastaConfigInfo *config, const char version[4]);
+int version_accepted(rasta_config_info *config, const char version[4]);

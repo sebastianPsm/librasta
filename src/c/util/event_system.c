@@ -55,8 +55,10 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s *fd_
         }
     }
     // wait
-    int result = select(nfds, &on_readable, &on_writable, &on_exceptional, &tv);
+    struct timeval* timeout = time_to_wait == UINT64_MAX ? NULL : &tv;
+    int result = select(nfds, &on_readable, &on_writable, &on_exceptional, timeout);
     if (result == -1) {
+        perror("select failed");
         // syscall error or error on select()
         return -1;
     }
@@ -126,13 +128,13 @@ void event_system_start(event_system *ev_sys) {
     for (timed_event *current = ev_sys->timed_events.first; current; current = current->next) {
         current->last_call = cur_time;
     }
-    while (1) {
+    for (;;) {
         timed_event *next_event;
         cur_time = get_nanotime();
         uint64_t time_to_wait = calc_next_timed_event(&ev_sys->timed_events, &next_event, cur_time);
         if (time_to_wait == UINT64_MAX) {
             // there are no active events - just wait for fd events
-            int result = event_system_sleep(~0, &ev_sys->fd_events);
+            int result = event_system_sleep(time_to_wait, &ev_sys->fd_events);
             if (result == -1) {
                 break;
             }
@@ -143,7 +145,7 @@ void event_system_start(event_system *ev_sys) {
                 // select failed, exit loop
                 return;
             } else if (result >= 0) {
-                // the sleep didn't time out, but a fd event occured
+                // the sleep didn't time out, but a fd event occurred
                 // recalculate next timed event in case one got rescheduled
                 continue;
             }
@@ -198,6 +200,9 @@ void disable_fd_event(fd_event *event) {
  * @param event the event to add
  */
 void add_timed_event(event_system *ev_sys, timed_event *event) {
+    assert(event->prev == NULL);
+    assert(event->next == NULL);
+
     // simple linked list add
     if (ev_sys->timed_events.last) {
         event->prev = ev_sys->timed_events.last;
@@ -239,6 +244,9 @@ void remove_timed_event(event_system *ev_sys, timed_event *event) {
  * @param options set how the event should be triggered. (EV_READABLE | EV_WRITEABLE | EV_CHANGE)
  */
 void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
+    assert(event->prev == NULL);
+    assert(event->next == NULL);
+
     // simple linked list add
     if (ev_sys->fd_events.last) {
         event->prev = ev_sys->fd_events.last;

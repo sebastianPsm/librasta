@@ -66,7 +66,7 @@ struct connect_event_data {
     fd_event *schwarzenegger;
 };
 
-int connect_on_stdin(void *carry_data) {
+int send_input_data(void *carry_data) {
     int c;
     while ((c = getchar()) != '\n' && c != EOF)
         ;
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
     termination_event.carry_data = &rc->h;
     termination_event.fd = STDIN_FILENO;
 
-    connect_on_stdin_event.callback = connect_on_stdin;
+    connect_on_stdin_event.callback = send_input_data;
     connect_on_stdin_event.carry_data = &connect_on_stdin_event_data;
     connect_on_stdin_event.fd = STDIN_FILENO;
 
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[1], "s") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_S);
 
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
         rasta_lib_init_configuration(rc, config, &logger);
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(argv[1], "c") == 0) {
         printf("->   S1 (ID = 0x%lX)\n", (unsigned long)ID_C);
 
-        struct RastaConfigInfo config;
+        rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C);
         rasta_lib_init_configuration(rc, config, &logger);
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
         enable_fd_event(&connect_on_stdin_event);
         add_fd_event(&rc->rasta_lib_event_system, &termination_event, EV_READABLE);
         add_fd_event(&rc->rasta_lib_event_system, &connect_on_stdin_event, EV_READABLE);
-        rasta_lib_start(rc, 0, false);
+        rasta_recv(rc, 0, false);
     }
 
     getchar();

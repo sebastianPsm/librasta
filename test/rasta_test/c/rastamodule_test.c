@@ -31,12 +31,12 @@ void testConversion() {
         r.data.bytes[1] = 0x22;
 
         struct RastaByteArray data;
-        data = rastaModuleToBytes(r, &context);
+        data = rastaModuleToBytes(&r, &context);
 
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_NONE);
 
         struct RastaPacket s;
-        s = bytesToRastaPacket(data, &context);
+        bytesToRastaPacket(data, &context, &s);
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_NONE);
 
         CU_ASSERT_EQUAL(r.length, s.length);
@@ -59,7 +59,7 @@ void testConversion() {
 
         // manipulate data
         data.bytes[8] = 0x43;
-        s = bytesToRastaPacket(data, &context);
+        bytesToRastaPacket(data, &context, &s);
 
         if (i != 0)
             CU_ASSERT_EQUAL(s.checksum_correct, 0)
@@ -68,7 +68,7 @@ void testConversion() {
 
         // check data failure
         r.length = 2;
-        s = bytesToRastaPacket(rastaModuleToBytes(r, &context), &context);
+        bytesToRastaPacket(rastaModuleToBytes(&r, &context), &context, &s);
 
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_PACKAGE_LENGTH_INVALID);
     }
@@ -102,10 +102,10 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context, &convertedFromBytes);
 
     CU_ASSERT_EQUAL(convertedFromBytes.length, packet_to_test.length);
     CU_ASSERT_EQUAL(convertedFromBytes.reserve, packet_to_test.reserve);
@@ -161,10 +161,10 @@ void testRedundancyConversionWithoutChecksum() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_a(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_a(), &context, &convertedFromBytes);
 
     CU_ASSERT_EQUAL(convertedFromBytes.length, packet_to_test.length);
     CU_ASSERT_EQUAL(convertedFromBytes.reserve, packet_to_test.reserve);
@@ -219,13 +219,13 @@ void testRedundancyConversionIncorrectChecksum() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     // simulate error in packet transmission
     convertedToBytes.bytes[16] = 0x42;
 
     struct RastaRedundancyPacket convertedFromBytes;
-    convertedFromBytes = bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context);
+    bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context, &convertedFromBytes);
 
     // check if internal packet checksum is incorrect
     CU_ASSERT_EQUAL(convertedFromBytes.data.checksum_correct, 0);

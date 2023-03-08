@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     hashing_context.hash_length = RASTA_CHECKSUM_8B;
     rasta_md4_set_key(&hashing_context, 0, 0, 0, 0);
 
-    struct RastaConfigInfo info;
-    struct RastaConfigInfoRedundancy configInfoRedundancy;
+    rasta_config_info info;
+    rasta_config_redundancy configInfoRedundancy;
     configInfoRedundancy.t_seq = 100;
     configInfoRedundancy.n_diagnose = 10;
     configInfoRedundancy.crc_type = crc_init_opt_a();

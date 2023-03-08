@@ -28,7 +28,7 @@ void checkConnectionPacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_CONNREQ);
 
         // check specific data
-        struct RastaConnectionData con = extractRastaConnectionData(r);
+        struct RastaConnectionData con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(con.send_max, 7);
 
         for (int i = 0; i < 4; i++) {
@@ -47,7 +47,7 @@ void checkConnectionPacket() {
         CU_ASSERT_EQUAL(r.confirmed_timestamp, 6);
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_CONNRESP);
 
-        con = extractRastaConnectionData(r);
+        con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(con.send_max, 7);
 
         for (int i = 0; i < 4; i++) {
@@ -55,7 +55,7 @@ void checkConnectionPacket() {
         }
 
         r.data.length -= 1;
-        con = extractRastaConnectionData(r);
+        con = extractRastaConnectionData(&r);
         CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
@@ -129,12 +129,12 @@ void checkDisconnectionRequest() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DISCREQ);
 
         // check special values
-        data = extractRastaDisconnectionData(r);
+        data = extractRastaDisconnectionData(&r);
         CU_ASSERT_EQUAL(data.reason, 7);
         CU_ASSERT_EQUAL(data.details, 8);
 
         r.data.length -= 1;
-        data = extractRastaDisconnectionData(r);
+        data = extractRastaDisconnectionData(&r);
         CU_ASSERT_EQUAL(getRastafactoryLastError(), RASTA_ERRORS_WRONG_PACKAGE_FORMAT);
     }
 }
@@ -180,7 +180,7 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_DATA);
 
         // check messagedata
-        m = extractMessageData(r);
+        m = extractMessageData(&r);
         CU_ASSERT_EQUAL(m.count, 2);
         CU_ASSERT_EQUAL(m.data_array[0].length, 2);
         CU_ASSERT_EQUAL(m.data_array[1].length, 2);
@@ -205,7 +205,7 @@ void checkMessagePacket() {
         CU_ASSERT_EQUAL(r.type, RASTA_TYPE_RETRDATA);
 
         // check messagedata
-        m = extractMessageData(r);
+        m = extractMessageData(&r);
         CU_ASSERT_EQUAL(m.count, 2);
         CU_ASSERT_EQUAL(m.data_array[0].length, 2);
         CU_ASSERT_EQUAL(m.data_array[1].length, 2);
@@ -228,7 +228,8 @@ void testCreateRedundancyPacket() {
     inner_test.sequence_number = 42;
 
     // crc opt b = 32bit/4byte width
-    struct RastaRedundancyPacket pdu_to_test = createRedundancyPacket(1, inner_test, crc_init_opt_b());
+    struct RastaRedundancyPacket pdu_to_test;
+    createRedundancyPacket(1, &inner_test, crc_init_opt_b(), &pdu_to_test);
 
     unsigned short expected_len = 8 + 10 + 4;
 
@@ -246,7 +247,8 @@ void testCreateRedundancyPacketNoChecksum() {
     inner_test.sequence_number = 42;
 
     // crc opt a = no crc / 0 bit width
-    struct RastaRedundancyPacket pdu_to_test = createRedundancyPacket(1, inner_test, crc_init_opt_a());
+    struct RastaRedundancyPacket pdu_to_test;
+    createRedundancyPacket(1, &inner_test, crc_init_opt_a(), &pdu_to_test);
 
     unsigned short expected_len = 8 + 10 + 0;
 

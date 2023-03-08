@@ -4,7 +4,6 @@
 #include <ctype.h>
 #include <ifaddrs.h>
 #include <inttypes.h>
-#include <linux/wireless.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -296,33 +295,6 @@ void parser_parseValue(struct LineParser *p, const char key[MAX_DICTIONARY_STRIN
 }
 
 /**
- * Checks if a given NIC is a wireless interface
- * @param ifname  the name of the NIC
- * @param protocol  the protocol
- * @return {@code true} if the NIC is a wireless interface, {@code false} otherwise
- */
-int isWirelessNic(const char *ifname, char *protocol) {
-    int sock = -1;
-    struct iwreq pwrq;
-    memset(&pwrq, 0, sizeof(pwrq));
-    strncpy(pwrq.ifr_name, ifname, IFNAMSIZ - 1);
-
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        perror("socket");
-        return 0;
-    }
-
-    if (ioctl(sock, SIOCGIWNAME, &pwrq) != -1) {
-        if (protocol) strncpy(protocol, pwrq.u.name, IFNAMSIZ);
-        close(sock);
-        return 1;
-    }
-
-    close(sock);
-    return 0;
-}
-
-/**
  * Gets the IP address of a wired NIC that matches the given index.
  * If only one wired NIC exists, the function will returns this NIC's IP without considering the index.
  * If multiple wired NIC's exists, the function will return the IP of the NIC with index index.
@@ -332,46 +304,44 @@ int isWirelessNic(const char *ifname, char *protocol) {
  * @return the IP address of a wired NIC that matches the given index
  */
 char *getIpByNic(int index) {
+    (void)index;
     char *ip = rmalloc(16);
-    struct ifaddrs *ifaddr, *ifa;
+    struct ifaddrs *ifaddr; //, *ifa;
 
     if (getifaddrs(&ifaddr) == -1) {
         perror("getifaddrs failed");
         return NULL;
     }
 
-    int eth_nics_count = 0;
+    // int eth_nics_count = 0;
     char *nic_ip = NULL;
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        char protocol[IFNAMSIZ] = {0};
+    // for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+    //     char protocol[IFNAMSIZ] = {0};
 
-        if (ifa->ifa_addr == NULL ||
-            ifa->ifa_addr->sa_family != AF_PACKET) continue;
+    //     if (ifa->ifa_addr == NULL ||
+    //         ifa->ifa_addr->sa_family != AF_PACKET) continue;
 
-        if (!isWirelessNic(ifa->ifa_name, protocol)) {
+    //     // check if it's loop interface and skip in that case
+    //     if (ifa->ifa_flags & IFF_LOOPBACK) {
+    //         continue;
+    //     }
 
-            // check if it's loop interface and skip in that case
-            if (ifa->ifa_flags & IFF_LOOPBACK) {
-                continue;
-            }
+    //     eth_nics_count++;
+    //     int fd;
+    //     struct ifreq ifr;
 
-            eth_nics_count++;
-            int fd;
-            struct ifreq ifr;
+    //     fd = socket(AF_INET, SOCK_DGRAM, 0);
+    //     ifr.ifr_addr.sa_family = AF_INET;
+    //     strncpy(ifr.ifr_name, ifa->ifa_name, IFNAMSIZ - 1);
+    //     ioctl(fd, SIOCGIFADDR, &ifr);
+    //     close(fd);
+    //     nic_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
 
-            fd = socket(AF_INET, SOCK_DGRAM, 0);
-            ifr.ifr_addr.sa_family = AF_INET;
-            strncpy(ifr.ifr_name, ifa->ifa_name, IFNAMSIZ - 1);
-            ioctl(fd, SIOCGIFADDR, &ifr);
-            close(fd);
-            nic_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
-
-            if (eth_nics_count == index + 1) {
-                rmemcpy(ip, nic_ip, 16);
-                break;
-            }
-        }
-    }
+    //     if (eth_nics_count == index + 1) {
+    //         rmemcpy(ip, nic_ip, 16);
+    //         break;
+    //     }
+    // }
 
     // no ip found, return last eth nic address
     if (nic_ip != NULL) {
@@ -729,7 +699,7 @@ void config_setstd(struct RastaConfig *cfg) {
 #endif
         if (!accepted) {
             fprintf(stderr, "Unknown or unsupported TLS mode: %s\n", entr.value.string.c);
-            exit(1);
+            abort();
         }
     } else {
         cfg->values.tls.mode = TLS_MODE_DISABLED;
@@ -778,7 +748,7 @@ void config_setstd(struct RastaConfig *cfg) {
         }
         if (!accepted) {
             fprintf(stderr, "Unknown or unsupported KEX mode: %s\n", entr.value.string.c);
-            exit(1);
+            abort();
         }
     }
     entr = config_get(cfg, "RASTA_KEX_PSK");
@@ -812,7 +782,7 @@ void config_setstd(struct RastaConfig *cfg) {
 
         if (strncmp(record_header, CONFIGURATION_FILE_USER_RECORD_HEADER, record_header_length - 1) != 0) {
             fprintf(stderr, "Unknown psk record header: %s\n", record_header);
-            exit(1);
+            abort();
         }
         cfg->values.kex.has_psk_record = true;
 
@@ -827,28 +797,29 @@ void config_setstd(struct RastaConfig *cfg) {
 /*
  * Public functions
  */
-struct RastaConfig config_load(const char filename[256]) {
+int config_load(struct RastaConfig *config, const char* filename) {
+
+    memset(config, 0, sizeof(struct RastaConfig));
 
     FILE *f;
     char buf[CONFIG_BUFFER_LENGTH];
-    struct RastaConfig config = {0};
-    strcpy(config.filename, filename);
+    strcpy(config->filename, filename);
 
-    config.logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
+    config->logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
-    f = fopen(config.filename, "r");
+    f = fopen(config->filename, "r");
     if (!f) {
-        logger_log(&config.logger, LOG_LEVEL_ERROR, config.filename, "File not found");
-        return config;
+        logger_log(&config->logger, LOG_LEVEL_ERROR, config->filename, "File not found");
+        return 1;
     }
 
-    config.dictionary = dictionary_create(2);
+    config->dictionary = dictionary_create(2);
 
     int n = 1;
     while (fgets(buf, CONFIG_BUFFER_LENGTH, f) != NULL) {
         // initialize parser
         struct LineParser p;
-        parser_init(&p, buf, n, &config);
+        parser_init(&p, buf, n, config);
 
         // skip empty start
         parser_skipBlanc(&p);
@@ -896,9 +867,9 @@ struct RastaConfig config_load(const char filename[256]) {
     fclose(f);
 
     // initialize standard value
-    config_setstd(&config);
+    config_setstd(config);
 
-    return config;
+    return 0;
 }
 
 struct DictionaryEntry config_get(struct RastaConfig *cfg, const char *key) {
@@ -980,9 +951,9 @@ uint32_t get_initial_seq_num(struct RastaConfig *config) {
     return long_random();
 }
 
-void load_configfile(struct RastaConfigInfo *c, struct logger_t *logger, const char *config_file_path) {
+void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *config_file_path) {
     struct RastaConfig config;
-    config = config_load(config_file_path);
+    config_load(&config, config_file_path);
     *c = config.values;
 
     // load logger configuration
@@ -999,12 +970,12 @@ void load_configfile(struct RastaConfigInfo *c, struct logger_t *logger, const c
                 logger_set_log_file(logger, logger_file.value.string.c);
             } else {
                 // error in config
-                exit(1);
+                abort();
             }
         }
     } else {
         // error in config
-        exit(1);
+        abort();
     }
 
     // get accepted versions from config

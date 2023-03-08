@@ -5,6 +5,8 @@
 #include <rasta/rastautil.h>
 #include <rasta/rmemory.h>
 
+#include "../../../src/c/transport/transport.h"
+
 #define SERVER_ID 0xA
 
 void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection *connection);
@@ -24,14 +26,14 @@ void fake_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send,
 }
 
 void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
-    fifo_destroy(test_send_fifo);
+    fifo_destroy(&test_send_fifo);
 
     struct rasta_receive_handle h;
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 
-    struct RastaConfigInfo info;
-    struct RastaConfigInfoRedundancy configInfoRedundancy;
+    rasta_config_info info;
+    rasta_config_redundancy configInfoRedundancy;
     configInfoRedundancy.t_seq = 100;
     configInfoRedundancy.n_diagnose = 10;
     configInfoRedundancy.crc_type = crc_init_opt_a();
@@ -41,6 +43,8 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     uint16_t listenPorts[1] = {1234};
     redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
     redundancy_mux_set_config_id(&mux, SERVER_ID);
+    mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
+    rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
     h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
@@ -50,10 +54,11 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.connected_channels = &transport;
-    fake_channel.connected_channel_count = 1;
+    transport.connected = true;
+    fake_channel.transport_channels = &transport;
+    fake_channel.transport_channel_count = 1;
 
-    mux.connected_channels = &fake_channel;
+    mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;
 
     struct rasta_connection connection;
@@ -63,6 +68,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     sr_retransmit_data(&h, &connection);
 
     // One message should be sent
+    CU_ASSERT_PTR_NOT_NULL_FATAL(test_send_fifo);
     CU_ASSERT_EQUAL(1, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* hb_message = fifo_pop(test_send_fifo);
@@ -70,20 +76,20 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     // 8 bytes retransmission header, 2 bytes offset for message type
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
-    fifo_destroy(connection.fifo_retransmission);
+    fifo_destroy(&connection.fifo_retransmission);
     logger_destroy(&logger);
 }
 
 void test_sr_retransmit_data_shouldRetransmitPackage() {
-    fifo_destroy(test_send_fifo);
+    fifo_destroy(&test_send_fifo);
 
     // Arrange
     struct rasta_receive_handle h;
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 
-    struct RastaConfigInfo info;
-    struct RastaConfigInfoRedundancy configInfoRedundancy;
+    rasta_config_info info;
+    rasta_config_redundancy configInfoRedundancy;
     configInfoRedundancy.t_seq = 100;
     configInfoRedundancy.n_diagnose = 10;
     configInfoRedundancy.crc_type = crc_init_opt_a();
@@ -93,6 +99,8 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     uint16_t listenPorts[1] = {1234};
     redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
     redundancy_mux_set_config_id(&mux, SERVER_ID);
+    mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
+    rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
     h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
@@ -102,10 +110,11 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
-    fake_channel.connected_channels = &transport;
-    fake_channel.connected_channel_count = 1;
+    transport.connected = true;
+    fake_channel.transport_channels = &transport;
+    fake_channel.transport_channel_count = 1;
 
-    mux.connected_channels = &fake_channel;
+    mux.redundancy_channels = &fake_channel;
     mux.channel_count = 1;
 
     struct rasta_connection connection;
@@ -125,7 +134,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     h.hashing_context = &hashing_context;
 
     struct RastaPacket data = createDataMessage(SERVER_ID, 0, 0, 0, 0, 0, app_messages, &hashing_context);
-    struct RastaByteArray packet = rastaModuleToBytes(data, &hashing_context);
+    struct RastaByteArray packet = rastaModuleToBytes(&data, &hashing_context);
     struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
     allocateRastaByteArray(to_fifo, packet.length);
     rmemcpy(to_fifo->bytes, packet.bytes, packet.length);
@@ -140,9 +149,11 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(1, fifo_get_size(connection.fifo_retransmission));
 
     // Two messages should be sent
+    CU_ASSERT_PTR_NOT_NULL_FATAL(test_send_fifo);
     CU_ASSERT_EQUAL(2, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* retrdata_message = fifo_pop(test_send_fifo);
+    CU_ASSERT_PTR_NOT_NULL(retrdata_message);
     CU_ASSERT_EQUAL(8 + 42, retrdata_message->length);
     CU_ASSERT_EQUAL(RASTA_TYPE_RETRDATA, leShortToHost(retrdata_message->bytes + 8 + 2));
     // Contains 'Hello world'
@@ -153,6 +164,6 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(8 + 28, hb_message->length);
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
-    fifo_destroy(connection.fifo_retransmission);
+    fifo_destroy(&connection.fifo_retransmission);
     logger_destroy(&logger);
 }

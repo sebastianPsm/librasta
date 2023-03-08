@@ -65,7 +65,7 @@ struct RastaPacket initializePacket(rasta_conn_type type, uint32_t receiver_id, 
     // static length: 28
     // checksum length: {0,8,16}
     // data length= data_length
-    result.length = (uint16_t)(28 + 8 * hashing_context->hash_length + data_length);
+    result.length = (uint16_t)(28 + (8 * hashing_context->hash_length) + data_length);
 
     return result;
 }
@@ -247,18 +247,18 @@ struct RastaPacket createKexAuthentication(uint32_t receiver_id, uint32_t sender
 }
 #endif
 
-struct RastaConnectionData extractRastaConnectionData(struct RastaPacket p) {
+struct RastaConnectionData extractRastaConnectionData(struct RastaPacket *p) {
     struct RastaConnectionData result;
 
-    if (p.data.length == 14) {
+    if (p->data.length == 14) {
 
         // extract version
-        result.version[0] = p.data.bytes[0];
-        result.version[1] = p.data.bytes[1];
-        result.version[2] = p.data.bytes[2];
-        result.version[3] = p.data.bytes[3];
+        result.version[0] = p->data.bytes[0];
+        result.version[1] = p->data.bytes[1];
+        result.version[2] = p->data.bytes[2];
+        result.version[3] = p->data.bytes[3];
 
-        result.send_max = leShortToHost(&p.data.bytes[4]);
+        result.send_max = leShortToHost(&p->data.bytes[4]);
     } else {
         result.send_max = 0;
         for (int i = 0; i < 4; i++)
@@ -297,16 +297,16 @@ struct RastaPacket createDisconnectionRequest(uint32_t receiver_id, uint32_t sen
     return p;
 }
 
-struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket p) {
+struct RastaDisconnectionData extractRastaDisconnectionData(struct RastaPacket *p) {
     struct RastaDisconnectionData result;
 
-    if (p.data.length == 4) {
+    if (p->data.length == 4) {
 
         // details
-        result.details = leShortToHost(&p.data.bytes[0]);
+        result.details = leShortToHost(&p->data.bytes[0]);
 
         // reason
-        result.reason = leShortToHost(&p.data.bytes[2]);
+        result.reason = leShortToHost(&p->data.bytes[2]);
     } else {
         result.details = 0;
         result.reason = 0;
@@ -320,7 +320,6 @@ struct RastaPacket createHeartbeat(uint32_t receiver_id, uint32_t sender_id, uin
                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t *hashing_context) {
     struct RastaPacket p = initializePacket(RASTA_TYPE_HB, receiver_id, sender_id, sequence_number,
                                             confirmed_sequence_number, timestamp, confirmed_timestamp, 0, hashing_context);
-
     return p;
 }
 
@@ -355,12 +354,12 @@ struct RastaPacket createDataMessage(uint32_t receiver_id, uint32_t sender_id, u
     return p;
 }
 
-struct RastaMessageData extractMessageData(struct RastaPacket p) {
+struct RastaMessageData extractMessageData(struct RastaPacket *p) {
     unsigned int current_length = 0;
     unsigned int counter = 0;
 
-    while (current_length < p.data.length) {
-        const uint16_t length = leShortToHost(&p.data.bytes[0 + current_length]);
+    while (current_length < p->data.length) {
+        const uint16_t length = leShortToHost(&p->data.bytes[0 + current_length]);
 
         current_length += length + 2;
         counter++;
@@ -372,12 +371,12 @@ struct RastaMessageData extractMessageData(struct RastaPacket p) {
     current_length = 0;
 
     for (unsigned int i = 0; i < result.count; i++) {
-        const uint16_t length = leShortToHost(&p.data.bytes[0 + current_length]);
+        const uint16_t length = leShortToHost(&p->data.bytes[0 + current_length]);
 
         allocateRastaByteArray(&result.data_array[i], length);
 
         for (int j = 0; j < length; j++) {
-            result.data_array[i].bytes[j] = p.data.bytes[2 + current_length + j];
+            result.data_array[i].bytes[j] = p->data.bytes[2 + current_length + j];
         }
 
         current_length += length + 2;
@@ -397,22 +396,18 @@ struct RastaPacket createRetransmittedDataMessage(uint32_t receiver_id, uint32_t
     return result;
 }
 
-struct RastaRedundancyPacket createRedundancyPacket(uint32_t sequence_number, struct RastaPacket inner_data, struct crc_options checksum_type) {
-    struct RastaRedundancyPacket packet;
-
-    packet.sequence_number = sequence_number;
-    packet.data = inner_data;
-    packet.checksum_type = checksum_type;
+void createRedundancyPacket(uint32_t sequence_number, struct RastaPacket *inner_data, struct crc_options checksum_type, struct RastaRedundancyPacket *packet) {
+    packet->sequence_number = sequence_number;
+    packet->data = *inner_data;
+    packet->checksum_type = checksum_type;
 
     // reserved bytes have to be 0s in version 03.03
-    packet.reserve = 0x0000;
+    packet->reserve = 0x0000;
 
     // length = 2 bytes length field + 2 bytes reserve + 4 bytes seq. nr. + inner data length + checksum length
     // checksum width in crc_options is in bit, so divide by 8 for bytes
-    packet.length = (uint16_t)(8 + inner_data.length + (checksum_type.width / 8));
+    packet->length = (uint16_t)(8 + inner_data->length + (checksum_type.width / 8));
 
     // set checksum_correct to 1 as checksum will be calculated on conversion to bytes
-    packet.checksum_correct = 1;
-
-    return packet;
+    packet->checksum_correct = 1;
 }

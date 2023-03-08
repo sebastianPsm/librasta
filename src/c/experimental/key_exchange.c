@@ -1,9 +1,9 @@
-#include <endian.h>
-#include <errno.h>
 #include <sys/mman.h>
+#include <errno.h>
 
 #include <rasta/logging.h>
 #include <rasta/rastahandle.h>
+
 
 #ifdef ENABLE_OPAQUE
 #include <rasta/key_exchange.h>

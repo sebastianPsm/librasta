@@ -212,21 +212,21 @@ struct RastaRedundancyPacket {
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytes(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaModuleToBytes(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a rasta packet and converts it into an allocated bytearray without calculating the safety code
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a rasta packet while checking the md4 checksum
  * @param data the data
  * @return if length = 0, the data packet was to short. If checksum_correct=0, the packed should be discarded
  */
-struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t *hashing_context);
+void bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t *hashing_context, struct RastaPacket *result);
 
 /**
  * Accepts a RaSTA redundancy layer packet and converts it into a byte array
@@ -234,7 +234,7 @@ struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return an already allocated RastaByteArray (no need to free it yourself)
  */
-struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a RaSTA redundancy layer packet
@@ -244,7 +244,7 @@ struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket 
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return a RaSTA Redundancy layer packet containing all data that was in the @p data byte array
  */
-struct RastaRedundancyPacket bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context);
+void bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context, struct RastaRedundancyPacket *packet);
 
 #ifdef __cplusplus
 }
