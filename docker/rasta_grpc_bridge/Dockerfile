@@ -1,11 +1,12 @@
-FROM debian:11
+FROM ubuntu:22.04
 
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get -y install --no-install-recommends libtool autogen automake git ca-certificates build-essential
 
 WORKDIR /tmp/wolfssl
-RUN git clone https://github.com/wolfssl/wolfssl . && git checkout v4.6.0-stable \
+RUN git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl \
+ && cd wolfssl \
  && ./autogen.sh \
  && ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra \
  && make && make install
@@ -13,4 +14,7 @@ RUN git clone https://github.com/wolfssl/wolfssl . && git checkout v4.6.0-stable
 ENV LD_LIBRARY_PATH=/usr/local/lib:.
 
 WORKDIR /app
-COPY build .
+COPY build/librasta*.so ./
+COPY build/rasta_grpc_bridge .
+
+ENTRYPOINT ["/app/rasta_grpc_bridge"]
