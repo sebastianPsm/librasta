@@ -5,16 +5,17 @@ RUN apt-get update && \
     apt-get -y install --no-install-recommends libtool autogen automake git ca-certificates build-essential
 
 WORKDIR /tmp/wolfssl
-RUN git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl \
+RUN mkdir /tmp/wolfssl && cd /tmp/wolfssl \
+ && git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl \
  && cd wolfssl \
  && ./autogen.sh \
  && ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra \
- && make && make install
+ && make && make install \
+ && cd / && rm -rf /tmp/wolfssl
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:.
 
 WORKDIR /app
-COPY build/librasta*.so ./
-COPY build/rasta_grpc_bridge .
+COPY build/librasta*.so build/rasta_grpc_bridge ./
 
 ENTRYPOINT ["/app/rasta_grpc_bridge"]

@@ -63,7 +63,7 @@ jobs:
 
     - name: Configure CMake without extensions
       # force full rebuild
-      run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_RASTA_GRPC_BRIDGE=ON -DENABLE_RASTA_TLS=ON
 
     - name: Build without extensions
       # Build your program with the given configuration
