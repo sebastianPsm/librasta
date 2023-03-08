@@ -89,7 +89,7 @@ void send_KexRequest(redundancy_mux *mux, struct rasta_connection *connection, s
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA KEX", "Rekeying at %" PRIu64, get_current_time_ms());
     }
 
-    redundancy_mux_send(mux, hb);
+    redundancy_mux_send(mux, &hb);
 
     connection->sn_t = connection->sn_t + 1;
 
