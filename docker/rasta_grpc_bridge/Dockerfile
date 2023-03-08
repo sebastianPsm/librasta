@@ -4,7 +4,6 @@ RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get -y install --no-install-recommends libtool autogen automake git ca-certificates build-essential
 
-WORKDIR /tmp/wolfssl
 RUN mkdir /tmp/wolfssl && cd /tmp/wolfssl \
  && git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl \
  && cd wolfssl \
