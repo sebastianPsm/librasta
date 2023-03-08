@@ -4,7 +4,15 @@ RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get -y install --no-install-recommends libtool autogen automake git ca-certificates build-essential
 
-RUN mkdir /tmp/wolfssl && cd /tmp/wolfssl \
+RUN cd /tmp \
+ && git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc \
+ && cd grpc \
+ && mkdir -p cmake/build && cd cmake/build \
+ && cmake ../.. -DgRPC_INSTALL=ON \
+ && make -j16 && make install \
+ && cd / && rm -rf /tmp/grpc
+
+RUN cd /tmp \
  && git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl \
  && cd wolfssl \
  && ./autogen.sh \
