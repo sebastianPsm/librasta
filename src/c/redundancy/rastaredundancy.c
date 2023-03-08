@@ -12,7 +12,8 @@
 #include "../transport/transport.h"
 
 int _deliver_message_to_upper_layer(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaByteArray message) {
-    struct RastaPacket packet = bytesToRastaPacket(message, &channel->hashing_context);
+    struct RastaPacket packet;
+    bytesToRastaPacket(message, &channel->hashing_context, &packet);
     return sr_receive(h, &packet);
 }
 
@@ -77,8 +78,8 @@ int red_f_deliverDeferQueue(struct rasta_receive_handle *h, rasta_redundancy_cha
 
         struct RastaByteArray innerPackerBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
-        innerPackerBytes = rastaModuleToBytes(deferqueue_get(&channel->defer_q, channel->seq_rx).data,
-                                              &channel->hashing_context);
+        struct RastaRedundancyPacket queuePacket = deferqueue_get(&channel->defer_q, channel->seq_rx);
+        innerPackerBytes = rastaModuleToBytes(&queuePacket.data, &channel->hashing_context);
         result |= _deliver_message_to_upper_layer(h, channel, innerPackerBytes);
         freeRastaByteArray(&innerPackerBytes);
 
@@ -162,7 +163,7 @@ int red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *
 
         struct RastaByteArray innerPacketBytes;
         // convert inner data (RaSTA SR layer PDU) to byte array
-        innerPacketBytes = rastaModuleToBytesNoChecksum(packet.data, &channel->hashing_context);
+        innerPacketBytes = rastaModuleToBytesNoChecksum(&packet.data, &channel->hashing_context);
         result = _deliver_message_to_upper_layer(h, channel, innerPacketBytes);
         freeRastaByteArray(&innerPacketBytes);
 

@@ -175,7 +175,7 @@ rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsign
  */
 void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data);
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data);
 
 /**
  * retrieves a message from the queue of the redundancy channel to entity with RaSTA ID @p id.

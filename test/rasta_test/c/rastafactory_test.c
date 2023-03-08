@@ -228,7 +228,8 @@ void testCreateRedundancyPacket() {
     inner_test.sequence_number = 42;
 
     // crc opt b = 32bit/4byte width
-    struct RastaRedundancyPacket pdu_to_test = createRedundancyPacket(1, inner_test, crc_init_opt_b());
+    struct RastaRedundancyPacket pdu_to_test;
+    createRedundancyPacket(1, &inner_test, crc_init_opt_b(), &pdu_to_test);
 
     unsigned short expected_len = 8 + 10 + 4;
 
@@ -246,7 +247,8 @@ void testCreateRedundancyPacketNoChecksum() {
     inner_test.sequence_number = 42;
 
     // crc opt a = no crc / 0 bit width
-    struct RastaRedundancyPacket pdu_to_test = createRedundancyPacket(1, inner_test, crc_init_opt_a());
+    struct RastaRedundancyPacket pdu_to_test;
+    createRedundancyPacket(1, &inner_test, crc_init_opt_a(), &pdu_to_test);
 
     unsigned short expected_len = 8 + 10 + 0;
 

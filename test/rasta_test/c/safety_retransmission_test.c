@@ -43,6 +43,8 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     uint16_t listenPorts[1] = {1234};
     redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
     redundancy_mux_set_config_id(&mux, SERVER_ID);
+    mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
+    rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
     h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
@@ -97,6 +99,8 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     uint16_t listenPorts[1] = {1234};
     redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
     redundancy_mux_set_config_id(&mux, SERVER_ID);
+    mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
+    rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
     h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
@@ -129,7 +133,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     h.hashing_context = &hashing_context;
 
     struct RastaPacket data = createDataMessage(SERVER_ID, 0, 0, 0, 0, 0, app_messages, &hashing_context);
-    struct RastaByteArray packet = rastaModuleToBytes(data, &hashing_context);
+    struct RastaByteArray packet = rastaModuleToBytes(&data, &hashing_context);
     struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
     allocateRastaByteArray(to_fifo, packet.length);
     rmemcpy(to_fifo->bytes, packet.bytes, packet.length);

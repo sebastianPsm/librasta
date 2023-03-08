@@ -31,12 +31,12 @@ void testConversion() {
         r.data.bytes[1] = 0x22;
 
         struct RastaByteArray data;
-        data = rastaModuleToBytes(r, &context);
+        data = rastaModuleToBytes(&r, &context);
 
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_NONE);
 
         struct RastaPacket s;
-        s = bytesToRastaPacket(data, &context);
+        bytesToRastaPacket(data, &context, &s);
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_NONE);
 
         CU_ASSERT_EQUAL(r.length, s.length);
@@ -59,7 +59,7 @@ void testConversion() {
 
         // manipulate data
         data.bytes[8] = 0x43;
-        s = bytesToRastaPacket(data, &context);
+        bytesToRastaPacket(data, &context, &s);
 
         if (i != 0)
             CU_ASSERT_EQUAL(s.checksum_correct, 0)
@@ -68,7 +68,7 @@ void testConversion() {
 
         // check data failure
         r.length = 2;
-        s = bytesToRastaPacket(rastaModuleToBytes(r, &context), &context);
+        bytesToRastaPacket(rastaModuleToBytes(&r, &context), &context, &s);
 
         CU_ASSERT_EQUAL(getRastamoduleLastError(), RASTA_ERRORS_PACKAGE_LENGTH_INVALID);
     }

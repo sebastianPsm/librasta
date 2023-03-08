@@ -282,6 +282,7 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, ras
 redundancy_mux redundancy_mux_init_(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config) {
     redundancy_mux mux;
 
+    mux.channel_count = 0;
     mux.logger = logger;
     mux.listen_ports = listen_ports;
     mux.port_count = port_count;
@@ -350,25 +351,28 @@ void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id) {
     }
 }
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data) {
+void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data) {
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "sending a data packet to id 0x%lX",
-               (long unsigned int)data.receiver_id);
+               (long unsigned int)data->receiver_id);
 
     // TODO: Provide a redundancy communication handle to a specific communication partner from the upper layer
     // get the channel to the remote entity by the data's received_id
     // Is it allowed to have multiple remote entities with the same rasta id that connect over differentiable transport channels?
-    rasta_redundancy_channel *receiver = redundancy_mux_get_channel(mux, data.receiver_id);
+    rasta_redundancy_channel *receiver = redundancy_mux_get_channel(mux, data->receiver_id);
 
     if (receiver == NULL) {
         logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "redundancy channel with id=0x%lX unknown",
-                   (long unsigned int)data.receiver_id);
+                   (long unsigned int)data->receiver_id);
         // not receiver found
         return;
     }
+    printf("receiver hash len %u\n", receiver->hashing_context.hash_length);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "current seq_tx=%lu", receiver->seq_tx);
 
     // create packet to send and convert to byte array
-    struct RastaRedundancyPacket packet = createRedundancyPacket(receiver->seq_tx, data, mux->config.redundancy.crc_type);
+    struct RastaRedundancyPacket packet;
+    printf("data len: %u\n", data->length);
+    createRedundancyPacket(receiver->seq_tx, data, mux->config.redundancy.crc_type, &packet);
     struct RastaByteArray data_to_send = rastaRedundancyPacketToBytes(&packet, &receiver->hashing_context);
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "redundancy packet created");

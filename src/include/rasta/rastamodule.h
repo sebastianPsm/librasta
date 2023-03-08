@@ -212,21 +212,21 @@ struct RastaRedundancyPacket {
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytes(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaModuleToBytes(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a rasta packet and converts it into an allocated bytearray without calculating the safety code
  * @param packet the packet
  * @return the bytearray
  */
-struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaModuleToBytesNoChecksum(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a rasta packet while checking the md4 checksum
  * @param data the data
  * @return if length = 0, the data packet was to short. If checksum_correct=0, the packed should be discarded
  */
-struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t *hashing_context);
+void bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_context_t *hashing_context, struct RastaPacket *result);
 
 /**
  * Accepts a RaSTA redundancy layer packet and converts it into a byte array

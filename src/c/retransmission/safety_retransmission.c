@@ -96,7 +96,8 @@ void sr_remove_confirmed_messages(struct rasta_receive_handle *h, struct rasta_c
 
     struct RastaByteArray *elem;
     while ((elem = fifo_pop(con->fifo_retransmission)) != NULL) {
-        struct RastaPacket packet = bytesToRastaPacket(*elem, h->hashing_context);
+        struct RastaPacket packet;
+        bytesToRastaPacket(*elem, h->hashing_context, &packet);
         logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA remove confirmed", "removing packet with sn = %lu",
                    (long unsigned int)packet.sequence_number);
 
@@ -353,19 +354,21 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "retransmit packet %d", i);
 
         // retrieve retransmission data to
-        struct RastaPacket old_p = bytesToRastaPacket(packets[i], h->hashing_context);
+        struct RastaPacket old_p;
+        bytesToRastaPacket(packets[i], h->hashing_context, &old_p);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "convert packet %d to packet structure", i);
 
         struct RastaMessageData app_messages = extractMessageData(&old_p);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "extract data from packet %d ", i);
 
         // create new packet for retransmission
+        // Where i left off: hashing context hash length is weird
         struct RastaPacket data = createRetransmittedDataMessage(connection->remote_id, connection->my_id, connection->sn_t,
                                                                  connection->cs_t, cur_timestamp(), connection->ts_r,
                                                                  app_messages, h->hashing_context);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "created retransmission packet %d ", i);
 
-        struct RastaByteArray new_p = rastaModuleToBytes(data, h->hashing_context);
+        struct RastaByteArray new_p = rastaModuleToBytes(&data, h->hashing_context);
 
         // add packet to retrFifo again
         struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
@@ -378,7 +381,7 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         }
 
         // send packet
-        redundancy_mux_send(h->mux, data);
+        redundancy_mux_send(h->mux, &data);
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "retransmitted packet with old sn=%lu",
                    (long unsigned int)old_p.sequence_number);
 

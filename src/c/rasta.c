@@ -250,7 +250,7 @@ int data_send_event(void *carry_data) {
                                                             con->cs_t, cur_timestamp(), con->ts_r,
                                                             app_messages, h->hashing_context);
 
-                struct RastaByteArray packet = rastaModuleToBytes(data, h->hashing_context);
+                struct RastaByteArray packet = rastaModuleToBytes(&data, h->hashing_context);
 
                 struct RastaByteArray *to_fifo = rmalloc(sizeof(struct RastaByteArray));
                 allocateRastaByteArray(to_fifo, packet.length);
@@ -259,7 +259,7 @@ int data_send_event(void *carry_data) {
                     logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA send handler", "discarding packet because retransmission queue is full");
                 }
 
-                redundancy_mux_send(h->mux, data);
+                redundancy_mux_send(h->mux, &data);
 
                 logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "Sent data packet from queue");
 
@@ -389,7 +389,7 @@ struct rasta_connection *handle_conreq(struct rasta_receive_handle *h, struct ra
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Send Connection Response - waiting for Heartbeat");
 
             // Send connection response immediately (don't go through packet batching)
-            redundancy_mux_send(h->mux, conresp);
+            redundancy_mux_send(h->mux, &conresp);
 
             freeRastaByteArray(&conresp.data);
         } else {
@@ -643,7 +643,7 @@ struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, st
     new_con.sn_i = new_con.sn_t;
 
     // Send connection request immediately (don't go through packet batching)
-    redundancy_mux_send(&h->mux, conreq);
+    redundancy_mux_send(&h->mux, &conreq);
 
     // increase sequence number
     new_con.sn_t++;

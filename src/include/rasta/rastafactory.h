@@ -246,7 +246,7 @@ struct RastaMessageData extractMessageData(struct RastaPacket *p);
  * @param checksum_type the options for the CRC algorithm that will be used to calculate the checksum
  * @return a RaSTA redundancy layer PDU
  */
-struct RastaRedundancyPacket createRedundancyPacket(uint32_t sequence_number, struct RastaPacket inner_data, struct crc_options checksum_type);
+void createRedundancyPacket(uint32_t sequence_number, struct RastaPacket *inner_data, struct crc_options checksum_type, struct RastaRedundancyPacket *packet);
 
 #ifdef __cplusplus
 }

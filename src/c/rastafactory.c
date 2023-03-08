@@ -65,7 +65,8 @@ struct RastaPacket initializePacket(rasta_conn_type type, uint32_t receiver_id, 
     // static length: 28
     // checksum length: {0,8,16}
     // data length= data_length
-    result.length = (uint16_t)(28 + 8 * hashing_context->hash_length + data_length);
+    printf("hc len: %u\n", hashing_context->hash_length);
+    result.length = (uint16_t)(28 + (8 * hashing_context->hash_length) + data_length);
 
     return result;
 }
@@ -320,7 +321,7 @@ struct RastaPacket createHeartbeat(uint32_t receiver_id, uint32_t sender_id, uin
                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t *hashing_context) {
     struct RastaPacket p = initializePacket(RASTA_TYPE_HB, receiver_id, sender_id, sequence_number,
                                             confirmed_sequence_number, timestamp, confirmed_timestamp, 0, hashing_context);
-
+    printf("packet len %u\n", p.length);
     return p;
 }
 
@@ -397,22 +398,18 @@ struct RastaPacket createRetransmittedDataMessage(uint32_t receiver_id, uint32_t
     return result;
 }
 
-struct RastaRedundancyPacket createRedundancyPacket(uint32_t sequence_number, struct RastaPacket inner_data, struct crc_options checksum_type) {
-    struct RastaRedundancyPacket packet;
-
-    packet.sequence_number = sequence_number;
-    packet.data = inner_data;
-    packet.checksum_type = checksum_type;
+void createRedundancyPacket(uint32_t sequence_number, struct RastaPacket *inner_data, struct crc_options checksum_type, struct RastaRedundancyPacket *packet) {
+    packet->sequence_number = sequence_number;
+    packet->data = *inner_data;
+    packet->checksum_type = checksum_type;
 
     // reserved bytes have to be 0s in version 03.03
-    packet.reserve = 0x0000;
+    packet->reserve = 0x0000;
 
     // length = 2 bytes length field + 2 bytes reserve + 4 bytes seq. nr. + inner data length + checksum length
     // checksum width in crc_options is in bit, so divide by 8 for bytes
-    packet.length = (uint16_t)(8 + inner_data.length + (checksum_type.width / 8));
+    packet->length = (uint16_t)(8 + inner_data->length + (checksum_type.width / 8));
 
     // set checksum_correct to 1 as checksum will be calculated on conversion to bytes
-    packet.checksum_correct = 1;
-
-    return packet;
+    packet->checksum_correct = 1;
 }
