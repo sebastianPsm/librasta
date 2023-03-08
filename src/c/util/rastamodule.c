@@ -213,48 +213,42 @@ struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_
     return result;
 }
 
-struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket packet, rasta_hashing_context_t *hashing_context) {
+struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket *packet, rasta_hashing_context_t *hashing_context) {
     uint8_t checksum_storage[sizeof(uint32_t)];
     struct RastaByteArray result;
-    allocateRastaByteArray(&result, packet.length);
+    allocateRastaByteArray(&result, packet->length);
 
     // pack packet length
-    hostShortTole(packet.length, &result.bytes[0]);
+    hostShortTole(packet->length, &result.bytes[0]);
 
     // pack reserve bytes
-    hostShortTole(packet.reserve, &result.bytes[2]);
+    hostShortTole(packet->reserve, &result.bytes[2]);
 
     // pack sequence number
-    hostLongToLe(packet.sequence_number, &result.bytes[4]);
+    hostLongToLe(packet->sequence_number, &result.bytes[4]);
 
     // convert internal RaSTA packet to bytes
-    unsigned int internal_packet_len = packet.data.length;
-    struct RastaByteArray internal_packet_bytes = rastaModuleToBytes(packet.data, hashing_context);
+    unsigned int internal_packet_len = packet->data.length;
+    struct RastaByteArray internal_packet_bytes = rastaModuleToBytes(packet->data, hashing_context);
 
     // pack data into result
-    for (unsigned int i = 0; i < internal_packet_len; ++i) {
-        result.bytes[8 + i] = internal_packet_bytes.bytes[i];
-    }
+    memcpy(&result.bytes[8], internal_packet_bytes.bytes, internal_packet_len);
 
     // initialize a byte array containing all data except checksum
     // this is needed, as otherwise the 0s/unset bytes in the result byte array will be used in calculating the checksum
     struct RastaByteArray temp_wo_checksum;
-    unsigned int len_wo_checksum = (unsigned int)packet.length - (packet.checksum_type.width / 8);
+    unsigned int len_wo_checksum = (unsigned int)packet->length - (packet->checksum_type.width / 8);
     allocateRastaByteArray(&temp_wo_checksum, len_wo_checksum);
 
     // copy data
-    for (unsigned int j = 0; j < len_wo_checksum; ++j) {
-        temp_wo_checksum.bytes[j] = result.bytes[j];
-    }
+    memcpy(temp_wo_checksum.bytes, result.bytes, len_wo_checksum);
 
     // generate checksum
-    unsigned long checksum = crc_calculate(&packet.checksum_type, temp_wo_checksum);
+    unsigned long checksum = crc_calculate(&packet->checksum_type, temp_wo_checksum);
 
     // pack checksum
     hostLongToLe(checksum, checksum_storage);
-    for (int k = 0; k < (packet.checksum_type.width / 8); ++k) {
-        result.bytes[8 + internal_packet_len + k] = checksum_storage[k];
-    }
+    memcpy(&result.bytes[8 + internal_packet_len], checksum_storage, (packet->checksum_type.width / 8));
 
     // free the temporary checksum data
     freeRastaByteArray(&temp_wo_checksum);

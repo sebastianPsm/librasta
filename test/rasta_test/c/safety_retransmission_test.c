@@ -52,6 +52,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
 
     rasta_transport_channel transport;
     transport.send_callback = fake_send_callback;
+    transport.connected = true;
     fake_channel.transport_channels = &transport;
     fake_channel.transport_channel_count = 1;
 
@@ -65,6 +66,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     sr_retransmit_data(&h, &connection);
 
     // One message should be sent
+    CU_ASSERT_NOT_EQUAL(NULL, test_send_fifo);
     CU_ASSERT_EQUAL(1, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* hb_message = fifo_pop(test_send_fifo);
@@ -142,6 +144,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(1, fifo_get_size(connection.fifo_retransmission));
 
     // Two messages should be sent
+    CU_ASSERT_NOT_EQUAL(NULL, test_send_fifo);
     CU_ASSERT_EQUAL(2, fifo_get_size(test_send_fifo));
 
     struct RastaByteArray* retrdata_message = fifo_pop(test_send_fifo);

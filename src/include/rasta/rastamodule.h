@@ -234,7 +234,7 @@ struct RastaPacket bytesToRastaPacket(struct RastaByteArray data, rasta_hashing_
  * @param hashing_context the hashing parameters that are used for the SR layer hash
  * @return an already allocated RastaByteArray (no need to free it yourself)
  */
-struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket packet, rasta_hashing_context_t *hashing_context);
+struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket *packet, rasta_hashing_context_t *hashing_context);
 
 /**
  * Accepts a byte array and converts it into a RaSTA redundancy layer packet

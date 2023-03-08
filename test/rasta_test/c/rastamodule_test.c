@@ -102,7 +102,7 @@ void testRedundancyConversionWithCrcChecksumCorrect() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
     bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_b(), &context, &convertedFromBytes);
@@ -161,7 +161,7 @@ void testRedundancyConversionWithoutChecksum() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     struct RastaRedundancyPacket convertedFromBytes;
     bytesToRastaRedundancyPacket(convertedToBytes, crc_init_opt_a(), &context, &convertedFromBytes);
@@ -219,7 +219,7 @@ void testRedundancyConversionIncorrectChecksum() {
     packet_to_test.data = r;
 
     struct RastaByteArray convertedToBytes;
-    convertedToBytes = rastaRedundancyPacketToBytes(packet_to_test, &context);
+    convertedToBytes = rastaRedundancyPacketToBytes(&packet_to_test, &context);
 
     // simulate error in packet transmission
     convertedToBytes.bytes[16] = 0x42;

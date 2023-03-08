@@ -369,7 +369,7 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket data) {
 
     // create packet to send and convert to byte array
     struct RastaRedundancyPacket packet = createRedundancyPacket(receiver->seq_tx, data, mux->config.redundancy.crc_type);
-    struct RastaByteArray data_to_send = rastaRedundancyPacketToBytes(packet, &receiver->hashing_context);
+    struct RastaByteArray data_to_send = rastaRedundancyPacketToBytes(&packet, &receiver->hashing_context);
 
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "redundancy packet created");
 
