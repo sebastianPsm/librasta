@@ -366,12 +366,10 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data) {
         // not receiver found
         return;
     }
-    printf("receiver hash len %u\n", receiver->hashing_context.hash_length);
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "current seq_tx=%lu", receiver->seq_tx);
 
     // create packet to send and convert to byte array
     struct RastaRedundancyPacket packet;
-    printf("data len: %u\n", data->length);
     createRedundancyPacket(receiver->seq_tx, data, mux->config.redundancy.crc_type, &packet);
     struct RastaByteArray data_to_send = rastaRedundancyPacketToBytes(&packet, &receiver->hashing_context);
 

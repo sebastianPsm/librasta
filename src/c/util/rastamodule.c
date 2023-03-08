@@ -90,22 +90,16 @@ void packFields(struct RastaByteArray result, struct RastaPacket *packet) {
 }
 
 struct RastaByteArray rastaModuleToBytes(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context) {
-    printf("entering..\n");
     struct RastaByteArray result;
     result = allocateBytes(packet, hashing_context);
 
     if (rastamodule_lasterror != RASTA_ERRORS_NONE) return result;
 
     packFields(result, packet);
-    printf("packed fields\n");
-
-    printf("packet size %u\n", packet->length);
 
     // pack data
     unsigned int len = getDataLength(packet, hashing_context);
-    printf("packing data %u\n", len);
     rmemcpy(&result.bytes[28], packet->data.bytes, len);
-    printf("packed data\n");
 
     // calculate md4 checksum
     unsigned char checksum[16];
@@ -120,7 +114,6 @@ struct RastaByteArray rastaModuleToBytes(struct RastaPacket *packet, rasta_hashi
     freeRastaByteArray(&data_to_hash);
 
     rmemcpy(&result.bytes[28 + len], checksum, checksum_len);
-    printf("packed checksum\n");
 
     return result;
 }

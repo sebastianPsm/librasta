@@ -65,7 +65,6 @@ struct RastaPacket initializePacket(rasta_conn_type type, uint32_t receiver_id, 
     // static length: 28
     // checksum length: {0,8,16}
     // data length= data_length
-    printf("hc len: %u\n", hashing_context->hash_length);
     result.length = (uint16_t)(28 + (8 * hashing_context->hash_length) + data_length);
 
     return result;
@@ -321,7 +320,6 @@ struct RastaPacket createHeartbeat(uint32_t receiver_id, uint32_t sender_id, uin
                                    uint32_t timestamp, uint32_t confirmed_timestamp, rasta_hashing_context_t *hashing_context) {
     struct RastaPacket p = initializePacket(RASTA_TYPE_HB, receiver_id, sender_id, sequence_number,
                                             confirmed_sequence_number, timestamp, confirmed_timestamp, 0, hashing_context);
-    printf("packet len %u\n", p.length);
     return p;
 }
 

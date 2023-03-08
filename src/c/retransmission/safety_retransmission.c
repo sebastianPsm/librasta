@@ -362,7 +362,6 @@ void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection 
         logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA retransmission", "extract data from packet %d ", i);
 
         // create new packet for retransmission
-        // Where i left off: hashing context hash length is weird
         struct RastaPacket data = createRetransmittedDataMessage(connection->remote_id, connection->my_id, connection->sn_t,
                                                                  connection->cs_t, cur_timestamp(), connection->ts_r,
                                                                  app_messages, h->hashing_context);
