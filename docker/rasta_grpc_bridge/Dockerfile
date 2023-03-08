@@ -2,7 +2,7 @@ FROM ubuntu:22.04
 
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get -y install --no-install-recommends libtool autogen automake git ca-certificates build-essential
+    apt-get -y install --no-install-recommends libtool autogen automake autoconf git ca-certificates build-essential cmake
 
 RUN cd /tmp \
  && git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc \
