@@ -129,7 +129,9 @@ int main(int argc, char *argv[]) {
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
             // write to stdout
-            write(STDOUT_FILENO, buf, recv_len);
+            if (write(STDOUT_FILENO, buf, recv_len) == -1) {
+                break;
+            }
         }
     } else if (strcmp(argv[1], "s") == 0) {
         printf("->   S (ID = 0x%lX)\n", (unsigned long)ID_S);
@@ -162,7 +164,9 @@ int main(int argc, char *argv[]) {
 
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
-            write(STDOUT_FILENO, buf, recv_len);
+            if (write(STDOUT_FILENO, buf, recv_len) == -1) {
+                break;
+            }
         }
     }
 
