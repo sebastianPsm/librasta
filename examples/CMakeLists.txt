@@ -90,10 +90,6 @@ configure_file(config/rasta_server.cfg rasta_server.cfg COPYONLY)
 configure_file(config/rasta_client1.cfg rasta_client1.cfg COPYONLY)
 configure_file(config/rasta_client2.cfg rasta_client2.cfg COPYONLY)
 
-if (EXAMPLE_IP_OVERRIDE)
-        add_compile_definitions(EXAMPLE_IP_OVERRIDE)
-endif(EXAMPLE_IP_OVERRIDE)
-
 endif(BUILD_REMOTE_EXAMPLES)
 
 if(BUILD_RASTA_GRPC_BRIDGE)

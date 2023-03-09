@@ -102,6 +102,7 @@ void processRasta(std::string config_path,
         } else {
             s_connection = sr_connect(&s_rc->h, local_id, toServer, 2);
         }
+
         if (s_connection) {
             s_message_fifo = fifo_init(128);
 

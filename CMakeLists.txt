@@ -14,7 +14,6 @@ option(BUILD_REMOTE_EXAMPLES "Build the RaSTA/SCI examples that communicate in a
 option(BUILD_RASTA_GRPC_BRIDGE "Build the RaSTA/gRPC bridge" OFF)
 option(ENABLE_RASTA_TLS "Enable RaSTA over TLS" OFF)
 option(ENABLE_RASTA_OPAQUE "Enable Password-Authenticated Session Key Exchange based on OPAQUE" OFF)
-option(EXAMPLE_IP_OVERRIDE "Use IPs from environment variables in RaSTA/SCI examples" OFF)
 option(ENABLE_CODE_COVERAGE "Provide command to generate code coverage report" OFF)
 option(ENABLE_STATIC_ANALYSIS "Run cppcheck along with the compiler" OFF)
 

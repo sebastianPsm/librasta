@@ -66,7 +66,7 @@ void sr_add_app_messages_to_buffer(struct rasta_receive_handle *h, struct rasta_
     struct RastaMessageData received_data;
     received_data = extractMessageData(packet);
 
-    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA add to buffer", "received %d application messages", received_data.count);
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA add to buffer", "received %d application messages", received_data.count);
 
     for (unsigned int i = 0; i < received_data.count && recv_buf_size; ++i) {
         // TODO: What to do with possibly remaining data from received_data?
@@ -457,7 +457,7 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
             }
         }
 
-        logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA send", "data in send queue");
+        logger_log(&h->logger, LOG_LEVEL_DEBUG, "RaSTA send", "data in send queue");
 
     } else if (con->current_state == RASTA_CONNECTION_CLOSED || con->current_state == RASTA_CONNECTION_DOWN) {
         // nothing to do besides changing state to closed
@@ -598,10 +598,12 @@ int sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacke
 
     // handle response
     if (receivedPacket->type == RASTA_TYPE_CONNRESP) {
+        // TODO: Why is result ignored?
         handle_conresp(h, con, receivedPacket);
 
         freeRastaByteArray(&receivedPacket->data);
-        return 0;
+        // Break from processing (i.e. sr_connect)
+        return 1;
     }
 
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RECEIVE", "Checking packet ...");

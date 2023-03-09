@@ -28,7 +28,7 @@ int handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *conn
  * @param packet the received data packet
  */
 int handle_data(struct rasta_receive_handle *h, struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
-    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "received Data");
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Data", "received Data");
 
     int result = 0;
 
@@ -39,10 +39,10 @@ int handle_data(struct rasta_receive_handle *h, struct rasta_connection *connect
         } else if (connection->current_state == RASTA_CONNECTION_UP) {
             // sn_in_seq == true -> check cts_in_seq
 
-            logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "SN in SEQ");
+            logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Data", "SN in SEQ");
 
             if (sr_cts_in_seq(connection, h->config, receivedPacket)) {
-                logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: Data", "CTS in SEQ");
+                logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: Data", "CTS in SEQ");
 
                 // valid data packet received
                 // read application messages and push into queue
