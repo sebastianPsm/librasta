@@ -164,52 +164,9 @@ void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *co
     red_call_on_new_connection(mux, new_channel.associated_id);
 }
 
-// fd_event *prepare_receive_event(struct receive_event_data *data) {
-//     fd_event *evt = rmalloc(sizeof(fd_event));
-//     struct receive_event_data *channel_event_data = rmalloc(sizeof(struct receive_event_data));
-
-//     *channel_event_data = *data;
-//     channel_event_data->event = evt;
-//     memset(evt, 0, sizeof(fd_event));
-//     evt->enabled = 1;
-//     evt->carry_data = channel_event_data;
-//     evt->callback = channel_receive_event;
-//     evt->fd = data->channel->fd;
-
-//     return evt;
-// }
-
-// #ifdef ENABLE_TLS
-// fd_event *prepare_tls_accept_event(fd_event *evt, struct rasta_connected_transport_channel_state *connection) {
-//     struct receive_event_data *channel_event_data = evt->carry_data;
-//     channel_event_data->ssl = connection->ssl;
-//     evt->fd = connection->file_descriptor;
-
-//     return evt;
-// }
-
-// int channel_accept_event(void *carry_data) {
-//     struct rasta_connected_transport_channel_state connection;
-//     struct receive_event_data *data = carry_data;
-
-//     connection.tls_config = &data->h->config.tls;
-
-//     logger_log(&data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
-//     tcp_accept_tls(&data->h->mux.transport_sockets[data->channel_index], &connection);
-
-//     fd_event *evt = prepare_receive_event(data);
-//     prepare_tls_accept_event(evt, &connection);
-
-//     add_fd_event(data->h->ev_sys, evt, EV_READABLE);
-//     return 0;
-// }
-// // #else
-
 int channel_timeout_event(void *carry_data) {
-    (void)carry_data;
-    // TODO: I don't know what exactly this should handle.
-
-    //  Right now, we are (mis-) using this only to timeout waiting for the handshake response.
+    UNUSED(carry_data);
+    // Escape the event loop
     return 1;
 }
 

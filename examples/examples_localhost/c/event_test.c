@@ -17,7 +17,7 @@ uint64_t test_get_nanotime() {
 int send_heartbeat_event(void *carry_data) {
     (void)carry_data;
     uint64_t n_time = test_get_nanotime();
-    printf("time since last call: %8lu us - expected:%8lu us\n", (n_time - last_time) / 1000, heartbeat_interval / 1000);
+    printf("time since last call: %8lu us - expected:%8lu us\n", (unsigned long)((n_time - last_time) / 1000), (unsigned long)(heartbeat_interval / 1000));
     last_time = n_time;
     return 0;
 }

@@ -34,6 +34,7 @@ int channel_accept_event(void *carry_data) {
     channel->receive_event.callback = channel_receive_event;
     channel->receive_event.fd = channel->file_descriptor;
 
+    memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
     channel->receive_event_data.channel = channel;
     channel->receive_event_data.h = data->h;
 

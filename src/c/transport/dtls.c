@@ -301,7 +301,7 @@ void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, cons
     socket->receive_event.callback = channel_receive_event;
     socket->receive_event.fd = socket->file_descriptor;
 
-    socket->receive_event_data.channel = NULL;
+    memset(&socket->receive_event_data, 0, sizeof(socket->receive_event_data));
     socket->receive_event_data.socket = socket;
     socket->receive_event_data.h = h;
 

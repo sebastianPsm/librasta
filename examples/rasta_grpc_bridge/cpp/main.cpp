@@ -73,13 +73,6 @@ void processRasta(std::string config_path,
     unsigned long local_id = std::stoul(rasta_local_id);
     s_remote_id = std::stoul(rasta_target_id);
 
-    // Channels
-    struct RastaIPData toServer[2];
-    strcpy(toServer[0].ip, rasta_channel1_address.c_str());
-    toServer[0].port = std::stoi(rasta_channel1_port);
-    strcpy(toServer[1].ip, rasta_channel2_address.c_str());
-    toServer[1].port = std::stoi(rasta_channel2_port);
-
     static rasta_lib_configuration_t s_rc;
     memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
     rasta_config_info config;
@@ -100,7 +93,15 @@ void processRasta(std::string config_path,
         if (server) {
             s_connection = rasta_accept(s_rc);
         } else {
-            s_connection = sr_connect(&s_rc->h, local_id, toServer, 2);
+            struct RastaIPData toServer[2];
+            strcpy(toServer[0].ip, rasta_channel1_address.c_str());
+            toServer[0].port = std::stoi(rasta_channel1_port);
+            strcpy(toServer[1].ip, rasta_channel2_address.c_str());
+            toServer[1].port = std::stoi(rasta_channel2_port);
+
+            int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
+
+            s_connection = sr_connect(&s_rc->h, local_id, toServer, nchannels);
         }
 
         if (s_connection) {
