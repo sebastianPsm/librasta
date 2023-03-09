@@ -181,6 +181,8 @@ int heartbeat_send_event(void *carry_data) {
     struct timed_event_data *data = carry_data;
     struct rasta_heartbeat_handle *h = (struct rasta_heartbeat_handle *)data->handle;
 
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "send Heartbeat");
+
     struct rasta_connection *connection = data->connection;
 
     if (connection == NULL || connection->hb_locked) {
@@ -197,9 +199,10 @@ int heartbeat_send_event(void *carry_data) {
     return 0;
 }
 
-// TODO: split up this mess of a function
 int data_send_event(void *carry_data) {
     struct rasta_sending_handle *h = carry_data;
+
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "send data");
 
     for (struct rasta_connection *con = h->handle->first_con; con; con = con->linkedlist_next) {
 
@@ -278,6 +281,10 @@ int data_send_event(void *carry_data) {
             }
         }
     }
+
+    // Disable this event until new data arrives
+    disable_timed_event(&h->send_event);
+
     return 0;
 }
 
@@ -683,6 +690,7 @@ struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, st
 
     // What happened? Timeout, or user abort, or success?
     if (con->current_state != RASTA_CONNECTION_UP) {
+        redundancy_mux_remove_channel(&h->mux, id);
         return NULL;
     }
 
@@ -691,25 +699,11 @@ struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, st
     return con;
 }
 
-// This is the time that packets are deferred for creating multi-packet messages
-// See section 5.5.10
-#define IO_INTERVAL 10000
-
 int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
 
     sr_set_receive_buffer(buf, len);
-
-    timed_event send_event;
-
-    // batch outgoing packets
-    memset(&send_event, 0, sizeof(timed_event));
-    send_event.callback = data_send_event;
-    send_event.interval = IO_INTERVAL * 1000lu;
-    send_event.carry_data = h->send_handle;
-    enable_timed_event(&send_event);
-    add_timed_event(event_system, &send_event);
 
     size_t received_data_len = 0;
 
@@ -720,10 +714,8 @@ int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connec
         received_data_len = sr_get_received_data_len();
     }
 
-    // Remove all stack entries from linked lists...
-    remove_timed_event(event_system, &send_event);
-
     if (connection->current_state != RASTA_CONNECTION_UP) {
+        // TODO: If sockets are broken, their event handlers have to be removed...
         return -1;
     }
 

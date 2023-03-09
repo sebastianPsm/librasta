@@ -112,6 +112,10 @@ void processRasta(std::string config_path,
             fd_event data_event;
             memset(&data_event, 0, sizeof(fd_event));
             data_event.callback = [](void *) {
+                // Invalidate the event
+                uint64_t u;
+                read(s_data_fd, &u, sizeof(u));
+
                 RastaByteArray *msg = nullptr;
 
                 {
@@ -120,6 +124,7 @@ void processRasta(std::string config_path,
                 }
 
                 if (msg != nullptr) {
+                    printf("got something to say\n");
                     rasta_send(s_rc, s_connection,  msg->bytes, msg->length);
 
                     freeRastaByteArray(msg);
@@ -137,6 +142,11 @@ void processRasta(std::string config_path,
             fd_event terminator_event;
             memset(&terminator_event, 0, sizeof(fd_event));
             terminator_event.callback = [](void *carry) {
+                UNUSED(carry);
+                // Invalidate the event
+                uint64_t u;
+                read(s_terminator_fd, &u, sizeof(u));
+
                 rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
                 struct rasta_connection *existing_connection = NULL;
                 for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next) {
@@ -146,7 +156,8 @@ void processRasta(std::string config_path,
                     }
                 }
                 if (existing_connection != NULL) {
-                    sr_disconnect(h, existing_connection);
+                    // TODO: Segfaults...
+                    // sr_disconnect(h, existing_connection);
                 }
                 return 1;
             };
@@ -191,6 +202,9 @@ void processRasta(std::string config_path,
 
             forwarderThread.join();
 
+            sr_disconnect(&s_rc->h, s_connection);
+            s_connection = NULL;
+
             remove_fd_event(&s_rc->rasta_lib_event_system, &data_event);
             remove_fd_event(&s_rc->rasta_lib_event_system, &terminator_event);
 
@@ -200,7 +214,8 @@ void processRasta(std::string config_path,
             fifo_destroy(&s_message_fifo);
         }
 
-        // Give the remote the chance to notice the possibly broken connection
+        // If the transport layer cannot connect, we don't have a
+        // delay between connection attempts without this
         sleep(1);
     }
 

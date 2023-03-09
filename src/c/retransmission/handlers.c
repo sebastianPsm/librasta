@@ -11,8 +11,6 @@ int handle_discreq(struct rasta_receive_handle *h, struct rasta_connection *conn
     // remove redundancy channel
     redundancy_mux_remove_channel(h->mux, connection->remote_id);
 
-    // struct RastaDisconnectionData disconnectionData = extractRastaDisconnectionData(receivedPacket);
-
     // fire connection state changed event
     fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
     // fire disconnection request received event

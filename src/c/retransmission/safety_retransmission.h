@@ -29,5 +29,6 @@ int sr_check_packet(struct rasta_connection *con, struct logger_t *logger, rasta
 unsigned int sr_retransmission_queue_item_count(struct rasta_connection *connection);
 unsigned int sr_send_queue_item_count(struct rasta_connection *connection);
 int sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacket);
+void sr_closed_connection(struct rasta_receive_handle *h, unsigned long id);
 void sr_set_receive_buffer(void *buf, size_t len);
 size_t sr_get_received_data_len();

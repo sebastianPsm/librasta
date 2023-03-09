@@ -42,16 +42,11 @@ typedef enum {
 /**
  * representation of a RaSTA redundancy channel
  */
-typedef struct {
+typedef struct rasta_redundancy_channel {
     /**
      * the RaSTA ID of the remote entity this channel is bound to
      */
     unsigned long associated_id;
-
-    /**
-     * current state of the redundancy channel
-     */
-    rasta_redundancy_state current_state;
 
     /**
      * the type of checksum that is used for all messages

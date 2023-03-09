@@ -228,6 +228,7 @@ int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out
 
 struct rasta_receive_handle;
 int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
+int handle_closed_transport(struct rasta_receive_handle *h, rasta_redundancy_channel *channel);
 
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
 

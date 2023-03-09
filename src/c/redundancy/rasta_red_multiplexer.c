@@ -11,6 +11,7 @@
 #include <rasta/rastaredundancy.h>
 #include <rasta/rmemory.h>
 #include <rasta/rastautil.h>
+#include "../retransmission/safety_retransmission.h"
 #include "../transport/transport.h"
 #include "../transport/events.h"
 
@@ -100,6 +101,18 @@ int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_tr
     return result;
 }
 
+int handle_closed_transport(struct rasta_receive_handle *h, rasta_redundancy_channel *channel) {
+    for (unsigned i = 0; i < channel->transport_channel_count; i++) {
+        if (channel->transport_channels[i].connected) {
+            // Another channel is still connected, continue the event loop
+            return 0;
+        }
+    }
+
+    sr_closed_connection(h, channel->associated_id);
+    return 1;
+}
+
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket) {
     struct RastaByteArray incomingData;
     incomingData.length = (unsigned int)len;
@@ -156,9 +169,15 @@ void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *co
 
     // reallocate memory for new client
     mux->redundancy_channels = rrealloc(mux->redundancy_channels, (mux->channel_count + 1) * sizeof(rasta_redundancy_channel));
-
     mux->redundancy_channels[mux->channel_count] = new_channel;
     mux->channel_count++;
+
+    // Update pointers
+    for (unsigned i = 0; i < mux->channel_count; i++) {
+        for (unsigned j = 0; j < mux->redundancy_channels[i].transport_channel_count; j++) {
+            mux->redundancy_channels[i].transport_channels[j].receive_event_data.redundancy_channel = &mux->redundancy_channels[i];
+        }
+    }
 
     // fire new redundancy channel notification
     red_call_on_new_connection(mux, new_channel.associated_id);
@@ -436,6 +455,13 @@ int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsi
     mux->redundancy_channels = rrealloc(mux->redundancy_channels, mux->channel_count * sizeof(rasta_redundancy_channel));
     mux->redundancy_channels[mux->channel_count - 1] = channel;
 
+    // Update pointers
+    for (unsigned i = 0; i < mux->channel_count; i++) {
+        for (unsigned j = 0; j < mux->redundancy_channels[i].transport_channel_count; j++) {
+            mux->redundancy_channels[i].transport_channels[j].receive_event_data.redundancy_channel = &mux->redundancy_channels[i];
+        }
+    }
+
     return 0;
 }
 
@@ -473,5 +499,13 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
     rfree(mux->redundancy_channels);
     mux->redundancy_channels = new_channels;
     mux->channel_count = newIndex;
+
+    // Update pointers
+    for (unsigned i = 0; i < mux->channel_count; i++) {
+        for (unsigned j = 0; j < mux->redundancy_channels[i].transport_channel_count; j++) {
+            mux->redundancy_channels[i].transport_channels[j].receive_event_data.redundancy_channel = &mux->redundancy_channels[i];
+        }
+    }
+
     logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux remove channel", "%d channels left", mux->channel_count);
 }

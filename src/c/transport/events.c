@@ -3,6 +3,7 @@
 #include <rasta/logging.h>
 #include <rasta/rmemory.h>
 #include <rasta/rastahandle.h>
+#include <rasta/rastaredundancy.h>
 
 #include "transport.h"
 #include "diagnostics.h"
@@ -97,29 +98,31 @@ int channel_receive_event(void *carry_data) {
 
     logger_log(&h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Channel %d calling receive", transport_channel->id);
 
-    if (len == 0) {
-        // Peer has performed an orderly shutdown
+    if (len <= 0) {
+        // Connection is broken
+        transport_channel->connected = false;
+
         if (transport_channel != NULL) {
             disable_fd_event(&transport_channel->receive_event);
+            remove_fd_event(data->h->ev_sys, &transport_channel->receive_event);
         }
         if (data->socket != NULL) {
             disable_fd_event(&data->socket->receive_event);
+            remove_fd_event(data->h->ev_sys, &data->socket->receive_event);
         }
-        return 0;
     }
 
     if (len < 0) {
-        // Connection is broken.
-        // Disable receive event
-        if (transport_channel != NULL) {
-            disable_fd_event(&transport_channel->receive_event);
-        }
-        if (data->socket != NULL) {
-            disable_fd_event(&data->socket->receive_event);
-        }
-
+        // Peer has not performed an orderly shutdown
         // TODO: If this is a RaSTA client, try to re-establish a connection somewhere else
         // transport_redial(transport_channel);
+    }
+
+    if (len <= 0) {
+        if (data->redundancy_channel != NULL) {
+            return handle_closed_transport(h->receive_handle, data->redundancy_channel);
+        }
+        // Ignore and continue
         return 0;
     }
 

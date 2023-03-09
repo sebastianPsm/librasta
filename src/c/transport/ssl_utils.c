@@ -222,6 +222,7 @@ void wolfssl_start_client(rasta_transport_channel *transport_state, const rasta_
 void wolfssl_send(WOLFSSL *ssl, unsigned char *message, size_t message_len) {
     if (wolfSSL_write(ssl, message, (int)message_len) != (int)message_len) {
         fprintf(stderr, "WolfSSL write error!\n");
+        // TODO: Signal connection broken
         abort();
     }
 }

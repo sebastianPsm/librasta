@@ -384,6 +384,8 @@ struct rasta_sending_handle {
      */
     struct rasta_handle *handle;
 
+    timed_event send_event;
+
     /**
      * The paramenters that are used for SR checksums
      */

@@ -280,6 +280,7 @@ void sr_close_connection(struct rasta_connection *connection, struct rasta_handl
         // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(handle, connection));
     }
+    // TODO: Close the redundancy channel and transport sockets, and remove the fd events
 }
 
 void sr_diagnostic_interval_init(struct rasta_connection *connection, rasta_config_sending cfg) {
@@ -422,9 +423,6 @@ void sr_listen(struct rasta_handle *h) {
     redundancy_mux_listen_channels(h, &h->mux, &h->config.tls);
 }
 
-// HACK
-int data_send_event(void *carry_data);
-
 void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages) {
     if (con == NULL)
         return;
@@ -454,6 +452,9 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
 
             if (!fifo_push(con->fifo_send, to_fifo)) {
                 logger_log(&h->logger, LOG_LEVEL_INFO, "RaSTA send", "could not insert message into send queue");
+            } else {
+                // Enable timed sending
+                enable_timed_event(&h->send_handle->send_event);
             }
         }
 
@@ -658,4 +659,22 @@ int sr_receive(struct rasta_receive_handle *h, struct RastaPacket *receivedPacke
     }
 
     return rasta_receive(h, con, receivedPacket);
+}
+
+void sr_closed_connection(struct rasta_receive_handle *h, unsigned long id) {
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA Close", "Closing connection to %lu", id);
+
+    struct rasta_connection *connection;
+    for (connection = h->handle->first_con; connection; connection = connection->linkedlist_next) {
+        if (connection->remote_id == id) break;
+    }
+
+    connection->current_state = RASTA_CONNECTION_CLOSED;
+    sr_reset_connection(connection, connection->remote_id, h->info);
+
+    // remove redundancy channel
+    redundancy_mux_remove_channel(h->mux, connection->remote_id);
+
+    // fire connection state changed event
+    fire_on_connection_state_change(sr_create_notification_result(h->handle, connection));
 }
