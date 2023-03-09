@@ -55,15 +55,6 @@ void on_con_end(rasta_lib_connection_t connection, void *memory) {
 //     RastaIPData *subchannels;
 // };
 
-void rasta_listen(rasta_lib_configuration_t rc, const char *config_file_path) {
-    rasta_config_info config;
-    struct logger_t logger;
-    load_configfile(&config, &logger, config_file_path);
-    rasta_lib_init_configuration(rc, &config, &logger);
-    rc->h.user_handles->on_connection_start = on_con_start;
-    rc->h.user_handles->on_disconnect = on_con_end;
-}
-
 static uint32_t s_remote_id = 0;
 struct rasta_connection *s_connection = NULL;
 
@@ -73,10 +64,15 @@ static int s_data_fd;
 static std::mutex s_fifo_mutex;
 static fifo_t *s_message_fifo;
 
-void processRasta(std::string config,
+void processRasta(std::string config_path,
                   std::string rasta_channel1_address, std::string rasta_channel1_port,
                   std::string rasta_channel2_address, std::string rasta_channel2_port,
+                  std::string rasta_local_id, std::string rasta_target_id,
                   std::function<std::thread()> run_thread) {
+
+    unsigned long local_id = std::stoul(rasta_local_id);
+    s_remote_id = std::stoul(rasta_target_id);
+
     // Channels
     struct RastaIPData toServer[2];
     strcpy(toServer[0].ip, rasta_channel1_address.c_str());
@@ -85,10 +81,27 @@ void processRasta(std::string config,
     toServer[1].port = std::stoi(rasta_channel2_port);
 
     static rasta_lib_configuration_t s_rc;
-    rasta_listen(s_rc, config.c_str());
+    memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
+    rasta_config_info config;
+    struct logger_t logger;
+    load_configfile(&config, &logger, config_path.c_str());
+    rasta_lib_init_configuration(s_rc, &config, &logger);
+    s_rc->h.user_handles->on_connection_start = on_con_start;
+    s_rc->h.user_handles->on_disconnect = on_con_end;
+
+    rasta_bind(&s_rc->h);
+
+    bool server = local_id > s_remote_id;
+    if (server) {
+        sr_listen(&s_rc->h);
+    }
 
     while (true) {
-        s_connection = rasta_accept(s_rc);
+        if (server) {
+            s_connection = rasta_accept(s_rc);
+        } else {
+            s_connection = sr_connect(&s_rc->h, local_id, toServer, 2);
+        }
         if (s_connection) {
             s_message_fifo = fifo_init(128);
 
@@ -232,7 +245,7 @@ class RastaService final : public sci::Rasta::Service {
             });
         };
 
-        processRasta(_config, _rasta_channel1_address, _rasta_channel1_port, _rasta_channel2_address, _rasta_channel2_port, forwardGrpc);
+        processRasta(_config, _rasta_channel1_address, _rasta_channel1_port, _rasta_channel2_address, _rasta_channel2_port, _rasta_local_id, _rasta_target_id, forwardGrpc);
 
         {
             std::lock_guard<std::mutex> guard(s_busy);
@@ -349,6 +362,7 @@ int main(int argc, char *argv[]) {
         processRasta(config,
                      rasta_channel1_address, rasta_channel1_port,
                      rasta_channel2_address, rasta_channel2_port,
+                     rasta_local_id, rasta_target_id,
                      connectGrpc);
     }
     return 0;
