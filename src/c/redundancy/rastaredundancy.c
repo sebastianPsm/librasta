@@ -234,10 +234,6 @@ void red_f_cleanup(rasta_redundancy_channel *channel) {
 
     logger_log(&channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "freeing connected channels");
     // free the channels
-    for (unsigned int i = 0; i < channel->transport_channel_count; ++i) {
-        // Not so sure about this.
-        rfree(channel->transport_channels[i].remote_ip_address);
-    }
     rfree(channel->transport_channels);
     channel->transport_channel_count = 0;
 

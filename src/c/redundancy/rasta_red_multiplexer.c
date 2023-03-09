@@ -343,6 +343,8 @@ void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data) {
         rasta_transport_channel *channel = &receiver->transport_channels[i];
 
         if (!channel->connected) {
+            logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "Skipping unconnected channel %d/%d",
+                   i + 1, receiver->transport_channel_count);
             // Attempt to connect (maybe previous attempts were unsuccessful)
             // TODO: Only if this is a RaSTA client, otherwise return
             // logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "Channel is not connected, re-trying %s:%d",
@@ -409,29 +411,32 @@ int rasta_red_add_transport_channel(struct rasta_handle *h, rasta_redundancy_cha
 int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels, unsigned transport_channels_length) {
     assert(transport_channels_length == mux->port_count);
 
-    // reallocate memory for new client
-    mux->channel_count++;
-    mux->redundancy_channels = rrealloc(mux->redundancy_channels, mux->channel_count * sizeof(rasta_redundancy_channel));
-    rasta_redundancy_channel *channel = &mux->redundancy_channels[mux->channel_count - 1];
-    red_f_init(mux->logger, mux->config, mux->port_count, id, channel);
+    rasta_redundancy_channel channel;
+    red_f_init(mux->logger, mux->config, mux->port_count, id, &channel);
 
     // add transport channels
     int success = 0;
     for (unsigned int i = 0; i < transport_channels_length; i++) {
         // Provided transport channels have to match with local ports configured
-        success |= rasta_red_add_transport_channel(h, channel,
+        success |= rasta_red_add_transport_channel(h, &channel,
                                         &mux->transport_sockets[i],
                                         transport_channels[i].ip,
                                         (uint16_t)transport_channels[i].port);
     }
 
+    if (!success) {
+        red_f_cleanup(&channel);
+        return 1;
+    }
 
     logger_log(&mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux add channel", "added new redundancy channel for ID=0x%lX", id);
 
-    if (success) {
-        return 0;
-    }
-    return 1;
+    // reallocate memory for new client
+    mux->channel_count++;
+    mux->redundancy_channels = rrealloc(mux->redundancy_channels, mux->channel_count * sizeof(rasta_redundancy_channel));
+    mux->redundancy_channels[mux->channel_count - 1] = channel;
+
+    return 0;
 }
 
 void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id) {

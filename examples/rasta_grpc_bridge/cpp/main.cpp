@@ -101,7 +101,7 @@ void processRasta(std::string config_path,
 
             int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
 
-            s_connection = sr_connect(&s_rc->h, local_id, toServer, nchannels);
+            s_connection = sr_connect(&s_rc->h, s_remote_id, toServer, nchannels);
         }
 
         if (s_connection) {
