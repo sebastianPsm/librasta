@@ -9,7 +9,7 @@
 
 #define SERVER_ID 0xA
 
-void sr_retransmit_data(struct rasta_receive_handle *h, struct rasta_connection *connection);
+void sr_retransmit_data(rasta_receive_handle *h, struct rasta_connection *connection);
 
 static fifo_t* test_send_fifo = NULL;
 
@@ -28,7 +28,7 @@ void fake_send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send,
 void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     fifo_destroy(&test_send_fifo);
 
-    struct rasta_receive_handle h;
+    rasta_receive_handle h;
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 
@@ -84,7 +84,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     fifo_destroy(&test_send_fifo);
 
     // Arrange
-    struct rasta_receive_handle h;
+    rasta_receive_handle h;
     struct logger_t logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
     h.logger = &logger;
 

@@ -358,12 +358,12 @@ char *getIpByNic(int index) {
  * @param data
  * @return the record. Port is set to 0 if wrong format
  */
-struct RastaIPData extractIPData(char data[256], int arrayIndex) {
+rasta_ip_data extractIPData(char data[256], int arrayIndex) {
     int points = 0;
     int numbers = 0;
     int pos = 0;
     char port[10];
-    struct RastaIPData result;
+    rasta_ip_data result;
 
     if (data[0] == '*') {
         char *ip = getIpByNic(arrayIndex);
@@ -589,11 +589,11 @@ void config_setstd(struct RastaConfig *cfg) {
         // set std
         cfg->values.redundancy.connections.count = 0;
     } else {
-        cfg->values.redundancy.connections.data = rmalloc(sizeof(struct RastaIPData) * entr.value.array.count);
+        cfg->values.redundancy.connections.data = rmalloc(sizeof(rasta_ip_data) * entr.value.array.count);
         cfg->values.redundancy.connections.count = entr.value.array.count;
         // check valid format
         for (unsigned int i = 0; i < entr.value.array.count; i++) {
-            struct RastaIPData ip = extractIPData(entr.value.array.data[i].c, i);
+            rasta_ip_data ip = extractIPData(entr.value.array.data[i].c, i);
             if (ip.port == 0) {
                 logger_log(&cfg->logger, LOG_LEVEL_ERROR, cfg->filename, "RASTA_REDUNDANCY_CONNECTIONS may only contain strings in format ip:port or *:port");
                 rfree(entr.value.array.data);

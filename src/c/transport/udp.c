@@ -148,16 +148,17 @@ void transport_create_socket(rasta_transport_socket *socket, int id, const rasta
     udp_init(socket, tls_config);
 }
 
-int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config) {
-    UNUSED(tls_config);
+int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
     UNUSED(h);
+    UNUSED(socket);
+    UNUSED(channel);
 
-    channel->id = socket->id;
-    channel->remote_port = port;
-    channel->send_callback = send_callback;
-    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
-    channel->tls_mode = socket->tls_mode;
-    channel->file_descriptor = socket->file_descriptor;
+    // channel->id = socket->id;
+    // channel->remote_port = port;
+    // channel->send_callback = send_callback;
+    // strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
+    // channel->tls_mode = socket->tls_mode;
+    // channel->file_descriptor = socket->file_descriptor;
 
     // We can regard UDP channels as 'always connected' (no re-dial possible)
     channel->connected = true;
@@ -201,9 +202,9 @@ void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, cons
     add_fd_event(h->ev_sys, &socket->receive_event, EV_READABLE);
 }
 
-void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
+int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
     UNUSED(socket);
-    UNUSED(channel);
+    UNUSED(addr);
     // int fd = tcp_accept(socket);
     // channel->id = socket->id;
     // channel->remote_port = 0;
@@ -223,6 +224,7 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
     // channel->remote_ip_address = rmalloc(sizeof(char) * 20);
     // strcpy(channel->remote_ip_address, inet_ntoa(addr.sin_addr));
     // channel->remote_port = ntohs(addr.sin_port);
+    return 0;
 }
 
 // void transport_initialize(rasta_transport_channel *channel, rasta_transport_connection transport_state, char *ip, uint16_t port) {
@@ -232,3 +234,12 @@ void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* c
 //     channel->send_callback = send_callback;
 //     rmemcpy(channel->remote_ip_address, ip, 15);
 // }
+
+void transport_init(struct rasta_handle *h, rasta_transport_channel* channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
+    UNUSED(h);
+    channel->id = id;
+    channel->remote_port = port;
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
+    channel->send_callback = send_callback;
+    channel->tls_config = tls_config;
+}

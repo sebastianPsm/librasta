@@ -113,27 +113,16 @@ void transport_listen(struct rasta_handle *h, rasta_transport_socket *socket) {
     add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
-void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
+int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
     int fd = do_accept(socket);
-    channel->id = socket->id;
-    channel->remote_port = 0;
-    channel->remote_ip_address[0] = '\0';
-    channel->send_callback = send_callback;
-    channel->tls_mode = socket->tls_mode;
-    channel->file_descriptor = fd;
-    channel->connected = true;
 
-    struct sockaddr_in addr;
     socklen_t addr_size = sizeof(struct sockaddr_in);
-    if (getpeername(fd, (struct sockaddr *)&addr, &addr_size) != 0) {
+    if (getpeername(fd, (struct sockaddr*)addr, &addr_size) != 0) {
         perror("tcp failed to resolve peer name");
         abort();
     }
 
-    char str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
-    memcpy(channel->remote_ip_address, str, INET_ADDRSTRLEN);
-    channel->remote_port = ntohs(addr.sin_port);
+    return fd;
 }
 
 int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config) {
@@ -168,10 +157,12 @@ int transport_redial(rasta_transport_channel* channel) {
     return tcp_connect(channel);
 }
 
-void transport_close(rasta_transport_channel *channel) {
+void transport_close(struct rasta_handle *h, rasta_transport_channel *channel) {
     if (channel->connected) {
         bsd_close(channel->file_descriptor);
     }
+
+    disable_fd_event(&channel->receive_event);
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
@@ -197,4 +188,12 @@ void transport_create_socket(rasta_transport_socket *socket, int id, const rasta
 void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port) {
     UNUSED(h);
     tcp_bind_device(socket, ip, port);
+}
+
+void transport_init(rasta_transport_channel* channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
+    channel->id = id;
+    channel->remote_port = port;
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
+    channel->send_callback = send_callback;
+    channel->tls_config = tls_config;
 }

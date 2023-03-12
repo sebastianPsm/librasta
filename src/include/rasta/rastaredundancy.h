@@ -15,7 +15,10 @@ extern "C" { // only need to export C interface if
 
 typedef struct rasta_transport_channel rasta_transport_channel;
 typedef struct rasta_transport_socket rasta_transport_socket;
-struct rasta_receive_handle;
+typedef struct rasta_receive_handle rasta_receive_handle;
+typedef struct rasta_sending_handle rasta_sending_handle;
+typedef struct rasta_heartbeat_handle rasta_heartbeat_handle;
+typedef struct rasta_connection rasta_connection;
 struct rasta_handle;
 
 /**
@@ -43,6 +46,8 @@ typedef enum {
  * representation of a RaSTA redundancy channel
  */
 typedef struct rasta_redundancy_channel {
+    struct redundancy_mux *mux;
+
     /**
      * the RaSTA ID of the remote entity this channel is bound to
      */
@@ -87,7 +92,7 @@ typedef struct rasta_redundancy_channel {
     /**
      * logger used for logging
      */
-    struct logger_t logger;
+    struct logger_t *logger;
 
     /**
      * 1 if the redundancy channel is open, 0 if it is closed
@@ -113,7 +118,7 @@ typedef struct rasta_redundancy_channel {
  * @param id the RaSTA ID that is associated with this redundancy channel
  * @return an initialized redundancy channel
  */
-void red_f_init(struct logger_t logger, rasta_config_info config, unsigned int transport_channel_count,
+void red_f_init(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_ip_data *transport_sockets, unsigned int transport_channel_count,
                 unsigned long id, rasta_redundancy_channel *channel);
 
 /**
@@ -122,13 +127,14 @@ void red_f_init(struct logger_t logger, rasta_config_info config, unsigned int t
  * @param packet the packet that has been received over UDP
  * @param channel_id the index of the transport channel, the @p packet has been received
  */
-int red_f_receiveData(struct rasta_receive_handle *h, rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+int red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyPacket packet, int channel_id);
+int red_f_deliverDeferQueue(rasta_connection *con, rasta_redundancy_channel *channel);
 
 /**
  * the f_deferTmo function of the redundancy layer
  * @param channel the redundancy channel that is used
  */
-void red_f_deferTmo(struct rasta_receive_handle *h, rasta_redundancy_channel *channel);
+void red_f_deferTmo(rasta_connection *h, rasta_redundancy_channel *channel);
 
 /**
  * blocks until the state is closed and all notification threads terminate
@@ -142,9 +148,7 @@ void rasta_red_wait_for_close(rasta_redundancy_channel *channel);
  * @param ip the remote IPv4 of the transport channel
  * @param port the remote port of the transport channel
  */
-int rasta_red_add_transport_channel(struct rasta_handle *h, rasta_redundancy_channel *channel,
-                                     rasta_transport_socket *transport_state,
-                                     char *ip, uint16_t port);
+int rasta_red_connect_transport_channel(rasta_connection *h, rasta_redundancy_channel *channel, rasta_transport_socket *transport_socket);
 
 /**
  * frees memory for the @p channel

@@ -41,7 +41,7 @@ typedef enum {
     RASTA_DISC_REASON_PROTOCOLERROR = 8
 } rasta_disconnect_reason;
 
-void sendDisconnectionRequest(redundancy_mux *mux, struct rasta_connection *connection, rasta_disconnect_reason reason, unsigned short details);
-void sendHeartbeat(redundancy_mux *mux, struct rasta_connection *connection, char reschedule_manually);
-void sendRetransmissionRequest(redundancy_mux *mux, struct rasta_connection *connection);
-void sendRetransmissionResponse(redundancy_mux *mux, struct rasta_connection *connection);
+void sendDisconnectionRequest(struct rasta_connection *connection, rasta_disconnect_reason reason, unsigned short details);
+void sendHeartbeat(struct rasta_connection *connection, char reschedule_manually);
+void sendRetransmissionRequest(struct rasta_connection *connection);
+void sendRetransmissionResponse(struct rasta_connection *connection);

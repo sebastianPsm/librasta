@@ -73,14 +73,22 @@ void processRasta(std::string config_path,
     unsigned long local_id = std::stoul(rasta_local_id);
     s_remote_id = std::stoul(rasta_target_id);
 
+    rasta_ip_data toServer[2];
+    strcpy(toServer[0].ip, rasta_channel1_address.c_str());
+    toServer[0].port = std::stoi(rasta_channel1_port);
+    strcpy(toServer[1].ip, rasta_channel2_address.c_str());
+    toServer[1].port = std::stoi(rasta_channel2_port);
+
     static rasta_lib_configuration_t s_rc;
     memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
     rasta_config_info config;
     struct logger_t logger;
     load_configfile(&config, &logger, config_path.c_str());
-    rasta_lib_init_configuration(s_rc, &config, &logger);
-    s_rc->h.user_handles->on_connection_start = on_con_start;
-    s_rc->h.user_handles->on_disconnect = on_con_end;
+    // int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
+    rasta_connection_config connection = {
+        &config, toServer, sizeof(toServer), s_remote_id
+    };
+    rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
 
     rasta_bind(&s_rc->h);
 
@@ -93,15 +101,7 @@ void processRasta(std::string config_path,
         if (server) {
             s_connection = rasta_accept(s_rc);
         } else {
-            struct RastaIPData toServer[2];
-            strcpy(toServer[0].ip, rasta_channel1_address.c_str());
-            toServer[0].port = std::stoi(rasta_channel1_port);
-            strcpy(toServer[1].ip, rasta_channel2_address.c_str());
-            toServer[1].port = std::stoi(rasta_channel2_port);
-
-            int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
-
-            s_connection = sr_connect(&s_rc->h, s_remote_id, toServer, nchannels);
+            s_connection = sr_connect(&s_rc->h, s_remote_id);
         }
 
         if (s_connection) {
@@ -147,18 +147,9 @@ void processRasta(std::string config_path,
                 uint64_t u;
                 read(s_terminator_fd, &u, sizeof(u));
 
-                rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
-                struct rasta_connection *existing_connection = NULL;
-                for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next) {
-                    if (con->remote_id == s_remote_id) {
-                        existing_connection = con;
-                        break;
-                    }
-                }
-                if (existing_connection != NULL) {
-                    // TODO: Segfaults...
-                    // sr_disconnect(h, existing_connection);
-                }
+                // rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
+                // TODO: Segfaults...
+                // sr_disconnect(h, existing_connection);
                 return 1;
             };
             terminator_event.carry_data = &s_rc->h;
@@ -177,17 +168,17 @@ void processRasta(std::string config_path,
 
                 std::lock_guard<std::mutex> streamGuard(s_busy);
                 if (s_currentStream != nullptr) {
-                    logger_log(&s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
+                    logger_log(s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
                     sci::SciPacket outPacket;
                     outPacket.set_message(buf, recvlen);
                     s_currentStream->Write(outPacket);
                 } else if (s_currentServerStream != nullptr) {
-                    logger_log(&s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
+                    logger_log(s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
                     sci::SciPacket outPacket;
                     outPacket.set_message(buf, recvlen);
                     s_currentServerStream->Write(outPacket);
                 } else {
-                    logger_log(&s_rc->h.logger, LOG_LEVEL_ERROR, (char *)"RaSTA retrieve", (char *)"discarding packet.");
+                    logger_log(s_rc->h.logger, LOG_LEVEL_ERROR, (char *)"RaSTA retrieve", (char *)"discarding packet.");
                 }
             }
 
@@ -342,6 +333,10 @@ int main(int argc, char *argv[]) {
                     // Establish gRPC connection
                     std::lock_guard<std::mutex> guard(s_busy);
                     s_currentContext = std::make_unique<grpc::ClientContext>();
+                    // unsigned int client_connection_timeout = 1; // seconds
+                    // std::chrono::system_clock::time_point deadline =
+                    //     std::chrono::system_clock::now() + std::chrono::seconds(client_connection_timeout);
+                    // s_currentContext->set_deadline(deadline);
                     s_currentContext->AddMetadata("rasta-id", std::to_string(s_remote_id));
                     s_currentStream = stub->Stream(s_currentContext.get());
                 }

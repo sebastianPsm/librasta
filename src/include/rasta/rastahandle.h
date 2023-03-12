@@ -128,10 +128,77 @@ struct timed_event_data {
     struct rasta_connection *connection;
 };
 
-struct rasta_connection {
+typedef struct rasta_sending_handle {
+    /**
+     * configuration values
+     */
+    rasta_config_sending config;
+    rasta_config_general info;
 
-    struct rasta_connection *linkedlist_next;
-    struct rasta_connection *linkedlist_prev;
+    struct logger_t *logger;
+
+    struct redundancy_mux *mux;
+
+    /**
+     * handle for notification only
+     */
+    struct rasta_handle *handle;
+
+    timed_event send_event;
+
+    /**
+     * The paramenters that are used for SR checksums
+     */
+    rasta_hashing_context_t *hashing_context;
+
+    rasta_connection *connection;
+} rasta_sending_handle;
+
+typedef struct rasta_heartbeat_handle {
+    /**
+     * configuration values
+     */
+    rasta_config_sending config;
+    rasta_config_general info;
+
+    struct logger_t *logger;
+
+    struct redundancy_mux *mux;
+
+    /**
+     * handle for notification only
+     */
+    struct rasta_handle *handle;
+
+    /**
+     * The paramenters that are used for SR checksums
+     */
+    rasta_hashing_context_t *hashing_context;
+} rasta_heartbeat_handle;
+
+typedef struct rasta_receive_handle {
+    /**
+     * configuration values
+     */
+    rasta_config_sending config;
+    rasta_config_general info;
+
+    struct logger_t *logger;
+
+    rasta_connection *connection;
+
+    /**
+     * handle for notification only
+     */
+    struct rasta_handle *handle;
+
+    /**
+     * The paramenters that are used for SR checksums
+     */
+    rasta_hashing_context_t *hashing_context;
+} rasta_receive_handle;
+
+typedef struct rasta_connection {
 
     /**
      * the event operating the heartbeats on this connection
@@ -265,7 +332,22 @@ struct rasta_connection {
      * Session data for and derived from key exchange
      */
     struct key_exchange_state kex_state;
-};
+
+    rasta_redundancy_channel* redundancy_channel;
+
+    rasta_receive_handle *receive_handle;
+
+    rasta_sending_handle *send_handle;
+
+    /**
+     * the heartbeat data
+     */
+    rasta_heartbeat_handle heartbeat_handle;
+
+    rasta_config_info *config;
+
+    struct logger_t *logger;
+} rasta_connection;
 
 /**
  * struct that is returned in all notifications
@@ -275,11 +357,6 @@ struct rasta_notification_result {
      * copy of the calling rasta connection (this should always be used first)
      */
     struct rasta_connection connection;
-
-    /**
-     * handle, don't touch
-     */
-    struct rasta_handle *handle;
 };
 
 /**
@@ -368,89 +445,7 @@ struct rasta_disconnect_notification_result {
     unsigned short detail;
 };
 
-struct rasta_sending_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending config;
-    rasta_config_general info;
-
-    struct logger_t *logger;
-
-    struct redundancy_mux *mux;
-
-    /**
-     * handle for notification only
-     */
-    struct rasta_handle *handle;
-
-    timed_event send_event;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-};
-
-struct rasta_heartbeat_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending config;
-    rasta_config_general info;
-
-    struct logger_t *logger;
-
-    struct redundancy_mux *mux;
-
-    /**
-     * handle for notification only
-     */
-    struct rasta_handle *handle;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-};
-
-struct rasta_receive_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending config;
-    rasta_config_general info;
-
-    struct logger_t *logger;
-
-    struct redundancy_mux *mux;
-
-    /**
-     * handle for notification only
-     */
-    struct rasta_handle *handle;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-};
-
 struct rasta_handle {
-    /**
-     * the receiving data
-     */
-    struct rasta_receive_handle *receive_handle;
-
-    /**
-     * the sending data
-     */
-    struct rasta_sending_handle *send_handle;
-
-    /**
-     * the heartbeat data
-     */
-    struct rasta_heartbeat_handle *heartbeat_handle;
 
     /**
      * pointers to functions that will be called on notifications as described in 5.2.2 and 5.5.6.4
@@ -460,9 +455,7 @@ struct rasta_handle {
     /**
      * the logger which is used to log protocol activities
      */
-    struct logger_t logger;
-
-    struct logger_t redlogger;
+    struct logger_t *logger;
 
     /**
      * RaSTA parameters
@@ -480,18 +473,6 @@ struct rasta_handle {
     struct redundancy_mux mux;
 
     /**
-     * linked list of rasta connections
-     */
-    // TODO: Remove
-    struct rasta_connection *first_con;
-    struct rasta_connection *last_con;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t hashing_context;
-
-    /**
      * the global event system on the main thread
      */
     event_system *ev_sys;
@@ -500,6 +481,9 @@ struct rasta_handle {
      * the user specified configurations for RaSTA
      */
     struct user_callbacks *user_handles;
+
+    rasta_connection *rasta_connections;
+    unsigned rasta_connections_length;
 };
 /**
  * creates the container for all notification events
@@ -553,10 +537,6 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result);
  * @param config_file_path
  */
 void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct logger_t *logger);
-
-void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con);
-void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con);
-int connection_exists(struct rasta_handle *h, unsigned long id);
 
 #ifdef __cplusplus
 }

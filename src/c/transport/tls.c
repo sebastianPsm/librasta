@@ -262,39 +262,35 @@ void transport_listen(struct rasta_handle *h, rasta_transport_socket *socket) {
     add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
-void transport_accept(rasta_transport_socket *socket, rasta_transport_channel* channel) {
+int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
     int fd = do_accept(socket);
-    channel->id = socket->id;
-    channel->remote_port = 0;
-    channel->remote_ip_address[0] = '\0';
-    channel->send_callback = send_callback;
-    channel->tls_mode = socket->tls_mode;
-    channel->file_descriptor = fd;
-    channel->connected = true;
-    channel->ssl = socket->ssl;
-    channel->ctx = socket->ctx;
+    // channel->id = socket->id;
+    // channel->remote_port = 0;
+    // channel->remote_ip_address[0] = '\0';
+    // channel->send_callback = send_callback;
+    // channel->tls_mode = socket->tls_mode;
+    // channel->file_descriptor = fd;
+    // channel->connected = true;
+    // channel->ssl = socket->ssl;
+    // channel->ctx = socket->ctx;
 
-    struct sockaddr_in addr;
+    // struct sockaddr_in addr;
     socklen_t addr_size = sizeof(struct sockaddr_in);
-    if (getpeername(fd, (struct sockaddr *)&addr, &addr_size) != 0) {
+    if (getpeername(fd, (struct sockaddr *)addr, &addr_size) != 0) {
         perror("tcp failed to resolve peer name");
         abort();
     }
 
-    char str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
-    memcpy(channel->remote_ip_address, str, INET_ADDRSTRLEN);
-    channel->remote_port = ntohs(addr.sin_port);
+    // char str[INET_ADDRSTRLEN];
+    // inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
+    // memcpy(channel->remote_ip_address, str, INET_ADDRSTRLEN);
+    // channel->remote_port = ntohs(addr.sin_port);
+
+    return fd;
 }
 
-int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config) {
-    channel->id = socket->id;
-    channel->remote_port = port;
-    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
-    channel->send_callback = send_callback;
-    channel->tls_mode = socket->tls_mode;
+int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
     channel->file_descriptor = socket->file_descriptor;
-    channel->tls_config = tls_config;
 
     if (tcp_connect(channel) != 0) {
         return -1;
@@ -311,10 +307,10 @@ int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, ra
         return -1;
     }
 
-    if (tls_config->tls_hostname[0]) {
-        int ret = wolfSSL_check_domain_name(channel->ssl, tls_config->tls_hostname);
+    if (h->config->tls.tls_hostname[0]) {
+        int ret = wolfSSL_check_domain_name(channel->ssl, h->config->tls.tls_hostname);
         if (ret != SSL_SUCCESS) {
-            fprintf(stderr, "Could not add domain name check for domain %s: %d", tls_config->tls_hostname, ret);
+            fprintf(stderr, "Could not add domain name check for domain %s: %d", h->config->tls.tls_hostname, ret);
             return -1;
         }
     } else {
@@ -344,7 +340,7 @@ int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, ra
         return -1;
     }
 
-    tls_pin_certificate(channel->ssl, tls_config->peer_tls_cert_path);
+    tls_pin_certificate(channel->ssl, h->config->tls.peer_tls_cert_path);
 
     wolfSSL_FreeArrays(channel->ssl);
     set_tls_async(channel->file_descriptor, channel->ssl);
@@ -357,9 +353,9 @@ int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, ra
 
     memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
     channel->receive_event_data.channel = channel;
-    channel->receive_event_data.h = h;
+    channel->receive_event_data.connection = h;
 
-    add_fd_event(h->ev_sys, &channel->receive_event, EV_READABLE);
+    enable_fd_event(&channel->receive_event);
 
     return 0;
 }
@@ -378,6 +374,8 @@ void transport_close(rasta_transport_channel *channel) {
             wolfSSL_free(channel->ssl);
         }
     }
+
+    disable_fd_event(&channel->receive_event);
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {
@@ -403,4 +401,23 @@ void transport_create_socket(rasta_transport_socket *socket, int id, const rasta
 void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port) {
     UNUSED(h);
     tcp_bind_device(socket, ip, port);
+}
+
+void transport_init(struct rasta_handle *h, rasta_transport_channel* channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
+    channel->id = id;
+    channel->remote_port = port;
+    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
+    channel->send_callback = send_callback;
+    channel->tls_config = tls_config;
+
+    memset(&channel->receive_event, 0, sizeof(fd_event));
+    channel->receive_event.carry_data = &channel->receive_event_data;
+    channel->receive_event.callback = channel_receive_event;
+    channel->receive_event.fd = channel->file_descriptor;
+
+    memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
+    channel->receive_event_data.channel = channel;
+    channel->receive_event_data.connection = NULL;
+
+    add_fd_event(h->ev_sys, &channel->receive_event, EV_READABLE);
 }

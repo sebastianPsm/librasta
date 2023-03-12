@@ -44,7 +44,7 @@ struct diagnose_notification_parameter_wrapper {
  * @return unused
  */
 void red_on_diagnostic_caller(struct diagnose_notification_parameter_wrapper *w) {
-    logger_log(&w->mux->logger, LOG_LEVEL_DEBUG, "RaSTA Redundancy onDiagnostics caller", "calling onDiagnostics function");
+    logger_log(w->mux->logger, LOG_LEVEL_DEBUG, "RaSTA Redundancy onDiagnostics caller", "calling onDiagnostics function");
     (*w->mux->notifications.on_diagnostics_available)(w->mux, w->n_diagnose, w->n_missed, w->t_drift, w->t_drift2, w->channel_id);
 
     w->mux->notifications_running = (unsigned short)(w->mux->notifications_running - 1);
@@ -79,43 +79,40 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 
     red_on_diagnostic_caller(&wrapper);
 
-    logger_log(&mux->logger, LOG_LEVEL_DEBUG, "RaSTA Redundancy call onDiagnostics", "called onDiagnostics");
+    logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA Redundancy call onDiagnostics", "called onDiagnostics");
 }
 
-void run_channel_diagnostics(struct rasta_handle *h, unsigned int channel_count, unsigned int channel_index) {
-    for (unsigned int i = 0; i < channel_count; ++i) {
-        rasta_redundancy_channel current = h->mux.redundancy_channels[i];
-        int n_diagnose = h->mux.config.redundancy.n_diagnose;
+void run_channel_diagnostics(rasta_redundancy_channel* current, unsigned int transport_channel_index) {
+    int n_diagnose = current->mux->config.redundancy.n_diagnose;
 
-        unsigned long channel_diag_start_time = current.transport_channels[channel_index].diagnostics_data.start_time;
+    unsigned long channel_diag_start_time = current->transport_channels[transport_channel_index].diagnostics_data.start_time;
 
-        if (current_ts() - channel_diag_start_time >= (unsigned long)n_diagnose) {
-            // increase n_missed by amount of messages that are not received
+    if (current_ts() - channel_diag_start_time >= (unsigned long)n_diagnose) {
+        // increase n_missed by amount of messages that are not received
 
-            // amount of missed packets
-            int missed_count = current.diagnostics_packet_buffer.count -
-                               current.transport_channels[channel_index].diagnostics_data.received_packets;
+        // amount of missed packets
+        int missed_count = current->diagnostics_packet_buffer.count -
+                            current->transport_channels[transport_channel_index].diagnostics_data.received_packets;
 
-            // increase n_missed
-            current.transport_channels[channel_index].diagnostics_data.n_missed += missed_count;
+        // increase n_missed
+        current->transport_channels[transport_channel_index].diagnostics_data.n_missed += missed_count;
 
-            // window finished, fire event
-            // fire diagnostic notification
-            red_call_on_diagnostic(&h->mux,
-                                   h->mux.config.redundancy.n_diagnose,
-                                   current.transport_channels[channel_index].diagnostics_data.n_missed,
-                                   current.transport_channels[channel_index].diagnostics_data.t_drift,
-                                   current.transport_channels[channel_index].diagnostics_data.t_drift2,
-                                   current.associated_id);
+        // window finished, fire event
+        // fire diagnostic notification
+        red_call_on_diagnostic(current->mux,
+                                current->mux->config.redundancy.n_diagnose,
+                                current->transport_channels[transport_channel_index].diagnostics_data.n_missed,
+                                current->transport_channels[transport_channel_index].diagnostics_data.t_drift,
+                                current->transport_channels[transport_channel_index].diagnostics_data.t_drift2,
+                                current->associated_id);
 
-            // reset values
-            current.transport_channels[channel_index].diagnostics_data.n_missed = 0;
-            current.transport_channels[channel_index].diagnostics_data.received_packets = 0;
-            current.transport_channels[channel_index].diagnostics_data.t_drift = 0;
-            current.transport_channels[channel_index].diagnostics_data.t_drift2 = 0;
-            current.transport_channels[channel_index].diagnostics_data.start_time = current_ts();
+        // reset values
+        current->transport_channels[transport_channel_index].diagnostics_data.n_missed = 0;
+        current->transport_channels[transport_channel_index].diagnostics_data.received_packets = 0;
+        current->transport_channels[transport_channel_index].diagnostics_data.t_drift = 0;
+        current->transport_channels[transport_channel_index].diagnostics_data.t_drift2 = 0;
+        current->transport_channels[transport_channel_index].diagnostics_data.start_time = current_ts();
 
-            deferqueue_clear(&current.diagnostics_packet_buffer);
-        }
+        deferqueue_clear(&current->diagnostics_packet_buffer);
     }
 }

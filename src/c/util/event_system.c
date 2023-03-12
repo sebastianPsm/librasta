@@ -247,6 +247,14 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     assert(event->prev == NULL);
     assert(event->next == NULL);
 
+    {
+        int cnt = 0;
+        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
+            cnt++;
+        }
+        printf("before add: %u\n", cnt);
+    }
+
     // simple linked list add
     if (ev_sys->fd_events.last) {
         event->prev = ev_sys->fd_events.last;
@@ -261,6 +269,14 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     }
 
     event->options = options;
+
+    {
+        int cnt = 0;
+        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
+            cnt++;
+        }
+        printf("after add: %u\n", cnt);
+    }
 }
 
 /**
@@ -270,6 +286,16 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
  * @param event the event to add
  */
 void remove_fd_event(event_system *ev_sys, fd_event *event) {
+    assert(event->prev != NULL || event->next != NULL);
+    {
+        int cnt = 0;
+        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
+            printf("%u %p\n", cnt, (void*)cur);
+            cnt++;
+        }
+        printf("before remove %p: %u\n", (void*)event, cnt);
+    }
+
     if (ev_sys->fd_events.first == event) {
         ev_sys->fd_events.first = ev_sys->fd_events.first->next;
     }
@@ -278,4 +304,12 @@ void remove_fd_event(event_system *ev_sys, fd_event *event) {
     }
     if (event->prev) event->prev->next = event->next;
     if (event->next) event->next->prev = event->prev;
+    {
+        int cnt = 0;
+        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
+            printf("%u %p\n", cnt, (void*)cur);
+            cnt++;
+        }
+        printf("after remove %p: %u\n", (void*)event, cnt);
+    }
 }

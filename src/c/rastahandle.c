@@ -5,8 +5,8 @@
 
 struct rasta_notification_result sr_create_notification_result(struct rasta_handle *handle, struct rasta_connection *connection) {
     struct rasta_notification_result r;
+    UNUSED(handle);
 
-    r.handle = handle;
     r.connection = *connection;
 
     return r;
@@ -19,7 +19,8 @@ struct rasta_notification_result sr_create_notification_result(struct rasta_hand
  * @return unused
  */
 void on_constatechange_call(struct rasta_notification_result *result) {
-    (*result->handle->notifications.on_connection_state_change)(result);
+    UNUSED(result);
+    // (*result->handle->notifications.on_connection_state_change)(result);
 }
 
 /**
@@ -28,16 +29,18 @@ void on_constatechange_call(struct rasta_notification_result *result) {
  * @param connection the connection that is used
  */
 void fire_on_connection_state_change(struct rasta_notification_result result) {
-    if (result.handle->notifications.on_connection_state_change == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    UNUSED(result);
+    // if (result.handle->notifications.on_connection_state_change == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    on_constatechange_call(&result);
+    // on_constatechange_call(&result);
 }
 
 void on_receive_call(struct rasta_notification_result *result) {
-    (*result->handle->notifications.on_receive)(result);
+    UNUSED(result);
+    // (*result->handle->notifications.on_receive)(result);
 }
 
 /**
@@ -46,25 +49,27 @@ void on_receive_call(struct rasta_notification_result *result) {
  * @param connection the connection that is used
  */
 void fire_on_receive(struct rasta_notification_result result) {
-    if (result.handle->notifications.on_receive == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    UNUSED(result);
+    // if (result.handle->notifications.on_receive == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    // create container
-    struct rasta_notification_result *container = rmalloc(sizeof(struct rasta_notification_result));
-    *container = result;
+    // // create container
+    // struct rasta_notification_result *container = rmalloc(sizeof(struct rasta_notification_result));
+    // *container = result;
 
-    on_receive_call(&result);
+    // on_receive_call(&result);
 }
 
 void on_discrequest_change_call(struct rasta_disconnect_notification_result *container) {
-    struct rasta_disconnect_notification_result *result = (struct rasta_disconnect_notification_result *)container;
+    UNUSED(container);
+    // struct rasta_disconnect_notification_result *result = (struct rasta_disconnect_notification_result *)container;
 
-    (*result->result.handle->notifications.on_disconnection_request_received)(&result->result, result->reason, result->detail);
+    // (*result->result.handle->notifications.on_disconnection_request_received)(&result->result, result->reason, result->detail);
 
-    // free container
-    rfree(container);
+    // // free container
+    // rfree(container);
 }
 
 /**
@@ -73,20 +78,21 @@ void on_discrequest_change_call(struct rasta_disconnect_notification_result *con
  * @param connection the connection that is used
  */
 void fire_on_discrequest_state_change(struct rasta_notification_result result, struct RastaDisconnectionData data) {
+    UNUSED(result); UNUSED(data);
 
-    if (result.handle->notifications.on_disconnection_request_received == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    // if (result.handle->notifications.on_disconnection_request_received == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    // create container
+    // // create container
 
-    struct rasta_disconnect_notification_result *container = rmalloc(sizeof(struct rasta_disconnect_notification_result));
-    container->result = result;
-    container->reason = data.reason;
-    container->detail = data.details;
+    // struct rasta_disconnect_notification_result *container = rmalloc(sizeof(struct rasta_disconnect_notification_result));
+    // container->result = result;
+    // container->reason = data.reason;
+    // container->detail = data.details;
 
-    on_discrequest_change_call(container);
+    // on_discrequest_change_call(container);
 }
 
 /**
@@ -96,12 +102,13 @@ void fire_on_discrequest_state_change(struct rasta_notification_result result, s
  * @return unused
  */
 void on_diagnostic_call(void *container) {
-    struct rasta_notification_result *result = (struct rasta_notification_result *)container;
+    UNUSED(container);
+    // struct rasta_notification_result *result = (struct rasta_notification_result *)container;
 
-    (*result->handle->notifications.on_diagnostic_notification)(result);
+    // (*result->handle->notifications.on_diagnostic_notification)(result);
 
-    // free container
-    rfree(container);
+    // // free container
+    // rfree(container);
 }
 
 /**
@@ -110,54 +117,59 @@ void on_diagnostic_call(void *container) {
  * @param connection the connection that is used
  */
 void fire_on_diagnostic_notification(struct rasta_notification_result result) {
+    UNUSED(result);
 
-    if (result.handle->notifications.on_diagnostic_notification == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    // if (result.handle->notifications.on_diagnostic_notification == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    if (result.connection.received_diagnostic_message_count <= 0) {
-        // no diagnostic notification to send
-        return;
-    }
+    // if (result.connection.received_diagnostic_message_count <= 0) {
+    //     // no diagnostic notification to send
+    //     return;
+    // }
 
-    // create container
-    on_diagnostic_call(&result);
+    // // create container
+    // on_diagnostic_call(&result);
 }
 
 void on_handshake_complete_call(struct rasta_notification_result *result) {
-    (*result->handle->notifications.on_handshake_complete)(result);
+    UNUSED(result);
+    // (*result->handle->notifications.on_handshake_complete)(result);
 }
 
 void fire_on_handshake_complete(struct rasta_notification_result result) {
+    UNUSED(result);
 
-    if (result.handle->notifications.on_handshake_complete == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    // if (result.handle->notifications.on_handshake_complete == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    on_handshake_complete_call(&result);
+    // on_handshake_complete_call(&result);
 }
 
 void on_heartbeat_timeout_call(struct rasta_notification_result *container) {
-    struct rasta_notification_result *result = (struct rasta_notification_result *)container;
+    UNUSED(container);
+    // struct rasta_notification_result *result = (struct rasta_notification_result *)container;
 
-    (*result->handle->notifications.on_heartbeat_timeout)(result);
+    // (*result->handle->notifications.on_heartbeat_timeout)(result);
 }
 
 void fire_on_heartbeat_timeout(struct rasta_notification_result result) {
+    UNUSED(result);
 
-    if (result.handle->notifications.on_heartbeat_timeout == NULL) {
-        // notification not set, do nothing
-        return;
-    }
+    // if (result.handle->notifications.on_heartbeat_timeout == NULL) {
+    //     // notification not set, do nothing
+    //     return;
+    // }
 
-    on_heartbeat_timeout_call(&result);
+    // on_heartbeat_timeout_call(&result);
 }
 
 void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct logger_t *logger) {
     h->config = *config;
-    h->logger = h->redlogger = *logger;
+    h->logger = logger;
 
     // set notification pointers to NULL
     h->notifications.on_receive = NULL;
@@ -165,10 +177,6 @@ void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct
     h->notifications.on_diagnostic_notification = NULL;
     h->notifications.on_disconnection_request_received = NULL;
     h->notifications.on_redundancy_diagnostic_notification = NULL;
-
-    // init the list
-    h->first_con = NULL;
-    h->last_con = NULL;
 
     // init hashing context
     // h->hashing_context.hash_length = h->config.sending.md4_type;
@@ -189,64 +197,31 @@ void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct
     //     h->hashing_context.key.bytes[3] = (h->config.sending.sr_hash_key) & 0xFF;
     // }
 
-    h->receive_handle = rmalloc(sizeof(struct rasta_receive_handle));
-    h->heartbeat_handle = rmalloc(sizeof(struct rasta_heartbeat_handle));
-    h->send_handle = rmalloc(sizeof(struct rasta_sending_handle));
+    // h->receive_handle = rmalloc(sizeof(rasta_receive_handle));
+    // h->send_handle = rmalloc(sizeof(rasta_sending_handle));
 
     // receive
-    h->receive_handle->config = h->config.sending;
-    h->receive_handle->info = h->config.general;
-    h->receive_handle->handle = h;
-    h->receive_handle->logger = &h->logger;
-    h->receive_handle->mux = &h->mux;
-    h->receive_handle->hashing_context = &h->mux.sr_hashing_context;
+    // h->receive_handle->config = h->config.sending;
+    // h->receive_handle->info = h->config.general;
+    // h->receive_handle->handle = h;
+    // h->receive_handle->logger = &h->logger;
+    // h->receive_handle->mux = &h->mux;
+    // h->receive_handle->hashing_context = &h->mux.sr_hashing_context;
 
     // send
-    h->send_handle->config = h->config.sending;
-    h->send_handle->info = h->config.general;
-    h->send_handle->handle = h;
-    h->send_handle->logger = &h->logger;
-    h->send_handle->mux = &h->mux;
-    h->send_handle->hashing_context = &h->mux.sr_hashing_context;
+    // h->send_handle->config = h->config.sending;
+    // h->send_handle->info = h->config.general;
+    // h->send_handle->handle = h;
+    // h->send_handle->logger = &h->logger;
+    // h->send_handle->mux = &h->mux;
+    // h->send_handle->hashing_context = &h->mux.sr_hashing_context;
 
     // heartbeat
-    h->heartbeat_handle->config = h->config.sending;
-    h->heartbeat_handle->info = h->config.general;
-    h->heartbeat_handle->handle = h;
-    h->heartbeat_handle->logger = &h->logger;
-    h->heartbeat_handle->mux = &h->mux;
-    h->heartbeat_handle->hashing_context = &h->mux.sr_hashing_context;
+    // h->heartbeat_handle.config = h->config.sending;
+    // h->heartbeat_handle.info = h->config.general;
+    // h->heartbeat_handle.handle = h;
+    // h->heartbeat_handle.logger = &h->logger;
+    // h->heartbeat_handle.mux = &h->mux;
+    // h->heartbeat_handle.hashing_context = &h->mux.sr_hashing_context;
 }
 
-void add_connection_to_list(struct rasta_handle *h, struct rasta_connection *con) {
-    if (h->last_con) {
-        con->linkedlist_prev = h->last_con;
-        con->linkedlist_next = NULL;
-        h->last_con->linkedlist_next = con;
-    } else {
-        h->first_con = con;
-        h->last_con = con;
-        con->linkedlist_prev = NULL;
-        con->linkedlist_next = NULL;
-    }
-}
-
-void remove_connection_from_list(struct rasta_handle *h, struct rasta_connection *con) {
-    if (h->first_con == con) {
-        h->first_con = con->linkedlist_next;
-    }
-    if (h->last_con == con) {
-        h->last_con = con->linkedlist_prev;
-    }
-    if (con->linkedlist_prev) con->linkedlist_prev->linkedlist_next = con->linkedlist_next;
-    if (con->linkedlist_next) con->linkedlist_next->linkedlist_prev = con->linkedlist_prev;
-}
-
-int connection_exists(struct rasta_handle *h, unsigned long id) {
-    for (struct rasta_connection *con = h->first_con; con; con = con->linkedlist_next) {
-        // TODO: Error handling
-        if (con->remote_id == id)
-            return 1;
-    }
-    return 0;
-}

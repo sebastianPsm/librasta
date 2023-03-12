@@ -52,7 +52,7 @@ void sr_listen(struct rasta_handle *h);
  * @param handle
  * @param id
  */
-struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id, struct RastaIPData *channels, unsigned channels_length);
+struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id);
 
 /**
  * send data to another instance

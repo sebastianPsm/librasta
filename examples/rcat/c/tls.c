@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     rasta_lib_configuration_t rc = {0};
 
-    struct RastaIPData toServer[2];
+    rasta_ip_data toServer[2];
 
     strcpy(toServer[0].ip, "127.0.0.1");
     strcpy(toServer[1].ip, "127.0.0.1");
@@ -110,9 +110,14 @@ int main(int argc, char *argv[]) {
         rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
-        rasta_lib_init_configuration(rc, &config, &logger);
-        rc->h.user_handles->on_connection_start = on_con_start;
-        rc->h.user_handles->on_disconnect = on_con_end;
+        rasta_connection_config connection = {
+            .config = &config,
+            .rasta_id = ID_S,
+            .transport_sockets = toServer,
+            .transport_sockets_count = sizeof(toServer)
+        };
+
+        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
 
         rasta_bind(&rc->h);
 
@@ -143,13 +148,18 @@ int main(int argc, char *argv[]) {
         rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C);
-        rasta_lib_init_configuration(rc, &config, &logger);
-        rc->h.user_handles->on_connection_start = on_con_start;
-        rc->h.user_handles->on_disconnect = on_con_end;
+        rasta_connection_config connection = {
+            .config = &config,
+            .rasta_id = ID_R,
+            .transport_sockets = toServer,
+            .transport_sockets_count = sizeof(toServer)
+        };
+
+        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
 
         rasta_bind(&rc->h);
 
-        struct rasta_connection *c = sr_connect(&rc->h, ID_R, toServer, 2);
+        struct rasta_connection *c = sr_connect(&rc->h, ID_R);
 
         if (c == NULL) {
             printf("->   Failed to connect any channel.\n");

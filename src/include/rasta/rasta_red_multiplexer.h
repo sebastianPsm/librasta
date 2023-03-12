@@ -18,6 +18,7 @@ extern "C" { // only need to export C interface if
  * define struct as type here to allow usage in notification pointers
  */
 typedef struct redundancy_mux redundancy_mux;
+typedef struct rasta_connection rasta_connection;
 struct receive_event_data;
 struct rasta_handle;
 
@@ -99,12 +100,12 @@ struct redundancy_mux {
     /**
      * the amount of redundancy channels to remote entitites, i.e. the length of redundancy_channels
      */
-    unsigned int channel_count;
+    unsigned int redundancy_channels_count;
 
     /**
      * the logger that is used to log information
      */
-    struct logger_t logger;
+    struct logger_t *logger;
 
     /**
      * configuration data for the multiplexer and redundancy channels
@@ -127,6 +128,8 @@ struct redundancy_mux {
     rasta_hashing_context_t sr_hashing_context;
 };
 
+void redundancy_mux_allocate_channels(struct rasta_handle *h, redundancy_mux *mux, rasta_connection_config *connections, size_t connections_length);
+
 /**
  * initializes an redundancy layer multiplexer
  * @param logger the logger that is used to log information
@@ -135,7 +138,7 @@ struct redundancy_mux {
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config);
+redundancy_mux redundancy_mux_init(struct logger_t *logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config);
 
 /**
  * initializes an redundancy layer multiplexer. The ports and interfaces to listen on are read from the config.
@@ -143,7 +146,7 @@ redundancy_mux redundancy_mux_init(struct logger_t logger, uint16_t *listen_port
  * @param config configuration for redundancy channels
  * @return an initialized redundancy layer multiplexer
  */
-void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t logger, rasta_config_info config);
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t *logger, rasta_config_info config);
 
 void redundancy_mux_bind(struct rasta_handle *h);
 
@@ -175,7 +178,7 @@ rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsign
  */
 void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
 
-void redundancy_mux_send(redundancy_mux *mux, struct RastaPacket *data);
+void redundancy_mux_send(rasta_redundancy_channel *channel, struct RastaPacket *data);
 
 /**
  * retrieves a message from the queue of the redundancy channel to entity with RaSTA ID @p id.
@@ -209,7 +212,7 @@ void redundancy_mux_listen_channels(struct rasta_handle *h, redundancy_mux *mux,
  * @param mux the multiplexer where the new redundancy channel is added
  * @param transport_channels the transport channels of the new redundancy channel
  */
-int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsigned long id, struct RastaIPData *transport_channels, unsigned transport_channels_length);
+int redundancy_mux_connect_channel(rasta_connection *h, redundancy_mux *mux, rasta_redundancy_channel *channel);
 
 /**
  * removes an existing redundancy channel from the multiplexer if the channels exists. If the channel with the given
@@ -217,7 +220,7 @@ int redundancy_mux_add_channel(struct rasta_handle *h, redundancy_mux *mux, unsi
  * @param mux the multiplexer where the new redundancy channel is removed
  * @param channel_id the RaSTA ID that identifies the redundancy channel (ID of remote partner)
  */
-void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id);
+void redundancy_mux_close_channel(rasta_redundancy_channel *c);
 
 /**
  * block until a PDU is available in any of the connected redundancy channels
@@ -226,9 +229,8 @@ void redundancy_mux_remove_channel(redundancy_mux *mux, unsigned long channel_id
  */
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
-struct rasta_receive_handle;
-int receive_packet(struct rasta_receive_handle *h, redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
-int handle_closed_transport(struct rasta_receive_handle *h, rasta_redundancy_channel *channel);
+int receive_packet(redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
+int handle_closed_transport(rasta_connection *h, rasta_redundancy_channel *channel);
 
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
 

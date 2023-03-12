@@ -37,16 +37,16 @@ typedef struct rasta_config_sending {
 /**
  * represents an IP and Port
  */
-struct RastaIPData {
+typedef struct rasta_ip_data {
     char ip[16];
     int port;
-};
+} rasta_ip_data;
 
 /**
  * represents a list of IP-Port
  */
 struct RastaConfigRedundancyConnections {
-    struct RastaIPData *data;
+    rasta_ip_data *data;
     unsigned int count;
 };
 
@@ -141,6 +141,13 @@ typedef struct rasta_config_info {
      */
     struct RastaConfigKex kex;
 } rasta_config_info;
+
+typedef struct rasta_connection_config {
+    rasta_config_info *config;
+    rasta_ip_data *transport_sockets;
+    size_t transport_sockets_count;
+    unsigned long rasta_id;
+} rasta_connection_config;
 
 #ifdef __cplusplus
 }
