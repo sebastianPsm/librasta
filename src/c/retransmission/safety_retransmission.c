@@ -479,7 +479,7 @@ void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con) {
     remove_timed_event(h->ev_sys, &con->timeout_event);
     remove_timed_event(h->ev_sys, &con->send_heartbeat_event);
 #ifdef ENABLE_OPAQUE
-    if (h->config.kex.rekeying_interval_ms) {
+    if (h->config->kex.rekeying_interval_ms) {
         remove_timed_event(h->ev_sys, &con->rekeying_event);
     }
 #endif

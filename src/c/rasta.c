@@ -25,21 +25,24 @@
  * @param host the host where the HB will be sent to
  * @param port the port where the HB will be sent to
  */
-void send_KexRequest(redundancy_mux *mux, struct rasta_connection *connection, rasta_receive_handle *h) {
+void init_send_key_exchange_event(timed_event *ev, struct timed_event_data *carry_data,
+                                  struct rasta_connection *connection);
+void send_KexRequest(struct rasta_connection *connection) {
 #ifdef ENABLE_OPAQUE
     struct RastaPacket hb = createKexRequest(connection->remote_id, connection->my_id, connection->sn_t,
                                              connection->cs_t, cur_timestamp(), connection->ts_r,
-                                             &mux->sr_hashing_context, h->handle->config.kex.psk, &connection->kex_state, h->logger);
+                                             &connection->redundancy_channel->mux->sr_hashing_context, connection->config->kex.psk, &connection->kex_state, connection->logger);
 
-    if (!connection->kex_state.last_key_exchanged_millis && h->handle->config.kex.rekeying_interval_ms) {
+    if (!connection->kex_state.last_key_exchanged_millis && connection->config->kex.rekeying_interval_ms) {
         // first key exchanged - need to enable periodic rekeying
-        init_send_key_exchange_event(&connection->rekeying_event, &connection->rekeying_carry_data, connection, h->handle);
-        add_timed_event(h->handle->ev_sys, &connection->rekeying_event);
+        init_send_key_exchange_event(&connection->rekeying_event, &connection->rekeying_carry_data, connection);
+        // TODO: Register event (somewhere else)
+        enable_timed_event(&connection->rekeying_event);
     } else {
-        logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA KEX", "Rekeying at %" PRIu64, get_current_time_ms());
+        logger_log(connection->logger, LOG_LEVEL_INFO, "RaSTA KEX", "Rekeying at %" PRIu64, get_current_time_ms());
     }
 
-    redundancy_mux_send(mux, &hb);
+    redundancy_mux_send(connection->redundancy_channel, &hb);
 
     connection->sn_t = connection->sn_t + 1;
 
@@ -57,8 +60,8 @@ void send_KexRequest(redundancy_mux *mux, struct rasta_connection *connection, r
 int send_timed_key_exchange(void *arg) {
 #ifdef ENABLE_OPAQUE
     struct timed_event_data *event_data = (struct timed_event_data *)arg;
-    rasta_receive_handle *handle = (rasta_receive_handle *)event_data->handle;
-    send_KexRequest(handle->mux, event_data->connection, handle);
+    // rasta_receive_handle *handle = (rasta_receive_handle *)event_data->handle;
+    send_KexRequest(event_data->connection);
     // call periodically
     reschedule_event(&event_data->connection->rekeying_event);
 #else
@@ -84,11 +87,11 @@ int rasta_receive(struct rasta_connection *con, struct RastaPacket *receivedPack
             return handle_hb(con, receivedPacket);
 #ifdef ENABLE_OPAQUE
         case RASTA_TYPE_KEX_REQUEST:
-            return handle_kex_request(h, con, receivedPacket);
+            return handle_kex_request(con, receivedPacket);
         case RASTA_TYPE_KEX_RESPONSE:
-            return handle_kex_response(h, con, receivedPacket);
+            return handle_kex_response(con, receivedPacket);
         case RASTA_TYPE_KEX_AUTHENTICATION:
-            return handle_kex_auth(h, con, receivedPacket);
+            return handle_kex_auth(con, receivedPacket);
 #endif
         default:
             logger_log(con->logger, LOG_LEVEL_ERROR, "RaSTA RECEIVE", "Received unexpected packet type %d", receivedPacket->type);
@@ -375,8 +378,8 @@ struct rasta_connection *handle_conresp(struct rasta_connection *con, struct Ras
                 sendHeartbeat(con, 1);
 
 #ifdef ENABLE_OPAQUE
-                if (h->handle->config.kex.mode == KEY_EXCHANGE_MODE_OPAQUE) {
-                    send_KexRequest(h->mux, con, h);
+                if (con->config->kex.mode == KEY_EXCHANGE_MODE_OPAQUE) {
+                    send_KexRequest(con);
                 }
 #endif
 

@@ -44,12 +44,12 @@ int handle_kex_request(struct rasta_connection *connection, struct RastaPacket *
 
                 response = createKexResponse(connection->remote_id, connection->my_id, connection->sn_t,
                                              receivedPacket->sequence_number, current_ts(),
-                                             receivedPacket->timestamp, h->hashing_context, h->handle->config.kex.psk,
+                                             receivedPacket->timestamp, &connection->redundancy_channel->mux->sr_hashing_context, connection->config->kex.psk,
                                              (uint8_t *)receivedPacket->data.bytes, receivedPacket->data.length, connection->sn_i,
                                              &connection->kex_state,
-                                             &h->handle->config.kex, connection->logger);
+                                             &connection->config->kex, connection->logger);
 
-                redundancy_mux_send(h->mux, &response);
+                redundancy_mux_send(connection->redundancy_channel, &response);
 
                 // set values according to 5.6.2 [3]
                 connection->sn_r = receivedPacket->sequence_number + 1;
@@ -61,14 +61,14 @@ int handle_kex_request(struct rasta_connection *connection, struct RastaPacket *
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
-                sr_remove_confirmed_messages(h, connection);
+                sr_remove_confirmed_messages(connection);
 
                 // wait for client to send auth packet, indicating that on the client's side, the exchange worked
                 connection->current_state = RASTA_CONNECTION_KEX_AUTH;
 
                 logger_hexdump(connection->logger, LOG_LEVEL_INFO, connection->kex_state.session_key, sizeof(connection->kex_state.session_key), "Setting hash key to:");
 
-                rasta_set_hash_key_variable(h->hashing_context, (char *)connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
+                rasta_set_hash_key_variable(&connection->redundancy_channel->mux->sr_hashing_context, (char *)connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
 
 #else
                 logger_log(connection->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Req", "Not implemented!");
@@ -126,12 +126,12 @@ int handle_kex_response(struct rasta_connection *connection, struct RastaPacket 
 
                 if (ret) {
                     logger_log(connection->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Could not recover credentials!");
-                    sr_close_connection(connection, h->handle, h->mux, h->info, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
+                    sr_close_connection(connection, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
                     return 1;
                 }
-                response = createKexAuthentication(connection->remote_id, connection->my_id, connection->sn_t, receivedPacket->sequence_number, current_ts(), receivedPacket->timestamp, h->hashing_context, connection->kex_state.user_auth_server, sizeof(connection->kex_state.user_auth_server), connection->logger);
+                response = createKexAuthentication(connection->remote_id, connection->my_id, connection->sn_t, receivedPacket->sequence_number, current_ts(), receivedPacket->timestamp, &connection->redundancy_channel->mux->sr_hashing_context, connection->kex_state.user_auth_server, sizeof(connection->kex_state.user_auth_server), connection->logger);
 
-                redundancy_mux_send(h->mux, &response);
+                redundancy_mux_send(connection->redundancy_channel, &response);
 
                 // set values according to 5.6.2 [3]
                 connection->sn_r = receivedPacket->sequence_number + 1;
@@ -143,14 +143,14 @@ int handle_kex_response(struct rasta_connection *connection, struct RastaPacket 
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
-                sr_remove_confirmed_messages(h, connection);
+                sr_remove_confirmed_messages(connection);
 
                 // kex is done from our PoV, can expect data from now
                 connection->current_state = RASTA_CONNECTION_UP;
 
                 logger_hexdump(connection->logger, LOG_LEVEL_INFO, connection->kex_state.session_key, sizeof(connection->kex_state.session_key), "Setting hash key to:");
 
-                rasta_set_hash_key_variable(h->hashing_context, (char *)connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
+                rasta_set_hash_key_variable(&connection->redundancy_channel->mux->sr_hashing_context, (char *)connection->kex_state.session_key, sizeof(connection->kex_state.session_key));
 #else
                 logger_log(connection->logger, LOG_LEVEL_ERROR, "RaSTA HANDLE: KEX Resp", "Not implemented!");
                 abort();
@@ -218,7 +218,7 @@ int handle_kex_auth(struct rasta_connection *connection, struct RastaPacket *rec
                 // con->cts_r = current_timestamp();
 
                 // cs_r updated, remove confirmed messages
-                sr_remove_confirmed_messages(h, connection);
+                sr_remove_confirmed_messages(connection);
 
                 // kex is done from our PoV, can expect data from now
                 connection->current_state = RASTA_CONNECTION_UP;

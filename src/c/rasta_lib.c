@@ -52,7 +52,7 @@ void init_connection_events(struct rasta_handle *h, struct rasta_connection *con
     add_timed_event(h->ev_sys, &connection->timeout_event);
     add_timed_event(h->ev_sys, &connection->send_heartbeat_event);
 #ifdef ENABLE_OPAQUE
-    if (connection->role == RASTA_ROLE_CLIENT && h->config.kex.rekeying_interval_ms) {
+    if (connection->role == RASTA_ROLE_CLIENT && h->config->kex.rekeying_interval_ms) {
         init_send_key_exchange_event(&connection->rekeying_event, &connection->rekeying_carry_data, connection);
         add_timed_event(h->ev_sys, &connection->rekeying_event);
     }
