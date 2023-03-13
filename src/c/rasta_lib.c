@@ -103,10 +103,12 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
         connection->send_handle.send_event.callback = data_send_event;
         connection->send_handle.send_event.interval = IO_INTERVAL * 1000lu;
         connection->send_handle.send_event.carry_data = &connection->send_handle;
+        connection->send_handle.connection = connection;
+
+        add_timed_event(h->ev_sys, &connection->send_handle.send_event);
 
         connection->send_handle.config = &config->sending;
         connection->send_handle.info = &config->general;
-        // connection->send_handle.handle = h;
         connection->send_handle.logger = logger;
         connection->send_handle.mux = connection->redundancy_channel->mux;
         connection->send_handle.hashing_context = &h->mux.sr_hashing_context;

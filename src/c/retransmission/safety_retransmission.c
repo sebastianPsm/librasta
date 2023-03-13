@@ -389,7 +389,7 @@ void sr_retransmit_data(rasta_connection *connection) {
     sendHeartbeat(connection, 1);
 }
 
-unsigned int sr_retransmission_queue_item_count( struct rasta_connection *connection) {
+unsigned int sr_retransmission_queue_item_count(struct rasta_connection *connection) {
     return fifo_get_size(connection->fifo_retransmission);
 }
 
