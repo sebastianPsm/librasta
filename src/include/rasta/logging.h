@@ -110,7 +110,7 @@ struct logger_t {
     /**
      * the FIFO that is used to buffer log messages
      */
-    fifo_t *buffer;
+    // fifo_t *buffer;
 
     /**
      * the pointer to the wrapper that was passed to the write thread. Used to free in logger_destroy.
@@ -153,12 +153,6 @@ void logger_log(struct logger_t *logger, log_level level, char *location, char *
  * @param ... the format parameters
  */
 void logger_log_if(struct logger_t *logger, int cond, log_level level, char *location, char *format, ...) __attribute__((format(printf, 5, 6)));
-
-/**
- * stops the write thread and frees resources of the logger
- * @param logger the logger that is cleared
- */
-void logger_destroy(struct logger_t *logger);
 
 /**
  * Print a description, followed by a memory range in hex and ascii

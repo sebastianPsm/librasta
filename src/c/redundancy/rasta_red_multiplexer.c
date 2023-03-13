@@ -303,10 +303,14 @@ void redundancy_mux_close(redundancy_mux *mux) {
     // Close listening ports
     for (unsigned int i = 0; i < mux->port_count; ++i) {
         logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux close", "closing socket %d/%d", i + 1, mux->port_count);
-        bsd_close(mux->transport_sockets[i].file_descriptor);
+        // bsd_close(mux->transport_sockets[i].file_descriptor);
     }
     mux->port_count = 0;
     rfree(mux->transport_sockets);
+    for (unsigned i = 0; i < mux->redundancy_channels_count; i++) {
+        rfree(mux->redundancy_channels[i].transport_channels);
+    }
+    rfree(mux->redundancy_channels);
 
     freeRastaByteArray(&mux->sr_hashing_context.key);
 }

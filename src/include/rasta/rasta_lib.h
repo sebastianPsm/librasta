@@ -35,6 +35,7 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
 struct rasta_connection * rasta_accept(rasta_lib_configuration_t user_configuration);
 int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len);
 int rasta_send(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len);
+void rasta_cleanup(rasta_lib_configuration_t user_configuration);
 
 #ifdef __cplusplus
 }

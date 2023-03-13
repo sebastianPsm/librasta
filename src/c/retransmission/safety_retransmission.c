@@ -502,8 +502,6 @@ void sr_cleanup(struct rasta_handle *h) {
     redundancy_mux_close(&h->mux);
 
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA Cleanup", "Cleanup done");
-
-    logger_destroy(h->logger);
 }
 
 #ifdef ENABLE_OPAQUE

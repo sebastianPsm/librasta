@@ -116,7 +116,7 @@ struct logger_t logger_init(log_level max_log_level, logger_type type) {
     logger.log_file = NULL;
 
     // init the buffer FIFO
-    logger.buffer = fifo_init(LOGGER_BUFFER_SIZE);
+    // logger.buffer = fifo_init(LOGGER_BUFFER_SIZE);
 
     return logger;
 }
@@ -225,17 +225,5 @@ void logger_log_if(struct logger_t *logger, int cond, log_level level, char *loc
         return;
     }
 
-    // add message string to the write buffer
-    fifo_push(logger->buffer, msg);
-}
-
-void logger_destroy(struct logger_t *logger) {
-
-    // free all remaining log messages
-    char *elem;
-    while ((elem = fifo_pop(logger->buffer)) != NULL) {
-        rfree(elem);
-    }
-
-    fifo_destroy(&logger->buffer);
+    do_log_message(logger, msg);
 }

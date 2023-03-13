@@ -137,3 +137,16 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
     }
     h->rasta_connections_length = connections_length;
 }
+
+void rasta_cleanup(rasta_lib_configuration_t user_configuration) {
+    sr_cleanup(&user_configuration->h);
+    for (unsigned i = 0; i < user_configuration->h.rasta_connections_length; i++) {
+        fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_retransmission);
+        fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_send);
+        // for (unsigned j = 0; j < user_configuration->h.rasta_connections[i].redundancy_channel->transport_channel_count; j++) {
+
+        // }
+    }
+    rfree(user_configuration->h.rasta_connections);
+
+}

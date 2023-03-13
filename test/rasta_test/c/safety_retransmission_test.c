@@ -76,7 +76,6 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
     fifo_destroy(&connection.fifo_retransmission);
-    logger_destroy(&logger);
 }
 
 void test_sr_retransmit_data_shouldRetransmitPackage() {
@@ -162,5 +161,4 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     CU_ASSERT_EQUAL(RASTA_TYPE_HB, leShortToHost(hb_message->bytes + 8 + 2));
 
     fifo_destroy(&connection.fifo_retransmission);
-    logger_destroy(&logger);
 }
