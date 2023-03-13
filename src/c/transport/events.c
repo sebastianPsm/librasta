@@ -20,27 +20,35 @@ int channel_accept_event(void *carry_data) {
     inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
 
     // Find the suitable transport channel in the mux
-    rasta_transport_channel * the_channel;
+    rasta_transport_channel * channel = NULL;
     for (unsigned i = 0; i < data->h->mux.redundancy_channels_count; i++) {
         for (unsigned j = 0; j < data->h->mux.redundancy_channels[i].transport_channel_count; j++) {
-            rasta_transport_channel *channel = &data->h->mux.redundancy_channels[i].transport_channels[j];
-            if (strncmp(channel->remote_ip_address, str, INET_ADDRSTRLEN) == 0 && channel->remote_port == ntohs(addr.sin_port)) {
-                the_channel = channel;
+            rasta_transport_channel *current_channel = &data->h->mux.redundancy_channels[i].transport_channels[j];
+            if (strncmp(current_channel->remote_ip_address, str, INET_ADDRSTRLEN) == 0
+                && current_channel->remote_port == ntohs(addr.sin_port)) {
+                channel = current_channel;
                 break;
             }
         }
     }
 
-    if (the_channel != NULL) {
-        the_channel->file_descriptor = fd;
-        the_channel->tls_mode = data->socket->tls_mode;
-        the_channel->connected = true;
+    if (channel != NULL) {
+        channel->file_descriptor = fd;
+        // We may not forget this:
+        channel->receive_event.fd = fd;
+        channel->tls_mode = data->socket->tls_mode;
+        channel->connected = true;
+#ifdef ENABLE_TLS
+        channel->tls_state = RASTA_TLS_CONNECTION_READY;
+        channel->ctx = data->socket->ctx;
+        channel->ssl = data->socket->ssl;
+#endif
 
-        if (the_channel->receive_event.callback != NULL) {
-            enable_fd_event(&the_channel->receive_event);
+        if (channel->receive_event.callback != NULL) {
+            enable_fd_event(&channel->receive_event);
         }
     } else {
-        // Unknown communication partner, reject
+        logger_log(data->h->mux.logger, LOG_LEVEL_INFO, "RaSTA RedMux accept", "Rejecting connection from unknown peer %s:%u", str, ntohs(addr.sin_port));
         close(fd);
     }
 
@@ -52,6 +60,7 @@ int channel_receive_event(void *carry_data) {
 
     unsigned char buffer[MAX_DEFER_QUEUE_MSG_SIZE] = {0};
     struct sockaddr_in sender = {0};
+
     ssize_t len = receive_callback(data->connection->redundancy_channel->mux, data, buffer, &sender);
 
     char str[INET_ADDRSTRLEN];
@@ -59,7 +68,6 @@ int channel_receive_event(void *carry_data) {
 
     // Resolve channel by using sender ip and port
     rasta_transport_channel *transport_channel = data->channel;
-    // TODO: Think about how this can work
 
     // if (transport_channel == NULL) {
     //     for (unsigned i = 0; i < h->mux.channel_count; i++) {

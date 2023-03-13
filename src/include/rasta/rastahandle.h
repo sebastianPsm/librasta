@@ -5,6 +5,8 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
+#include <stdbool.h>
+
 #include "config.h"
 #include "logging.h"
 #include "rasta_red_multiplexer.h"
@@ -132,8 +134,8 @@ typedef struct rasta_sending_handle {
     /**
      * configuration values
      */
-    rasta_config_sending config;
-    rasta_config_general info;
+    rasta_config_sending *config;
+    rasta_config_general *info;
 
     struct logger_t *logger;
 
@@ -142,7 +144,7 @@ typedef struct rasta_sending_handle {
     /**
      * handle for notification only
      */
-    struct rasta_handle *handle;
+    // struct rasta_handle *handle;
 
     timed_event send_event;
 
@@ -158,8 +160,8 @@ typedef struct rasta_heartbeat_handle {
     /**
      * configuration values
      */
-    rasta_config_sending config;
-    rasta_config_general info;
+    rasta_config_sending *config;
+    rasta_config_general *info;
 
     struct logger_t *logger;
 
@@ -168,7 +170,7 @@ typedef struct rasta_heartbeat_handle {
     /**
      * handle for notification only
      */
-    struct rasta_handle *handle;
+    // struct rasta_handle *handle;
 
     /**
      * The paramenters that are used for SR checksums
@@ -180,8 +182,8 @@ typedef struct rasta_receive_handle {
     /**
      * configuration values
      */
-    rasta_config_sending config;
-    rasta_config_general info;
+    rasta_config_sending *config;
+    rasta_config_general *info;
 
     struct logger_t *logger;
 
@@ -199,6 +201,11 @@ typedef struct rasta_receive_handle {
 } rasta_receive_handle;
 
 typedef struct rasta_connection {
+
+    // Flag to tell the caller that the connection was established in the last event loop run
+    bool is_new;
+
+    timed_event handshake_timeout_event;
 
     /**
      * the event operating the heartbeats on this connection
@@ -224,11 +231,6 @@ typedef struct rasta_connection {
      * 1 if the process for sending heartbeats should be paused, otherwise 0
      */
     int hb_stopped;
-
-    /**
-     * bool value if data from the send buffer is sent right now
-     */
-    int is_sending;
 
     /**
      * blocks heartbeats until connection handshake is complete
@@ -335,9 +337,9 @@ typedef struct rasta_connection {
 
     rasta_redundancy_channel* redundancy_channel;
 
-    rasta_receive_handle *receive_handle;
+    rasta_receive_handle receive_handle;
 
-    rasta_sending_handle *send_handle;
+    rasta_sending_handle send_handle;
 
     /**
      * the heartbeat data
@@ -460,7 +462,7 @@ struct rasta_handle {
     /**
      * RaSTA parameters
      */
-    rasta_config_info config;
+    rasta_config_info *config;
 
     /**
      * versions that this RaSTA entity will accept during the handshake
@@ -484,6 +486,8 @@ struct rasta_handle {
 
     rasta_connection *rasta_connections;
     unsigned rasta_connections_length;
+
+    struct rasta_connection *accepted_connection;
 };
 /**
  * creates the container for all notification events

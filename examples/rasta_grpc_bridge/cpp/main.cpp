@@ -39,22 +39,6 @@ static std::unique_ptr<grpc::ClientReaderWriter<sci::SciPacket, sci::SciPacket>>
 static grpc::ServerReaderWriter<sci::SciPacket, sci::SciPacket> *s_currentServerStream;
 static grpc::ServerContext *s_currentServerContext;
 
-void *on_con_start(rasta_lib_connection_t connection) {
-    (void)connection;
-    return malloc(sizeof(rasta_lib_connection_t));
-}
-
-void on_con_end(rasta_lib_connection_t connection, void *memory) {
-    (void)connection;
-    free(memory);
-}
-
-// struct RastaChannel {
-//     unsigned long remote_id;
-//     // The size of subchannels implicitly equals the number of local listen endpoints
-//     RastaIPData *subchannels;
-// };
-
 static uint32_t s_remote_id = 0;
 struct rasta_connection *s_connection = NULL;
 
@@ -86,12 +70,13 @@ void processRasta(std::string config_path,
     load_configfile(&config, &logger, config_path.c_str());
     // int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
     rasta_connection_config connection = {
-        &config, toServer, sizeof(toServer), s_remote_id
+        &config, toServer, 2, s_remote_id
     };
     rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
 
     rasta_bind(&s_rc->h);
 
+    // TODO: This may be different for each connection
     bool server = local_id > s_remote_id;
     if (server) {
         sr_listen(&s_rc->h);
@@ -124,7 +109,6 @@ void processRasta(std::string config_path,
                 }
 
                 if (msg != nullptr) {
-                    printf("got something to say\n");
                     rasta_send(s_rc, s_connection,  msg->bytes, msg->length);
 
                     freeRastaByteArray(msg);

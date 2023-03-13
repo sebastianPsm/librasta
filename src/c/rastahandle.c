@@ -168,7 +168,7 @@ void fire_on_heartbeat_timeout(struct rasta_notification_result result) {
 }
 
 void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct logger_t *logger) {
-    h->config = *config;
+    h->config = config;
     h->logger = logger;
 
     // set notification pointers to NULL
@@ -215,13 +215,5 @@ void rasta_handle_init(struct rasta_handle *h, rasta_config_info *config, struct
     // h->send_handle->logger = &h->logger;
     // h->send_handle->mux = &h->mux;
     // h->send_handle->hashing_context = &h->mux.sr_hashing_context;
-
-    // heartbeat
-    // h->heartbeat_handle.config = h->config.sending;
-    // h->heartbeat_handle.info = h->config.general;
-    // h->heartbeat_handle.handle = h;
-    // h->heartbeat_handle.logger = &h->logger;
-    // h->heartbeat_handle.mux = &h->mux;
-    // h->heartbeat_handle.hashing_context = &h->mux.sr_hashing_context;
 }
 

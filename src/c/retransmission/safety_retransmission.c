@@ -300,38 +300,17 @@ void sr_diagnostic_interval_init(struct rasta_connection *connection, rasta_conf
     }
 }
 
-// This is the time that packets are deferred for creating multi-packet messages
-// See section 5.5.10
-#define IO_INTERVAL 10000
-
-void sr_init_connection(struct rasta_connection *connection, unsigned long id, rasta_role role, const rasta_config_info *config) {
+void sr_init_connection(struct rasta_connection *connection, rasta_role role) {
     sr_reset_connection(connection);
-    connection->remote_id = id;
-    // connection->my_id = (uint32_t)info->rasta_id;
-    // connection->network_id = (uint32_t)info->rasta_network;
     connection->role = role;
 
     // initalize diagnostic interval and store it in connection
     // sr_diagnostic_interval_init(connection, cfg);
 
-    // init retransmission fifo
-    connection->fifo_retransmission = fifo_init(MAX_QUEUE_SIZE);
-
-    // create send queue
-    connection->fifo_send = fifo_init(2 * config->sending.max_packet);
-
     // reset last rekeying time
 #ifdef ENABLE_OPAQUE
     connection->kex_state.last_key_exchanged_millis = 0;
 #endif
-
-    // TODO: Initialize redundancy channel
-
-    // batch outgoing packets
-    memset(&connection->send_handle->send_event, 0, sizeof(timed_event));
-    connection->send_handle->send_event.callback = data_send_event;
-    connection->send_handle->send_event.interval = IO_INTERVAL * 1000lu;
-    connection->send_handle->send_event.carry_data = connection->send_handle;
 }
 
 void sr_retransmit_data(rasta_connection *connection) {
@@ -421,15 +400,12 @@ unsigned int sr_send_queue_item_count(struct rasta_connection *connection) {
 void rasta_socket(struct rasta_handle *handle, rasta_config_info *config, struct logger_t *logger) {
     rasta_handle_init(handle, config, logger);
 
-    // init the redundancy layer
-    redundancy_mux_init_config(&handle->mux, handle->logger, handle->config);
-
     //  register redundancy layer diagnose notification handler
     handle->mux.notifications.on_diagnostics_available = handle->notifications.on_redundancy_diagnostic_notification;
 }
 
 void sr_listen(struct rasta_handle *h) {
-    redundancy_mux_listen_channels(h, &h->mux, &h->config.tls);
+    redundancy_mux_listen_channels(h, &h->mux, &h->config->tls);
 }
 
 void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages) {
@@ -437,10 +413,10 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
         return;
 
     if (con->current_state == RASTA_CONNECTION_UP) {
-        if (app_messages.count > h->config.sending.max_packet) {
+        if (app_messages.count > h->config->sending.max_packet) {
             // too many application messages
             logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA send", "too many application messages to send in one packet. Maximum is %d",
-                       h->config.sending.max_packet);
+                       h->config->sending.max_packet);
             // do nothing and leave method with error code 2
             return;
         }
@@ -456,14 +432,14 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
 
             if (fifo_full(con->fifo_send)) {
                 // Flush, send queued messages now
-                data_send_event(con->send_handle);
+                data_send_event(&con->send_handle);
             }
 
             if (!fifo_push(con->fifo_send, to_fifo)) {
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA send", "could not insert message into send queue");
             } else {
                 // Enable timed sending
-                enable_timed_event(&con->send_handle->send_event);
+                enable_timed_event(&con->send_handle.send_event);
             }
         }
 

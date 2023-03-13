@@ -125,7 +125,7 @@ void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t le
     test.algorithm = mux->sr_hashing_context.algorithm;
     allocateRastaByteArray(&test.key, mux->sr_hashing_context.key.length);
     rmemcpy(test.key.bytes, mux->sr_hashing_context.key.bytes, mux->sr_hashing_context.key.length);
-    rmemcpy(&options, &mux->config.redundancy.crc_type, sizeof(mux->config.redundancy.crc_type));
+    rmemcpy(&options, &mux->config->redundancy.crc_type, sizeof(mux->config->redundancy.crc_type));
 
     bytesToRastaRedundancyPacket(incomingData, options, &test, receivedPacket);
 
@@ -205,9 +205,9 @@ void init_handshake_timeout_event(timed_event *event, int channel_timeout_ms) {
 
 /* ----------------------------*/
 
-void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t *logger, rasta_config_info config) {
+void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t *logger, rasta_config_info *config) {
     mux->logger = logger;
-    mux->port_count = config.redundancy.connections.count;
+    mux->port_count = config->redundancy.connections.count;
     mux->listen_ports = rmalloc(sizeof(uint16_t) * mux->port_count);
     mux->config = config;
     mux->notifications_running = 0;
@@ -218,42 +218,30 @@ void redundancy_mux_init_config(redundancy_mux *mux, struct logger_t *logger, ra
     mux->notifications.on_diagnostics_available = NULL;
     mux->notifications.on_new_connection = NULL;
 
-    // load ports that are specified in config
-    if (mux->config.redundancy.connections.count > 0) {
-        logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading listen from config");
-
-        // init sockets
-        mux->transport_sockets = rmalloc(mux->port_count * sizeof(rasta_transport_socket));
-        memset(mux->transport_sockets, 0, mux->port_count * sizeof(rasta_transport_socket));
-        for (unsigned i = 0; i < mux->port_count; i++) {
-            transport_create_socket(&mux->transport_sockets[i], i, &mux->config.tls);
-        }
-    }
-
     // init hashing context
     // TODO: Why is this code duplicated in the safety/retransmission layer?
-    mux->sr_hashing_context.hash_length = config.sending.md4_type;
-    mux->sr_hashing_context.algorithm = config.sending.sr_hash_algorithm;
+    mux->sr_hashing_context.hash_length = config->sending.md4_type;
+    mux->sr_hashing_context.algorithm = config->sending.sr_hash_algorithm;
 
     if (mux->sr_hashing_context.algorithm == RASTA_ALGO_MD4) {
         // use MD4 IV as key
-        rasta_md4_set_key(&mux->sr_hashing_context, config.sending.md4_a, config.sending.md4_b,
-                          config.sending.md4_c, config.sending.md4_d);
+        rasta_md4_set_key(&mux->sr_hashing_context, config->sending.md4_a, config->sending.md4_b,
+                          config->sending.md4_c, config->sending.md4_d);
     } else {
         // use the sr_hash_key
         allocateRastaByteArray(&mux->sr_hashing_context.key, sizeof(unsigned int));
 
         // convert unsigned in to byte array
-        mux->sr_hashing_context.key.bytes[0] = (config.sending.sr_hash_key >> 24) & 0xFF;
-        mux->sr_hashing_context.key.bytes[1] = (config.sending.sr_hash_key >> 16) & 0xFF;
-        mux->sr_hashing_context.key.bytes[2] = (config.sending.sr_hash_key >> 8) & 0xFF;
-        mux->sr_hashing_context.key.bytes[3] = (config.sending.sr_hash_key) & 0xFF;
+        mux->sr_hashing_context.key.bytes[0] = (config->sending.sr_hash_key >> 24) & 0xFF;
+        mux->sr_hashing_context.key.bytes[1] = (config->sending.sr_hash_key >> 16) & 0xFF;
+        mux->sr_hashing_context.key.bytes[2] = (config->sending.sr_hash_key >> 8) & 0xFF;
+        mux->sr_hashing_context.key.bytes[3] = (config->sending.sr_hash_key) & 0xFF;
     }
 
     logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "initialization done");
 }
 
-redundancy_mux redundancy_mux_init_(struct logger_t *logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config) {
+redundancy_mux redundancy_mux_init_(struct logger_t *logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info *config) {
     redundancy_mux mux;
 
     mux.logger = logger;
@@ -268,7 +256,7 @@ redundancy_mux redundancy_mux_init_(struct logger_t *logger, uint16_t *listen_po
     return mux;
 }
 
-redundancy_mux redundancy_mux_init(struct logger_t *logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info config) {
+redundancy_mux redundancy_mux_init(struct logger_t *logger, uint16_t *listen_ports, unsigned int port_count, rasta_config_info *config) {
     redundancy_mux mux = redundancy_mux_init_(logger, listen_ports, port_count, config);
     mux.transport_sockets = rmalloc(port_count * sizeof(int));
 
@@ -282,16 +270,29 @@ void redundancy_mux_allocate_channels(struct rasta_handle *h, redundancy_mux *mu
     mux->redundancy_channels = rmalloc(sizeof(rasta_redundancy_channel) * connections_length);
     mux->redundancy_channels_count = connections_length;
 
+    // load ports that are specified in config
+    if (mux->config->redundancy.connections.count > 0) {
+        logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux init", "loading listen from config");
+
+        // init sockets
+        mux->transport_sockets = rmalloc(mux->port_count * sizeof(rasta_transport_socket));
+        memset(mux->transport_sockets, 0, mux->port_count * sizeof(rasta_transport_socket));
+        for (unsigned i = 0; i < mux->port_count; i++) {
+            transport_create_socket(h, &mux->transport_sockets[i], i, &mux->config->tls);
+        }
+    }
+
     for (unsigned i = 0; i < connections_length; i++) {
         assert(connections[i].transport_sockets_count == mux->port_count);
         red_f_init(h, mux->logger, connections[i].config, connections[i].transport_sockets, connections[i].transport_sockets_count,
             connections[i].rasta_id, &mux->redundancy_channels[i]);
+        mux->redundancy_channels[i].mux = mux;
     }
 }
 
 void redundancy_mux_bind(struct rasta_handle *h) {
     for (unsigned i = 0; i < h->mux.port_count; ++i) {
-        const rasta_ip_data *ip_data = &h->mux.config.redundancy.connections.data[i];
+        const rasta_ip_data *ip_data = &h->mux.config->redundancy.connections.data[i];
         transport_bind(h, &h->mux.transport_sockets[i], ip_data->ip, (uint16_t)ip_data->port);
     }
 }
@@ -332,7 +333,7 @@ void redundancy_mux_send(rasta_redundancy_channel *receiver, struct RastaPacket 
 
     // create packet to send and convert to byte array
     struct RastaRedundancyPacket packet;
-    createRedundancyPacket(receiver->seq_tx, data, mux->config.redundancy.crc_type, &packet);
+    createRedundancyPacket(receiver->seq_tx, data, mux->config->redundancy.crc_type, &packet);
     struct RastaByteArray data_to_send = rastaRedundancyPacketToBytes(&packet, &receiver->hashing_context);
 
     logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux send", "redundancy packet created");
@@ -399,10 +400,8 @@ void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id) {
 }
 
 void redundancy_mux_listen_channels(struct rasta_handle *h, redundancy_mux *mux, rasta_config_tls *tls_config) {
+    UNUSED(tls_config);
     for (unsigned i = 0; i < mux->port_count; ++i) {
-        // TODO: We should have a transport_socket initialize constructor
-        mux->transport_sockets[i].id = i;
-        mux->transport_sockets[i].tls_config = tls_config;
         transport_listen(h, &mux->transport_sockets[i]);
     }
 }
@@ -413,12 +412,12 @@ int rasta_red_connect_transport_channel(rasta_connection *h, rasta_redundancy_ch
     return transport_connection->connected;
 }
 
-int redundancy_mux_connect_channel(rasta_connection *h, redundancy_mux *mux, rasta_redundancy_channel *channel) {
+int redundancy_mux_connect_channel(rasta_connection *connection, redundancy_mux *mux, rasta_redundancy_channel *channel) {
     // add transport channels
     int success = 0;
     for (unsigned int i = 0; i < channel->transport_channel_count; i++) {
         // Provided transport channels have to match with local ports configured
-        success |= rasta_red_connect_transport_channel(h, channel, &mux->transport_sockets[i]);
+        success |= rasta_red_connect_transport_channel(connection, channel, &mux->transport_sockets[i]);
     }
 
     if (!success) {

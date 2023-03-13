@@ -248,18 +248,7 @@ void transport_listen(struct rasta_handle *h, rasta_transport_socket *socket) {
 
     // Register accept event
 
-    memset(&socket->accept_event, 0, sizeof(fd_event));
-    socket->accept_event.carry_data = &socket->accept_event_data;
-
-    socket->accept_event.callback = channel_accept_event;
-    socket->accept_event.fd = socket->file_descriptor;
-    socket->accept_event.enabled = 1;
-
-    socket->accept_event_data.socket = socket;
-    socket->accept_event_data.event = &socket->accept_event;
-    socket->accept_event_data.h = h;
-
-    add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
+    enable_fd_event(&socket->accept_event);
 }
 
 int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
@@ -345,15 +334,8 @@ int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket
     wolfSSL_FreeArrays(channel->ssl);
     set_tls_async(channel->file_descriptor, channel->ssl);
 
-    memset(&channel->receive_event, 0, sizeof(fd_event));
-    channel->receive_event.enabled = 1;
-    channel->receive_event.carry_data = &channel->receive_event_data;
-    channel->receive_event.callback = channel_receive_event;
     channel->receive_event.fd = channel->file_descriptor;
-
-    memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
     channel->receive_event_data.channel = channel;
-    channel->receive_event_data.connection = h;
 
     enable_fd_event(&channel->receive_event);
 
@@ -392,10 +374,22 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return do_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
+void transport_create_socket(struct rasta_handle *h, rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init socket
     socket->id = id;
     tcp_init(socket, tls_config);
+
+    memset(&socket->accept_event, 0, sizeof(fd_event));
+
+    socket->accept_event.callback = channel_accept_event;
+    socket->accept_event.carry_data = &socket->accept_event_data;
+    socket->accept_event.fd = socket->file_descriptor;
+
+    socket->accept_event_data.event = &socket->accept_event;
+    socket->accept_event_data.socket = socket;
+    socket->accept_event_data.h = h;
+
+    add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
 void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port) {
@@ -413,7 +407,6 @@ void transport_init(struct rasta_handle *h, rasta_transport_channel* channel, un
     memset(&channel->receive_event, 0, sizeof(fd_event));
     channel->receive_event.carry_data = &channel->receive_event_data;
     channel->receive_event.callback = channel_receive_event;
-    channel->receive_event.fd = channel->file_descriptor;
 
     memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
     channel->receive_event_data.channel = channel;

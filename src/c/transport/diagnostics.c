@@ -83,7 +83,7 @@ void red_call_on_diagnostic(redundancy_mux *mux, int n_diagnose,
 }
 
 void run_channel_diagnostics(rasta_redundancy_channel* current, unsigned int transport_channel_index) {
-    int n_diagnose = current->mux->config.redundancy.n_diagnose;
+    int n_diagnose = current->mux->config->redundancy.n_diagnose;
 
     unsigned long channel_diag_start_time = current->transport_channels[transport_channel_index].diagnostics_data.start_time;
 
@@ -100,7 +100,7 @@ void run_channel_diagnostics(rasta_redundancy_channel* current, unsigned int tra
         // window finished, fire event
         // fire diagnostic notification
         red_call_on_diagnostic(current->mux,
-                                current->mux->config.redundancy.n_diagnose,
+                                current->mux->config->redundancy.n_diagnose,
                                 current->transport_channels[transport_channel_index].diagnostics_data.n_missed,
                                 current->transport_channels[transport_channel_index].diagnostics_data.t_drift,
                                 current->transport_channels[transport_channel_index].diagnostics_data.t_drift2,

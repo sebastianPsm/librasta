@@ -240,16 +240,16 @@ void red_f_deferTmo(rasta_connection *h, rasta_redundancy_channel *channel) {
 
 void red_f_cleanup(rasta_redundancy_channel *channel) {
     // destroy the defer queue
-    deferqueue_destroy(&channel->defer_q);
+    // deferqueue_destroy(&channel->defer_q);
 
     // destroy the diagnostics buffer
-    deferqueue_destroy(&channel->diagnostics_packet_buffer);
+    // deferqueue_destroy(&channel->diagnostics_packet_buffer);
 
     // free the channels
-    rfree(channel->transport_channels);
-    channel->transport_channel_count = 0;
+    // rfree(channel->transport_channels);
+    // channel->transport_channel_count = 0;
 
-    freeRastaByteArray(&channel->hashing_context.key);
+    // freeRastaByteArray(&channel->hashing_context.key);
 
     logger_log(channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red cleanup", "Cleanup complete");
 }

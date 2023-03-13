@@ -13,7 +13,7 @@ void sr_remove_confirmed_messages(struct rasta_connection *con);
 void sr_reset_connection(struct rasta_connection *connection);
 void sr_close_connection(struct rasta_connection *connection, rasta_disconnect_reason reason, unsigned short details);
 void sr_diagnostic_interval_init(struct rasta_connection *connection, rasta_config_sending *cfg);
-void sr_init_connection(struct rasta_connection *connection, unsigned long id, rasta_role role, const rasta_config_info *config);
+void sr_init_connection(struct rasta_connection *connection, rasta_role role);
 void sr_retransmit_data(struct rasta_connection *connection);
 void rasta_socket(struct rasta_handle *handle, rasta_config_info *config, struct logger_t *logger);
 void sr_listen(struct rasta_handle *h);

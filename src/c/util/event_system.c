@@ -129,6 +129,18 @@ void event_system_start(event_system *ev_sys) {
         current->last_call = cur_time;
     }
     for (;;) {
+        {
+            int fd_event_count = 0, fd_event_active_count = 0, timed_event_count = 0, timed_event_active_count = 0;
+            for (fd_event *ev = ev_sys->fd_events.first; ev; ev = ev->next) {
+                fd_event_count++;
+                fd_event_active_count += !!ev->enabled;
+            }
+            for (timed_event *ev = ev_sys->timed_events.first; ev; ev = ev->next) {
+                timed_event_count++;
+                timed_event_active_count += !!ev->enabled;
+            }
+            printf("%d/%d fd events and %d/%d timed events active\n", fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
+        }
         timed_event *next_event;
         cur_time = get_nanotime();
         uint64_t time_to_wait = calc_next_timed_event(&ev_sys->timed_events, &next_event, cur_time);
@@ -247,14 +259,6 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     assert(event->prev == NULL);
     assert(event->next == NULL);
 
-    {
-        int cnt = 0;
-        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
-            cnt++;
-        }
-        printf("before add: %u\n", cnt);
-    }
-
     // simple linked list add
     if (ev_sys->fd_events.last) {
         event->prev = ev_sys->fd_events.last;
@@ -269,14 +273,6 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     }
 
     event->options = options;
-
-    {
-        int cnt = 0;
-        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
-            cnt++;
-        }
-        printf("after add: %u\n", cnt);
-    }
 }
 
 /**
@@ -287,14 +283,6 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
  */
 void remove_fd_event(event_system *ev_sys, fd_event *event) {
     assert(event->prev != NULL || event->next != NULL);
-    {
-        int cnt = 0;
-        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
-            printf("%u %p\n", cnt, (void*)cur);
-            cnt++;
-        }
-        printf("before remove %p: %u\n", (void*)event, cnt);
-    }
 
     if (ev_sys->fd_events.first == event) {
         ev_sys->fd_events.first = ev_sys->fd_events.first->next;
@@ -304,12 +292,4 @@ void remove_fd_event(event_system *ev_sys, fd_event *event) {
     }
     if (event->prev) event->prev->next = event->next;
     if (event->next) event->next->prev = event->prev;
-    {
-        int cnt = 0;
-        for (fd_event *cur = ev_sys->fd_events.first; cur ; cur = cur->next) {
-            printf("%u %p\n", cnt, (void*)cur);
-            cnt++;
-        }
-        printf("after remove %p: %u\n", (void*)event, cnt);
-    }
 }
