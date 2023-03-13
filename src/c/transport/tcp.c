@@ -124,40 +124,27 @@ int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
 
     return fd;
 }
-
-int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel, char *host, uint16_t port, const rasta_config_tls *tls_config) {
-    UNUSED(tls_config);
-    channel->id = socket->id;
-    channel->remote_port = port;
-    strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
-    channel->send_callback = send_callback;
-    channel->tls_mode = socket->tls_mode;
+int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
+    UNUSED(h);
     channel->file_descriptor = socket->file_descriptor;
 
-    int r = tcp_connect(channel);
+    if (tcp_connect(channel) != 0) {
+        return -1;
+    };
 
-    if (r == 0) {
-        memset(&channel->receive_event, 0, sizeof(fd_event));
-        channel->receive_event.enabled = 1;
-        channel->receive_event.carry_data = &channel->receive_event_data;
-        channel->receive_event.callback = channel_receive_event;
-        channel->receive_event.fd = channel->file_descriptor;
+    channel->receive_event.fd = channel->file_descriptor;
+    channel->receive_event_data.channel = channel;
 
-        memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
-        channel->receive_event_data.channel = channel;
-        channel->receive_event_data.h = h;
+    enable_fd_event(&channel->receive_event);
 
-        add_fd_event(h->ev_sys, &channel->receive_event, EV_READABLE);
-    }
-
-    return r;
+    return 0;
 }
 
 int transport_redial(rasta_transport_channel* channel) {
     return tcp_connect(channel);
 }
 
-void transport_close(struct rasta_handle *h, rasta_transport_channel *channel) {
+void transport_close(rasta_transport_channel *channel) {
     if (channel->connected) {
         bsd_close(channel->file_descriptor);
     }
@@ -179,10 +166,22 @@ ssize_t receive_callback(redundancy_mux *mux, struct receive_event_data *data, u
     return do_receive(data->channel, buffer, MAX_DEFER_QUEUE_MSG_SIZE, sender);
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
+void transport_create_socket(struct rasta_handle *h, rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init socket
     socket->id = id;
     tcp_init(socket, tls_config);
+
+    memset(&socket->accept_event, 0, sizeof(fd_event));
+
+    socket->accept_event.callback = channel_accept_event;
+    socket->accept_event.carry_data = &socket->accept_event_data;
+    socket->accept_event.fd = socket->file_descriptor;
+
+    socket->accept_event_data.event = &socket->accept_event;
+    socket->accept_event_data.socket = socket;
+    socket->accept_event_data.h = h;
+
+    add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
 void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, const char *ip, uint16_t port) {
@@ -190,10 +189,20 @@ void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, cons
     tcp_bind_device(socket, ip, port);
 }
 
-void transport_init(rasta_transport_channel* channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
+void transport_init(struct rasta_handle *h, rasta_transport_channel* channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
     channel->id = id;
     channel->remote_port = port;
     strncpy(channel->remote_ip_address, host, INET_ADDRSTRLEN-1);
     channel->send_callback = send_callback;
     channel->tls_config = tls_config;
+
+    memset(&channel->receive_event, 0, sizeof(fd_event));
+    channel->receive_event.carry_data = &channel->receive_event_data;
+    channel->receive_event.callback = channel_receive_event;
+
+    memset(&channel->receive_event_data, 0, sizeof(channel->receive_event_data));
+    channel->receive_event_data.channel = channel;
+    channel->receive_event_data.connection = NULL;
+
+    add_fd_event(h->ev_sys, &channel->receive_event, EV_READABLE);
 }

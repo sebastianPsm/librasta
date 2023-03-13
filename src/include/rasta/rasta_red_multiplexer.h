@@ -170,14 +170,6 @@ void redundancy_mux_close(redundancy_mux *mux);
  */
 rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsigned long id);
 
-/**
- * setter for the RaSTA ID of the redundancy channel, that has been specified in the config.
- * This is only necessary as a client where the redundancy channel to a server is specified in the config file
- * @param mux the mux where the ID will be set
- * @param id the RaSTA ID of the config channel
- */
-void redundancy_mux_set_config_id(redundancy_mux *mux, unsigned long id);
-
 void redundancy_mux_send(rasta_redundancy_channel *channel, struct RastaPacket *data);
 
 /**

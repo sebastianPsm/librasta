@@ -244,13 +244,25 @@ void udp_init(rasta_transport_socket *transport_state, const rasta_config_tls *t
     transport_state->file_descriptor = file_desc;
 }
 
-void transport_create_socket(rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
+void transport_create_socket(struct rasta_handle *h, rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {
     // init and bind sockets
     socket->id = id;
     udp_init(socket, tls_config);
+
+    memset(&socket->accept_event, 0, sizeof(fd_event));
+
+    socket->accept_event.callback = channel_accept_event;
+    socket->accept_event.carry_data = &socket->accept_event_data;
+    socket->accept_event.fd = socket->file_descriptor;
+
+    socket->accept_event_data.event = &socket->accept_event;
+    socket->accept_event_data.socket = socket;
+    socket->accept_event_data.h = h;
+
+    add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
-int transport_connect(struct rasta_handle *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
+int transport_connect(rasta_connection *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
     UNUSED(h);
 
     // channel->id = socket->id;
@@ -302,7 +314,6 @@ void transport_bind(struct rasta_handle *h, rasta_transport_socket *socket, cons
 
     memset(&socket->receive_event_data, 0, sizeof(socket->receive_event_data));
     socket->receive_event_data.socket = socket;
-    socket->receive_event_data.h = h;
 
     add_fd_event(h->ev_sys, &socket->receive_event, EV_READABLE);
 }

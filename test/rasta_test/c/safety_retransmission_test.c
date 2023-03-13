@@ -6,10 +6,9 @@
 #include <rasta/rmemory.h>
 
 #include "../../../src/c/transport/transport.h"
+#include "../../../src/c/retransmission/safety_retransmission.h"
 
 #define SERVER_ID 0xA
-
-void sr_retransmit_data(rasta_receive_handle *h, struct rasta_connection *connection);
 
 static fifo_t* test_send_fifo = NULL;
 
@@ -41,13 +40,12 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     info.redundancy = configInfoRedundancy;
 
     uint16_t listenPorts[1] = {1234};
-    redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
-    redundancy_mux_set_config_id(&mux, SERVER_ID);
+    redundancy_mux mux = redundancy_mux_init(&logger, listenPorts, 1, &info);
     mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
-    h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
+    fake_channel.mux = &mux;
     fake_channel.associated_id = SERVER_ID;
     fake_channel.hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&fake_channel.hashing_context, 0, 0, 0, 0);
@@ -59,13 +57,14 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     fake_channel.transport_channel_count = 1;
 
     mux.redundancy_channels = &fake_channel;
-    mux.channel_count = 1;
+    mux.redundancy_channels_count = 1;
 
-    struct rasta_connection connection;
+    rasta_connection connection;
     connection.remote_id = SERVER_ID;
     connection.fifo_retransmission = fifo_init(0);
+    connection.redundancy_channel = &fake_channel;
 
-    sr_retransmit_data(&h, &connection);
+    sr_retransmit_data(&connection);
 
     // One message should be sent
     CU_ASSERT_PTR_NOT_NULL_FATAL(test_send_fifo);
@@ -97,11 +96,9 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     info.redundancy = configInfoRedundancy;
 
     uint16_t listenPorts[1] = {1234};
-    redundancy_mux mux = redundancy_mux_init(logger, listenPorts, 1, info);
-    redundancy_mux_set_config_id(&mux, SERVER_ID);
+    redundancy_mux mux = redundancy_mux_init(&logger, listenPorts, 1, &info);
     mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
-    h.mux = &mux;
 
     rasta_redundancy_channel fake_channel;
     fake_channel.associated_id = SERVER_ID;
@@ -115,7 +112,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     fake_channel.transport_channel_count = 1;
 
     mux.redundancy_channels = &fake_channel;
-    mux.channel_count = 1;
+    mux.redundancy_channels_count = 1;
 
     struct rasta_connection connection;
     connection.remote_id = SERVER_ID;
@@ -141,7 +138,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     fifo_push(connection.fifo_retransmission, to_fifo);
 
     // Act
-    sr_retransmit_data(&h, &connection);
+    sr_retransmit_data(&connection);
 
     // Assert
 
