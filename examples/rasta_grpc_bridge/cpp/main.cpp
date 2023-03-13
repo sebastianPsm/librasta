@@ -68,9 +68,9 @@ void processRasta(std::string config_path,
     rasta_config_info config;
     struct logger_t logger;
     load_configfile(&config, &logger, config_path.c_str());
-    // int nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
+    unsigned nchannels = config.redundancy.connections.count < 2 ? config.redundancy.connections.count : 2;
     rasta_connection_config connection = {
-        &config, toServer, 2, s_remote_id
+        &config, toServer, nchannels, s_remote_id
     };
     rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
 

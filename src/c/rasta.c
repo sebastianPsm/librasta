@@ -272,7 +272,7 @@ struct rasta_connection *handle_conreq(struct rasta_connection *connection, stru
         // received packet is a ConReq -> check version
         struct RastaConnectionData connectionData = extractRastaConnectionData(receivedPacket);
 
-        logger_log(connection->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Client has version %s", connectionData.version);
+        logger_log(connection->logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE: ConnectionRequest", "Client has version %.4s", connectionData.version);
 
         if (compare_version(RASTA_VERSION, connectionData.version) == 0 ||
             compare_version(RASTA_VERSION, connectionData.version) == -1 ||
