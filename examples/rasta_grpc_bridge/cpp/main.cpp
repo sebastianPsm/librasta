@@ -126,17 +126,15 @@ void processRasta(std::string config_path,
             fd_event terminator_event;
             memset(&terminator_event, 0, sizeof(fd_event));
             terminator_event.callback = [](void *carry) {
-                UNUSED(carry);
                 // Invalidate the event
                 uint64_t u;
                 read(s_terminator_fd, &u, sizeof(u));
 
-                // rasta_handle *h = reinterpret_cast<rasta_handle *>(carry);
-                // TODO: Segfaults...
-                // sr_disconnect(h, existing_connection);
+                rasta_connection *h = reinterpret_cast<rasta_connection *>(carry);
+                sr_disconnect(h);
                 return 1;
             };
-            terminator_event.carry_data = &s_rc->h;
+            terminator_event.carry_data = s_connection;
             terminator_event.fd = s_terminator_fd;
             enable_fd_event(&terminator_event);
             add_fd_event(&s_rc->rasta_lib_event_system, &terminator_event, EV_READABLE);
@@ -177,7 +175,7 @@ void processRasta(std::string config_path,
 
             forwarderThread.join();
 
-            sr_disconnect(&s_rc->h, s_connection);
+            sr_disconnect(s_connection);
             s_connection = NULL;
 
             remove_fd_event(&s_rc->rasta_lib_event_system, &data_event);

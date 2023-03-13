@@ -228,11 +228,6 @@ typedef struct rasta_connection {
 #endif
 
     /**
-     * 1 if the process for sending heartbeats should be paused, otherwise 0
-     */
-    int hb_stopped;
-
-    /**
      * blocks heartbeats until connection handshake is complete
      */
     int hb_locked;

@@ -111,6 +111,7 @@ int channel_receive_event(void *carry_data) {
 
     if (len <= 0) {
         // Connection is broken
+        // TODO: What about disabling events?
         transport_channel->connected = false;
 
         // Why should a readable UDP socket return len <= 0?

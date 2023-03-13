@@ -167,8 +167,6 @@ int data_send_event(void *carry_data) {
             logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "Messages waiting to be sent: %d",
                         send_backlog_size);
 
-            con->hb_stopped = 1;
-
             struct RastaMessageData app_messages;
             struct RastaByteArray msg;
 
@@ -216,8 +214,6 @@ int data_send_event(void *carry_data) {
 
             // set last message ts
             reschedule_event(&con->send_heartbeat_event);
-
-            con->hb_stopped = 0;
 
             freeRastaMessageData(&app_messages);
             freeRastaByteArray(&packet);

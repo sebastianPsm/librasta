@@ -243,7 +243,6 @@ void sr_reset_connection(struct rasta_connection *connection) {
     connection->current_state = RASTA_CONNECTION_CLOSED;
     connection->connected_recv_buffer_size = -1;
     connection->hb_locked = 1;
-    connection->hb_stopped = 0;
 
     // set all error counters to 0
     struct rasta_error_counters error_counters;
@@ -471,16 +470,16 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
  * @param h
  * @param remote_id
  */
-void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con) {
-    logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA connection", "disconnected %X", con->remote_id);
+void sr_disconnect(struct rasta_connection *con) {
+    logger_log(con->logger, LOG_LEVEL_INFO, "RaSTA connection", "disconnected %X", con->remote_id);
 
     sr_close_connection(con, RASTA_DISC_REASON_USERREQUEST, 0);
 
-    remove_timed_event(h->ev_sys, &con->timeout_event);
-    remove_timed_event(h->ev_sys, &con->send_heartbeat_event);
+    disable_timed_event(&con->timeout_event);
+    disable_timed_event(&con->send_heartbeat_event);
 #ifdef ENABLE_OPAQUE
-    if (h->config->kex.rekeying_interval_ms) {
-        remove_timed_event(h->ev_sys, &con->rekeying_event);
+    if (con->config->kex.rekeying_interval_ms) {
+        disable_timed_event(&con->rekeying_event);
     }
 #endif
 }

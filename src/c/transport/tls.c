@@ -358,6 +358,7 @@ void transport_close(rasta_transport_channel *channel) {
     }
 
     disable_fd_event(&channel->receive_event);
+    channel->connected = false;
 }
 
 void send_callback(redundancy_mux *mux, struct RastaByteArray data_to_send, rasta_transport_channel *channel, unsigned int channel_index) {

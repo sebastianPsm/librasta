@@ -76,7 +76,7 @@ rastaApplicationMessage sr_get_received_data(struct rasta_handle *h, struct rast
  * @param h
  * @param con
  */
-void sr_disconnect(struct rasta_handle *h, struct rasta_connection *con);
+void sr_disconnect(struct rasta_connection *con);
 
 /**
  * used to end all threads an free assigned ressources
