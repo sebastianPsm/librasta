@@ -50,9 +50,7 @@ void send_KexRequest(struct rasta_connection *connection) {
     connection->current_state = RASTA_CONNECTION_KEX_RESP;
 #else
     // should never be called
-    (void)mux;
     (void)connection;
-    (void)h;
     abort();
 #endif
 }
