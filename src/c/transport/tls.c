@@ -283,7 +283,9 @@ int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket
 
     if (tcp_connect(channel) != 0) {
         return -1;
-    };
+    }
+
+    channel->connected = false;
 
     if (channel->ctx == NULL) {
         handle_tls_mode_client(channel);
@@ -338,6 +340,8 @@ int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket
     channel->receive_event_data.channel = channel;
 
     enable_fd_event(&channel->receive_event);
+
+    channel->connected = true;
 
     return 0;
 }

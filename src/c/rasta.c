@@ -238,8 +238,8 @@ void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const cha
         timed_event_count++;
         timed_event_active_count += !!ev->enabled;
     }
-    // logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA EVENT-SYSTEM", "%s | %d/%d fd events and %d/%d timed events active",
-    //            message, fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA EVENT-SYSTEM", "%s | %d/%d fd events and %d/%d timed events active",
+               message, fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
 }
 
 // HACK
