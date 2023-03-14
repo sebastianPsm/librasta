@@ -221,12 +221,10 @@ void redundancy_mux_close_channel(rasta_redundancy_channel *c);
  */
 int redundancy_mux_try_retrieve_all(redundancy_mux *mux, struct RastaPacket *out);
 
-int receive_packet(redundancy_mux *mux, rasta_transport_channel *channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len);
+int receive_packet(redundancy_mux *mux, rasta_transport_channel *channel, unsigned char *buffer, size_t len);
 int handle_closed_transport(rasta_connection *h, rasta_redundancy_channel *channel);
 
 void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t len, struct RastaRedundancyPacket *receivedPacket);
-
-void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *channel, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender);
 
 #ifdef __cplusplus
 }

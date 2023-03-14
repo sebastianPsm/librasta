@@ -73,7 +73,7 @@ void red_call_on_new_connection(redundancy_mux *mux, unsigned long id) {
 
 /* --------------------- */
 
-int receive_packet(redundancy_mux *mux, rasta_transport_channel *transport_channel, struct sockaddr_in *sender, unsigned char *buffer, size_t len) {
+int receive_packet(redundancy_mux *mux, rasta_transport_channel *transport_channel, unsigned char *buffer, size_t len) {
     int result = 0;
     logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", transport_channel->id, len);
 
@@ -83,8 +83,6 @@ int receive_packet(redundancy_mux *mux, rasta_transport_channel *transport_chann
         uint16_t currentPacketSize = leShortToHost(&buffer[read_offset]);
         struct RastaRedundancyPacket receivedPacket;
         handle_received_data(mux, buffer + read_offset, currentPacketSize, &receivedPacket);
-        update_redundancy_channels(mux, transport_channel, &receivedPacket, sender);
-
         // Check that deferqueue can take new elements before calling red_f_receiveData
         rasta_redundancy_channel *channel = redundancy_mux_get_channel(mux, receivedPacket.data.sender_id);
         if (deferqueue_isfull(&channel->defer_q)) {
@@ -130,59 +128,6 @@ void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t le
     bytesToRastaRedundancyPacket(incomingData, options, &test, receivedPacket);
 
     freeRastaByteArray(&test.key);
-}
-
-void update_redundancy_channels(redundancy_mux *mux, rasta_transport_channel *connected_channel, struct RastaRedundancyPacket *receivedPacket, struct sockaddr_in *sender) {
-    // This method used to assign a new transport channel to a possibly existing redundancy_channel
-
-    UNUSED(mux); UNUSED(connected_channel); UNUSED(receivedPacket); UNUSED(sender);
-
-    // // find associated redundancy channel
-    // for (unsigned int i = 0; i < mux->channel_count; ++i) {
-    //     if (receivedPacket->data.sender_id == mux->redundancy_channels[i].associated_id) {
-    //         // found redundancy channel with associated id
-    //         rasta_redundancy_channel *channel = &mux->redundancy_channels[i];
-    //         assert(channel->transport_channel_count > i);
-
-    //         if (!channel->transport_channels[connected_channel->id].connected) {
-    //             channel->transport_channels[connected_channel->id] = *connected_channel;
-    //             logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d discovered client transport channel %s:%d for connection to 0x%lX",
-    //                         connected_channel->id, connected_channel->remote_ip_address, connected_channel->remote_port, channel->associated_id);
-    //             // TODO: rfree channel
-    //         }
-    //         return;
-    //     }
-    // }
-
-    // // no associated channel found -> received message from new partner
-    // logger_log(mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux receive", "received pdu from previously unknown entity with id=0x%lX",
-    //            (long unsigned int)receivedPacket->data.sender_id);
-
-    // rasta_redundancy_channel new_channel;
-    // red_f_init(mux->logger, mux->config, mux->port_count, receivedPacket->data.sender_id, &new_channel);
-    // // add transport channel to redundancy channel
-    // new_channel.transport_channels[connected_channel->id] = *connected_channel;
-
-    // // TODO: Bad idea to free it up in the middle of this
-    // // Memory was allocated in accept_event
-    // // rfree(connected_channel);
-
-    // new_channel.is_open = 1;
-
-    // // reallocate memory for new client
-    // mux->redundancy_channels = rrealloc(mux->redundancy_channels, (mux->channel_count + 1) * sizeof(rasta_redundancy_channel));
-    // mux->redundancy_channels[mux->channel_count] = new_channel;
-    // mux->channel_count++;
-
-    // // Update pointers
-    // for (unsigned i = 0; i < mux->channel_count; i++) {
-    //     for (unsigned j = 0; j < mux->redundancy_channels[i].transport_channel_count; j++) {
-    //         mux->redundancy_channels[i].transport_channels[j].receive_event_data.redundancy_channel = &mux->redundancy_channels[i];
-    //     }
-    // }
-
-    // // fire new redundancy channel notification
-    // red_call_on_new_connection(mux, new_channel.associated_id);
 }
 
 int channel_timeout_event(void *carry_data) {

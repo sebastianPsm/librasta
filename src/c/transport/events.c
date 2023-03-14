@@ -69,19 +69,6 @@ int channel_receive_event(void *carry_data) {
     // Resolve channel by using sender ip and port
     rasta_transport_channel *transport_channel = data->channel;
 
-    // if (transport_channel == NULL) {
-    //     for (unsigned i = 0; i < h->mux.channel_count; i++) {
-    //         rasta_redundancy_channel *redundancy_channel = &h->mux.redundancy_channels[i];
-    //         for (unsigned j = 0; j < redundancy_channel->transport_channel_count; j++) {
-    //             rasta_transport_channel *t_transport_channel = &redundancy_channel->transport_channels[j];
-    //             if (strncmp(t_transport_channel->remote_ip_address, str, INET_ADDRSTRLEN) == 0
-    //                     && t_transport_channel->remote_port == ntohs(sender.sin_port)) {
-    //                 transport_channel = t_transport_channel;
-    //             }
-    //         }
-    //     }
-    // }
-
     if (transport_channel == NULL) {
         // For UDP and DTLS, this seems to be a new peer
         transport_channel = rmalloc(sizeof(rasta_transport_channel));
@@ -135,7 +122,7 @@ int channel_receive_event(void *carry_data) {
         return 0;
     }
 
-    int result = receive_packet(data->connection->redundancy_channel->mux, transport_channel, &sender, buffer, len);
+    int result = receive_packet(data->connection->redundancy_channel->mux, transport_channel, buffer, len);
 
     if (result) {
         // Deliver messages to the upper layer
