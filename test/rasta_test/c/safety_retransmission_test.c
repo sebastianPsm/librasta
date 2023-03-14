@@ -100,6 +100,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
 
     rasta_redundancy_channel fake_channel;
+    fake_channel.mux = &mux;
     fake_channel.associated_id = SERVER_ID;
     fake_channel.hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&fake_channel.hashing_context, 0, 0, 0, 0);
@@ -116,6 +117,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     struct rasta_connection connection;
     connection.remote_id = SERVER_ID;
     connection.fifo_retransmission = fifo_init(1);
+    connection.redundancy_channel = &fake_channel;
 
     struct RastaMessageData app_messages;
     struct RastaByteArray message;
