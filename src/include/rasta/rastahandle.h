@@ -157,11 +157,6 @@ typedef struct rasta_sending_handle {
 } rasta_sending_handle;
 
 typedef struct rasta_heartbeat_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending *config;
-    rasta_config_general *info;
 
     struct logger_t *logger;
 

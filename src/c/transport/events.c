@@ -89,9 +89,9 @@ int channel_receive_event(void *carry_data) {
 
         // TODO: Somewhere, this channel should be freed.
         // Maybe in redmux update connected channels?
-
-        run_channel_diagnostics(data->connection->redundancy_channel, transport_channel->id);
     }
+
+    run_channel_diagnostics(data->connection->redundancy_channel, transport_channel->id);
 
 
     logger_log(data->connection->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Channel %d calling receive", transport_channel->id);

@@ -103,12 +103,18 @@ int rasta_receive(struct rasta_connection *con, struct RastaPacket *receivedPack
 int event_connection_expired(void *carry_data) {
     struct timed_event_data *data = carry_data;
     struct rasta_heartbeat_handle *h = (struct rasta_heartbeat_handle *)data->handle;
-    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "T_i timer expired - send DisconnectionRequest");
+    logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "T_i timer expired");
 
     struct rasta_connection *connection = data->connection;
     // so check if connection is valid
 
-    if (connection == NULL || connection->hb_locked) {
+    if (connection == NULL) {
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "connection is unknown");
+        return 0;
+    }
+
+    if (connection->hb_locked) {
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "connection is hb_locked");
         return 0;
     }
 

@@ -158,7 +158,6 @@ void processRasta(std::string config_path,
     unsigned long local_id = std::stoul(rasta_local_id);
     s_remote_id = std::stoul(rasta_target_id);
 
-    memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
     struct logger_t logger;
 
     rasta_config_info config;
@@ -179,6 +178,7 @@ void processRasta(std::string config_path,
     // TODO: Assert that this is true for every known peer
     bool server = local_id > s_remote_id;
     if (server) {
+        memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
         rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
         rasta_bind(&s_rc->h);
         sr_listen(&s_rc->h);
@@ -191,6 +191,7 @@ void processRasta(std::string config_path,
         rasta_cleanup(s_rc);
     } else {
         while (true) {
+            memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
             rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
             rasta_bind(&s_rc->h);
             s_connection = sr_connect(&s_rc->h, s_remote_id);

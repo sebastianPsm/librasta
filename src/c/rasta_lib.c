@@ -15,7 +15,7 @@ void init_connection_timeout_event(timed_event *ev, struct timed_event_data *car
     memset(ev, 0, sizeof(timed_event));
     ev->callback = event_connection_expired;
     ev->carry_data = carry_data;
-    ev->interval = connection->heartbeat_handle.config->t_max * 1000000lu;
+    ev->interval = connection->config->sending.t_max * 1000000lu;
     carry_data->handle = &connection->heartbeat_handle;
     carry_data->connection = connection;
 }
@@ -26,7 +26,7 @@ void init_send_heartbeat_event(timed_event *ev, struct timed_event_data *carry_d
     memset(ev, 0, sizeof(timed_event));
     ev->callback = heartbeat_send_event;
     ev->carry_data = carry_data;
-    ev->interval = connection->heartbeat_handle.config->t_h * 1000000lu;
+    ev->interval = connection->config->sending.t_h * 1000000lu;
     carry_data->handle = &connection->heartbeat_handle;
     carry_data->connection = connection;
 }
@@ -114,8 +114,6 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
         connection->send_handle.hashing_context = &h->mux.sr_hashing_context;
 
         // heartbeat
-        connection->heartbeat_handle.config = &config->sending;
-        connection->heartbeat_handle.info = &config->general;
         connection->heartbeat_handle.logger = logger;
         connection->heartbeat_handle.mux = connection->redundancy_channel->mux;
         connection->heartbeat_handle.hashing_context = &connection->redundancy_channel->mux->sr_hashing_context;

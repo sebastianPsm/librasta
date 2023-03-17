@@ -244,6 +244,9 @@ void sr_reset_connection(struct rasta_connection *connection) {
     connection->connected_recv_buffer_size = -1;
     connection->hb_locked = 1;
 
+    disable_timed_event(&connection->send_heartbeat_event);
+    disable_timed_event(&connection->timeout_event);
+
     // set all error counters to 0
     struct rasta_error_counters error_counters;
     error_counters.address = 0;
