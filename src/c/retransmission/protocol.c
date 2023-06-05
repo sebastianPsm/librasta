@@ -6,7 +6,7 @@
 
 /**
  * this will generate a 4 byte timestamp of the current system time
- * @return current system time in s since 1970
+ * @return current system time in milliseconds since the boot time (on Linux, behaviour on other systems may differ)
  */
 uint32_t cur_timestamp() {
     long ms;
