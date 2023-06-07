@@ -4,28 +4,6 @@
 #include <stdlib.h>
 #include <rasta/config.h>
 
-/**
- * this will generate a 4 byte timestamp of the current system time
- * @return current system time in milliseconds since the boot time (on Linux, behaviour on other systems may differ)
- */
-uint32_t cur_timestamp() {
-    long ms;
-    time_t s;
-    struct timespec spec;
-
-    clock_gettime(CLOCK_MONOTONIC, &spec);
-
-    s = spec.tv_sec;
-
-    // seconds to milliseconds
-    ms = s * 1000;
-
-    // nanoseconds to milliseconds
-    ms += (long)(spec.tv_nsec / 1.0e6);
-
-    return (uint32_t)ms;
-}
-
 uint64_t get_current_time_ms() {
     uint64_t current_time;
     struct timespec current_time_tv;
@@ -86,22 +64,12 @@ int compare_version(const char local_version[4], const char remote_version[4]) {
  * @return 1 if the remote version is accepted, else 0
  */
 int version_accepted(rasta_config_info *config, const char version[4]) {
-    /*struct DictionaryEntry accepted_version = config_get(&con->configuration_parameters, RASTA_CONFIG_KEY_ACCEPTED_VERSIONS);
-    if (accepted_version.type == DICTIONARY_ARRAY){
-        for (int i = 0; i < accepted_version.value.array.count; ++i) {
-            if (cmp_version(accepted_version.value.array.data[i].c, version) == 0){
-                // match, version is in accepted version list
-                return 1;
-            }
-        }
-    }*/
     for (unsigned int i = 0; i < config->accepted_version_count; ++i) {
         if (compare_version(config->accepted_versions[i], version) == 0) {
             // match, version is in accepted version list
             return 1;
         }
     }
-    return 1;
 
     // otherwise (something with config went wrong or version was not in accepted versions) return 0
     return 0;
