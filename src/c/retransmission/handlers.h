@@ -14,3 +14,4 @@ struct rasta_connection *handle_conresp(struct rasta_connection *con, struct Ras
 
 // protected methods
 void update_connection_attrs(struct rasta_connection *connection, struct RastaPacket *receivedPacket);
+void update_confirmed_attrs(struct rasta_connection *connection, struct RastaPacket *receivedPacket);

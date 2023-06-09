@@ -8,6 +8,11 @@ void update_connection_attrs(struct rasta_connection *connection, struct RastaPa
     connection->ts_r = receivedPacket->timestamp;
 }
 
+void update_confirmed_attrs(struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
+    connection->cts_r = receivedPacket->confirmed_timestamp;
+    connection->cs_r = receivedPacket->confirmed_sequence_number;
+}
+
 int handle_discreq(struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     logger_log(connection->logger, LOG_LEVEL_INFO, "RaSTA HANDLE: DisconnectionRequest", "received DiscReq");
 
@@ -55,8 +60,7 @@ int handle_data(struct rasta_connection *connection, struct RastaPacket *receive
 
                 // set values according to 5.6.2 [3]
                 update_connection_attrs(connection, receivedPacket);
-                connection->cs_r = receivedPacket->confirmed_sequence_number;
-                connection->cts_r = receivedPacket->confirmed_timestamp;
+                update_confirmed_attrs(connection, receivedPacket);
 
                 // cs_r updated, remove confirmed messages
                 sr_remove_confirmed_messages(connection);
@@ -186,8 +190,7 @@ int handle_retrresp(struct rasta_connection *connection, struct RastaPacket *rec
 
         // set values according to 5.6.2 [3]
         update_connection_attrs(connection, receivedPacket);
-        connection->cs_r = receivedPacket->confirmed_sequence_number;
-        connection->cts_r = receivedPacket->confirmed_timestamp;
+        update_confirmed_attrs(connection, receivedPacket);
     } else {
         logger_log(connection->logger, LOG_LEVEL_ERROR, "RaSTA receive", "received packet type retr_resp, but not in state retr_req");
         sr_close_connection(connection, RASTA_DISC_REASON_UNEXPECTEDTYPE, 0);
