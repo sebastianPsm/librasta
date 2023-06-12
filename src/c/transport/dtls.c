@@ -287,8 +287,8 @@ void transport_create_socket(struct rasta_handle *h, rasta_transport_socket *soc
     add_fd_event(h->ev_sys, &socket->accept_event, EV_READABLE);
 }
 
-int transport_connect(rasta_connection *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
-    UNUSED(h);
+int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, rasta_config_tls tls_config) {
+    UNUSED(tls_config);
 
     channel->tls_mode = socket->tls_mode;
     channel->tls_state = RASTA_TLS_CONNECTION_READY;
@@ -300,6 +300,12 @@ int transport_connect(rasta_connection *h, rasta_transport_socket *socket, rasta
     channel->connected = true;
 
     return 0;
+}
+
+int transport_redial(rasta_transport_channel *channel, rasta_transport_socket *socket) {
+    // We can't reconnect when using DTLS
+    UNUSED(channel); UNUSED(socket);
+    return -1;
 }
 
 void transport_close(rasta_transport_channel *channel) {

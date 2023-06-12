@@ -111,8 +111,8 @@ int transport_accept(rasta_transport_socket *socket, struct sockaddr_in *addr) {
     return fd;
 }
 
-int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket, rasta_transport_channel *channel) {
-    UNUSED(h);
+int transport_connect(rasta_transport_socket *socket, rasta_transport_channel *channel, rasta_config_tls tls_config) {
+    UNUSED(tls_config);
     channel->file_descriptor = socket->file_descriptor;
 
     if (tcp_connect(channel) != 0) {
@@ -127,8 +127,23 @@ int transport_connect(struct rasta_connection *h, rasta_transport_socket *socket
     return 0;
 }
 
-int transport_redial(rasta_transport_channel* channel) {
-    return tcp_connect(channel);
+int transport_redial(rasta_transport_channel* channel, rasta_transport_socket *socket) {
+    // create a new socket (closed socket cannot be reused)
+    socket->file_descriptor = bsd_create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    // bind new socket to the configured ip/port
+    rasta_handle *h = socket->accept_event_data.h;
+    const rasta_ip_data *ip_data = &h->mux.config->redundancy.connections.data[socket->id];
+    transport_bind(h, socket, ip_data->ip, (uint16_t)ip_data->port);
+
+    if (transport_connect(socket, channel,*channel->tls_config) != 0) {
+        return -1;
+    }
+    
+    socket->receive_event.fd = socket->file_descriptor;
+    socket->accept_event.fd = socket->file_descriptor;
+
+    return 0;
 }
 
 void transport_close(rasta_transport_channel *channel) {

@@ -103,6 +103,15 @@ int channel_receive_event(void *carry_data) {
     if (len <= 0 && !is_dtls_conn_ready) {
         // Connection is broken
         transport_channel->connected = false;
+
+        // Disable receive events so this handler doesn't get called endlessly
+        if (data->socket != NULL) {
+            disable_fd_event(&data->socket->receive_event);
+        }
+        if (data->channel != NULL) {
+            disable_fd_event(&data->channel->receive_event);
+        }
+      
         if (connection != NULL) {
             return handle_closed_transport(connection, connection->redundancy_channel);
         }
