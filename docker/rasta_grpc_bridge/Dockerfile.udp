@@ -2,7 +2,7 @@
 
 FROM ubuntu:22.04
 
-INCLUDE+ Dockerfile.common
+INCLUDE+ docker/rasta_grpc_bridge/Dockerfile.common
 
 WORKDIR /app
 COPY build/librasta_udp.so build/rasta_grpc_bridge_udp ./
