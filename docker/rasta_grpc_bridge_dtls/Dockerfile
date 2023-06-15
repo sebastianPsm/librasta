@@ -23,6 +23,6 @@ RUN cd /tmp \
 ENV LD_LIBRARY_PATH=/usr/local/lib:.
 
 WORKDIR /app
-COPY build/librasta*.so build/rasta_grpc_bridge ./
+COPY build/librasta_dtls.so build/rasta_grpc_bridge_dtls ./
 
-ENTRYPOINT ["/app/rasta_grpc_bridge"]
+ENTRYPOINT ["/app/rasta_grpc_bridge_dtls"]
