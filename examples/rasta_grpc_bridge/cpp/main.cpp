@@ -7,7 +7,6 @@
 #include <string>
 #include <thread>
 
-#include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -43,8 +42,8 @@ static uint32_t s_remote_id = 0;
 rasta_connection *s_connection = NULL;
 static rasta_lib_configuration_t s_rc;
 
-static int s_terminator_fd;
-static int s_data_fd;
+static int s_terminator_fd[2] = {-1, -1};
+static int s_data_fd[2] = {-1, -1};
 
 static std::mutex s_fifo_mutex;
 static fifo_t *s_message_fifo;
@@ -53,13 +52,16 @@ void processConnection(std::function<std::thread()> run_thread) {
     s_message_fifo = fifo_init(128);
 
     // Data event
-    s_data_fd = eventfd(0, 0);
+    if (pipe(s_data_fd) < 0){
+        perror("Failed to create pipe");
+        abort();
+    }
     fd_event data_event;
     memset(&data_event, 0, sizeof(fd_event));
     data_event.callback = [](void *) {
         // Invalidate the event
         uint64_t u;
-        ssize_t ignored = read(s_data_fd, &u, sizeof(u));
+        ssize_t ignored = read(s_data_fd[0], &u, sizeof(u));
         UNUSED(ignored);
 
         RastaByteArray *msg = nullptr;
@@ -80,18 +82,21 @@ void processConnection(std::function<std::thread()> run_thread) {
         return 0;
     };
     data_event.carry_data = &s_rc->h;
-    data_event.fd = s_data_fd;
+    data_event.fd = s_data_fd[0];
     enable_fd_event(&data_event);
     add_fd_event(&s_rc->rasta_lib_event_system, &data_event, EV_READABLE);
 
     // Terminator event
-    s_terminator_fd = eventfd(0, 0);
+    if (pipe(s_terminator_fd) < 0){
+        perror("Failed to create pipe");
+        abort();
+    }
     fd_event terminator_event;
     memset(&terminator_event, 0, sizeof(fd_event));
     terminator_event.callback = [](void *carry) {
         // Invalidate the event
         uint64_t u;
-        ssize_t ignored = read(s_terminator_fd, &u, sizeof(u));
+        ssize_t ignored = read(s_terminator_fd[0], &u, sizeof(u));
         UNUSED(ignored);
 
         rasta_connection *h = reinterpret_cast<rasta_connection *>(carry);
@@ -99,7 +104,7 @@ void processConnection(std::function<std::thread()> run_thread) {
         return 1;
     };
     terminator_event.carry_data = s_connection;
-    terminator_event.fd = s_terminator_fd;
+    terminator_event.fd = s_terminator_fd[0];
     enable_fd_event(&terminator_event);
     add_fd_event(&s_rc->rasta_lib_event_system, &terminator_event, EV_READABLE);
 
@@ -145,8 +150,13 @@ void processConnection(std::function<std::thread()> run_thread) {
     remove_fd_event(&s_rc->rasta_lib_event_system, &data_event);
     remove_fd_event(&s_rc->rasta_lib_event_system, &terminator_event);
 
-    close(s_data_fd);
-    close(s_terminator_fd);
+    close(s_data_fd[0]);
+    close(s_data_fd[1]);
+    s_data_fd[0] = s_data_fd[1] = -1;
+    
+    close(s_terminator_fd[0]);
+    close(s_terminator_fd[1]);
+    s_terminator_fd[0] = s_terminator_fd[1] = -1;
 
     fifo_destroy(&s_message_fifo);
 }
@@ -239,12 +249,12 @@ class RastaService final : public sci::Rasta::Service {
                     }
 
                     uint64_t notify_data = 1;
-                    uint64_t ignore = write(s_data_fd, &notify_data, sizeof(uint64_t));
+                    uint64_t ignore = write(s_data_fd[1], &notify_data, sizeof(uint64_t));
                     (void)ignore;
                 }
 
                 uint64_t terminate = 1;
-                uint64_t ignore = write(s_terminator_fd, &terminate, sizeof(uint64_t));
+                uint64_t ignore = write(s_terminator_fd[1], &terminate, sizeof(uint64_t));
                 (void)ignore;
             });
         };
@@ -350,7 +360,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     uint64_t notify_data = 1;
-                    uint64_t ignore = write(s_data_fd, &notify_data, sizeof(uint64_t));
+                    uint64_t ignore = write(s_data_fd[1], &notify_data, sizeof(uint64_t));
                     (void)ignore;
                 }
 
@@ -361,7 +371,7 @@ int main(int argc, char *argv[]) {
                 }
 
                 uint64_t terminate = 1;
-                uint64_t ignore = write(s_terminator_fd, &terminate, sizeof(uint64_t));
+                uint64_t ignore = write(s_terminator_fd[1], &terminate, sizeof(uint64_t));
                 (void)ignore;
             });
         };
