@@ -7,7 +7,6 @@
 #include <string>
 #include <thread>
 
-#include <sys/eventfd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -53,7 +52,10 @@ void processConnection(std::function<std::thread()> run_thread) {
     s_message_fifo = fifo_init(128);
 
     // Data event
-    pipe(s_data_fd);
+    if (pipe(s_data_fd) < 0){
+        perror("Failed to create pipe");
+        abort();
+    }
     fd_event data_event;
     memset(&data_event, 0, sizeof(fd_event));
     data_event.callback = [](void *) {
@@ -85,7 +87,10 @@ void processConnection(std::function<std::thread()> run_thread) {
     add_fd_event(&s_rc->rasta_lib_event_system, &data_event, EV_READABLE);
 
     // Terminator event
-    pipe(s_terminator_fd);
+    if (pipe(s_terminator_fd) < 0){
+        perror("Failed to create pipe");
+        abort();
+    }
     fd_event terminator_event;
     memset(&terminator_event, 0, sizeof(fd_event));
     terminator_event.callback = [](void *carry) {
