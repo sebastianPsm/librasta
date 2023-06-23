@@ -147,8 +147,11 @@ void processConnection(std::function<std::thread()> run_thread) {
 
     close(s_data_fd[0]);
     close(s_data_fd[1]);
+    s_data_fd[0] = s_data_fd[1] = -1;
+    
     close(s_terminator_fd[0]);
     close(s_terminator_fd[1]);
+    s_terminator_fd[0] = s_terminator_fd[1] = -1;
 
     fifo_destroy(&s_message_fifo);
 }
