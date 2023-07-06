@@ -61,7 +61,7 @@ int handle_discreq(struct rasta_connection *connection, struct RastaPacket *rece
     struct RastaDisconnectionData data = extractRastaDisconnectionData(receivedPacket);
     fire_on_discrequest_state_change(sr_create_notification_result(NULL, connection), data);
 
-    return 0;
+    return 1;
 }
 
 int handle_data(struct rasta_connection *connection, struct RastaPacket *receivedPacket) {

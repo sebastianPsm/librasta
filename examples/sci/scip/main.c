@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
             scip_on_rasta_receive(scip, msg);
         }
 
-        // sr_disconnect(connection);
+        rasta_disconnect(connection);
     } else if (strcmp(argv[1], "c") == 0) {
         printf("->   C (ID = 0x%lX)\n", (unsigned long)ID_C);
         rasta_config_info config;
@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
             scip_on_rasta_receive(scip, msg);
         }
 
-        //sr_disconnect(connection);
+        rasta_disconnect(connection);
     }
 
     scip_cleanup(scip);
