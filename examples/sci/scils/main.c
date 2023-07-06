@@ -1,7 +1,6 @@
 #include <memory.h>
 #include <rasta/rasta.h>
 #include <rasta/rmemory.h>
-#include <rasta/rasta_lib.h>
 #include <scils.h>
 #include <scils_telegram_factory.h>
 #include <stdio.h>
@@ -87,8 +86,8 @@ int main(int argc, char *argv[]) {
         };
 
         rasta_lib_init_configuration(rc, &config, &logger, &connection_config, 1);
-        rasta_bind(&rc->h);
-        sr_listen(&rc->h);
+        rasta_bind(rc);
+        rasta_listen(rc);
 
         rasta_connection *connection = rasta_accept(rc);
         if(connection == NULL) {
@@ -135,9 +134,9 @@ int main(int argc, char *argv[]) {
         };
 
         rasta_lib_init_configuration(rc, &config, &logger, &connection_config, 1);
-        rasta_bind(&rc->h);
+        rasta_bind(rc);
 
-        rasta_connection *connection = sr_connect(&rc->h, ID_S);
+        rasta_connection *connection = rasta_connect(rc, ID_S);
         if(connection == NULL) {
             printf("Failed to connect any channel!\n");
             return 1;
@@ -166,6 +165,6 @@ int main(int argc, char *argv[]) {
     }
 
     scils_cleanup(scils);
-    sr_cleanup(&rc->h);
+    rasta_cleanup(rc);
     return 0;
 }

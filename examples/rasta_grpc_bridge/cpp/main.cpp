@@ -15,7 +15,6 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/health_check_service_interface.h>
 
-#include <rasta/rasta_lib.h>
 #include <rasta/rasta.h>
 #include <rasta/rmemory.h>
 
@@ -99,8 +98,8 @@ void processConnection(std::function<std::thread()> run_thread) {
         ssize_t ignored = read(s_terminator_fd[0], &u, sizeof(u));
         UNUSED(ignored);
 
-        rasta_connection *h = reinterpret_cast<rasta_connection *>(carry);
-        sr_disconnect(h);
+        rasta_connection *con = reinterpret_cast<rasta_connection *>(carry);
+        rasta_disconnect(con);
         return 1;
     };
     terminator_event.carry_data = s_connection;
@@ -144,7 +143,7 @@ void processConnection(std::function<std::thread()> run_thread) {
 
     forwarderThread.join();
 
-    sr_disconnect(s_connection);
+    rasta_disconnect(s_connection);
     s_connection = NULL;
 
     remove_fd_event(&s_rc->rasta_lib_event_system, &data_event);
@@ -192,8 +191,8 @@ void processRasta(std::string config_path,
     if (server) {
         memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
         rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
-        rasta_bind(&s_rc->h);
-        sr_listen(&s_rc->h);
+        rasta_bind(s_rc);
+        rasta_listen(s_rc);
         while (true) {
             s_connection = rasta_accept(s_rc);
             if (s_connection) {
@@ -205,8 +204,8 @@ void processRasta(std::string config_path,
         while (true) {
             memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
             rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
-            rasta_bind(&s_rc->h);
-            s_connection = sr_connect(&s_rc->h, s_remote_id);
+            rasta_bind(s_rc);
+            s_connection = rasta_connect(s_rc, s_remote_id);
             if (s_connection) {
                 processConnection(run_thread);
             }
