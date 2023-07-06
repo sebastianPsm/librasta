@@ -28,12 +28,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install Dependencies
-        run: sudo apt-get install build-essential doxygen graphviz libsodium-dev pkgconf
+        run: sudo apt-get install build-essential doxygen graphviz
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v3
       - name: Configure CMake
-        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_RASTA_TLS=ON -DENABLE_RASTA_OPAQUE=ON -DBUILD_DOCUMENTATION=ON
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_DOCUMENTATION=ON
       - name: Build
         run: cmake --build ${{github.workspace}}/build --target documentation --config ${{env.BUILD_TYPE}} -v
       - name: Upload artifact
