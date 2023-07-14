@@ -107,6 +107,11 @@ void sr_remove_confirmed_messages(struct rasta_connection *con) {
         freeRastaByteArray(&packet.data);
         rfree(elem);
     }
+
+    // sending is now possible again (space in the retransmission queue is available), so we should trigger it
+    if(fifo_full(con->fifo_send)){
+        data_send_event(&con->send_handle);
+    }
 }
 
 /* ----- processing of received packet types ----- */
@@ -361,17 +366,17 @@ void sr_listen(struct rasta_handle *h) {
     redundancy_mux_listen_channels(h, &h->mux, &h->config->tls);
 }
 
-void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages) {
+int sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMessageData app_messages) {
     if (con == NULL)
-        return;
+        return -1;
 
     if (con->current_state == RASTA_CONNECTION_UP) {
         if (app_messages.count > h->config->sending.max_packet) {
             // too many application messages
             logger_log(h->logger, LOG_LEVEL_ERROR, "RaSTA send", "too many application messages to send in one packet. Maximum is %d",
                        h->config->sending.max_packet);
-            // do nothing and leave method with error code 2
-            return;
+            // do nothing and leave method with error code
+            return -1;
         }
 
         for (unsigned int i = 0; i < app_messages.count; ++i) {
@@ -390,13 +395,13 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
 
             if (!fifo_push(con->fifo_send, to_fifo)) {
                 logger_log(h->logger, LOG_LEVEL_INFO, "RaSTA send", "could not insert message into send queue");
+                return -1;
             } else {
                 // Enable timed sending
                 enable_timed_event(&con->send_handle.send_event);
+                logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send", "data in send queue");
             }
         }
-
-        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send", "data in send queue");
 
     } else if (con->current_state == RASTA_CONNECTION_CLOSED || con->current_state == RASTA_CONNECTION_DOWN) {
         // nothing to do besides changing state to closed
@@ -414,9 +419,10 @@ void sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaM
         // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(h, con));
 
-        // leave with error code 1
-        return;
+        // leave with error code
+        return -1;
     }
+    return 0;
 }
 
 struct rasta_connection* sr_connect(struct rasta_handle *h, unsigned long id) {
