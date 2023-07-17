@@ -10,7 +10,7 @@ The following dependencies are required for building the RaSTA library and binar
 
 * CUnit (package `libcunit1` or similar)
 * if `ENABLE_RASTA_OPAQUE` is enabled: libsodium (packages `libsodium-dev` and `pkgconf` or similar)
-* if `ENABLE_RASTA_TLS` is enabled: [WolfSSL](https://www.wolfssl.com/) (package `wolfssl` or similar). built manually with the configuration flags `--enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra`
+* if `ENABLE_RASTA_TLS` is enabled: [WolfSSL](https://www.wolfssl.com/) (package `wolfssl` or similar).
 * if `BUILD_RASTA_GRPC_BRIDGE` is enabled: gRPC (package `grpc` or similar)
 
 We tested with WolfSSL version 5.2.0-stable and gRPC version 1.47.0. For other versions, we cannot guarantee that you will be able to build the library.
