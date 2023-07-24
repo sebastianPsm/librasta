@@ -75,7 +75,7 @@ void red_call_on_new_connection(redundancy_mux *mux, unsigned long id) {
 
 int receive_packet(redundancy_mux *mux, rasta_transport_channel *transport_channel, unsigned char *buffer, size_t len) {
     int result = 0;
-    logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %lu", transport_channel->id, len);
+    logger_log(mux->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "channel %d received data len = %zu", transport_channel->id, len);
 
     size_t len_remaining = len;
     size_t read_offset = 0;

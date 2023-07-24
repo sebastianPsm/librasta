@@ -80,7 +80,7 @@ int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connec
 
     if (len < elem->length) {
         logger_log(connection->logger, LOG_LEVEL_INFO, "RaSTA receive",
-            "supplied buffer (%ld bytes) is smaller than message length (%d bytes) - received message may be incomplete!", len, elem->length);
+            "supplied buffer (%zd bytes) is smaller than message length (%d bytes) - received message may be incomplete!", len, elem->length);
     }
 
     rmemcpy(buf, elem->bytes, received_len);
