@@ -10,7 +10,6 @@
 #include "rastacrc_test.h"
 #include "rastadeferqueue_test.h"
 #include "rastafactory_test.h"
-#include "rastalist_test.h"
 #include "rastamd4_test.h"
 #include "rastamodule_test.h"
 #include "safety_retransmission_test.h"
@@ -24,7 +23,7 @@ int suite_clean(void) {
 }
 
 void cunit_register() {
-    CU_pSuite pSuiteMath = CU_add_suite("port tests", suite_init, suite_clean);
+    CU_pSuite pSuiteMath = CU_add_suite("rasta tests", suite_init, suite_clean);
     CU_add_test(pSuiteMath, "testConversion", testConversion);
 
     // MD4 tests
@@ -73,9 +72,6 @@ void cunit_register() {
     CU_add_test(pSuiteMath, "test_deferqueue_get_ts", test_deferqueue_get_ts);
     CU_add_test(pSuiteMath, "test_deferqueue_clear", test_deferqueue_clear);
     CU_add_test(pSuiteMath, "test_deferqueue_get_ts_doesnt_contain", test_deferqueue_get_ts_doesnt_contain);
-
-    // tests for rastalist
-    // CU_add_test(pSuiteMath, "check_rastalist", check_rastalist);
 
     // Tests for the FIFO
     CU_add_test(pSuiteMath, "test_push", test_push);
