@@ -944,19 +944,12 @@ unsigned long mix(unsigned long a, unsigned long b, unsigned long c) {
  */
 uint32_t long_random(void) {
     srand(mix(clock(), time(NULL), getpid()));
-
     uint32_t r = 0;
-
-    // int randomSrc = open("/dev/random", O_RDONLY);
-    // unsigned long seed[1];
-    // read(randomSrc , seed, sizeof(long) );
-    // close(randomSrc);
 
     for (int i = 0; i < 32; i++) {
         r = r * 2 + rand() % 2;
     }
     return r;
-    // return seed[0];
 }
 
 /**
@@ -968,13 +961,8 @@ uint32_t long_random(void) {
 uint32_t get_initial_seq_num(struct RastaConfig *config) {
     struct DictionaryEntry init_seq = config_get(config, RASTA_CONFIG_KEY_INITIAL_SEQ_NUM);
 
-    if (init_seq.type == DICTIONARY_NUMBER) {
-        // random number when < 0 or the specified value else
-        return (init_seq.value.number < 0) ? long_random() : init_seq.value.unumber;
-    }
-
-    // return random value if there is not a number in config
-    return long_random();
+    // return specified value if > 0, random number if < 0 or not in config
+    return (init_seq.type == DICTIONARY_NUMBER && init_seq.value.number >= 0) ? init_seq.value.unumber : long_random();
 }
 
 void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *config_file_path) {
@@ -1016,4 +1004,6 @@ void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *
             c->accepted_versions[i][4] = '\0';
         }
     }
+
+    c->initial_sequence_number = get_initial_seq_num(&config);
 }

@@ -160,6 +160,7 @@ void logger_log(struct logger_t *logger, log_level level, char *location, char *
         return;
     }
     do_log_message(logger, msg);
+    rfree(msg);
 }
 
 void logger_hexdump(struct logger_t *logger, log_level level, const void *data, size_t data_length, char *header_fmt, ...) {
@@ -226,4 +227,5 @@ void logger_log_if(struct logger_t *logger, int cond, log_level level, char *loc
     }
 
     do_log_message(logger, msg);
+    rfree(msg);
 }
