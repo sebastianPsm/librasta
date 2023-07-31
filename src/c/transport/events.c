@@ -71,7 +71,7 @@ int channel_receive_event(void *carry_data) {
 #else
     bool is_dtls_conn_ready = false;
 #endif
-    
+
     ssize_t len = receive_callback(data, buffer, &sender);
 
     char str[INET_ADDRSTRLEN];
@@ -85,15 +85,14 @@ int channel_receive_event(void *carry_data) {
 
         // Find the suitable transport channel in the mux
         find_channel_by_ip_address(data->h, sender, &red_channel_idx, &transport_channel_idx);
-        if(red_channel_idx != -1 && transport_channel_idx != -1){
+        if (red_channel_idx != -1 && transport_channel_idx != -1) {
             transport_channel = &data->h->mux.redundancy_channels[red_channel_idx].transport_channels[transport_channel_idx];
             connection = &data->h->rasta_connections[red_channel_idx];
         }
 
         if (transport_channel == NULL) {
             // Ignore and continue
-            // TODO: in this case, connection will also be NULL, so we can't use its logger
-            logger_log(connection->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Discarding packet from unknown peer %s:%u", str, ntohs(sender.sin_port));
+            logger_log(data->h->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux receive", "Discarding packet from unknown peer %s:%u", str, ntohs(sender.sin_port));
             return 0;
         }
 
@@ -118,7 +117,7 @@ int channel_receive_event(void *carry_data) {
         if (data->channel != NULL) {
             disable_fd_event(&data->channel->receive_event);
         }
-      
+
         if (connection != NULL) {
             return handle_closed_transport(connection, connection->redundancy_channel);
         }
