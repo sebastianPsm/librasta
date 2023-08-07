@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 project(rasta
     LANGUAGES C CXX
     DESCRIPTION "A C implementation of the RaSTA protocol stack")
