@@ -11,6 +11,7 @@
 #include <rasta/rastautil.h>
 #include <rasta/rmemory.h>
 
+#include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../transport/bsd_utils.h"
 #include "../transport/events.h"
@@ -147,7 +148,7 @@ int channel_timeout_event(void *carry_data) {
 void init_handshake_timeout_event(timed_event *event, int channel_timeout_ms) {
     memset(event, 0, sizeof(timed_event));
     event->callback = channel_timeout_event;
-    event->interval = channel_timeout_ms * 1000000lu;
+    event->interval = channel_timeout_ms * NS_PER_MS;
 }
 
 /* ----------------------------*/

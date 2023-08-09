@@ -1,23 +1,24 @@
-#include <rasta/rasta_init.h>
-
 #include <memory.h>
 #include <stdbool.h>
-#include <rasta/rmemory.h>
-#include "transport/transport.h"
-#include "transport/events.h"
-#include "retransmission/protocol.h"
-#include "retransmission/safety_retransmission.h"
 
-// This is the time that packets are deferred for creating multi-packet messages
+#include <rasta/rasta_init.h>
+#include <rasta/rastautil.h>
+#include <rasta/rmemory.h>
+
+#include "retransmission/safety_retransmission.h"
+#include "transport/events.h"
+#include "transport/transport.h"
+
+// This is the time that packets are deferred for creating multi-packet messages (in ms)
 // See section 5.5.10
-#define IO_INTERVAL 10000
+#define IO_INTERVAL 10
 
 void init_connection_timeout_event(timed_event *ev, struct timed_event_data *carry_data,
                                    struct rasta_connection *connection) {
     memset(ev, 0, sizeof(timed_event));
     ev->callback = event_connection_expired;
     ev->carry_data = carry_data;
-    ev->interval = connection->config->sending.t_max * 1000000lu;
+    ev->interval = connection->config->sending.t_max * NS_PER_MS;
     carry_data->handle = &connection->heartbeat_handle;
     carry_data->connection = connection;
 }
@@ -27,7 +28,7 @@ void init_send_heartbeat_event(timed_event *ev, struct timed_event_data *carry_d
     memset(ev, 0, sizeof(timed_event));
     ev->callback = heartbeat_send_event;
     ev->carry_data = carry_data;
-    ev->interval = connection->config->sending.t_h * 1000000lu;
+    ev->interval = connection->config->sending.t_h * NS_PER_MS;
     carry_data->handle = &connection->heartbeat_handle;
     carry_data->connection = connection;
 }
@@ -105,7 +106,7 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
         // batch outgoing packets
         memset(&connection->send_handle.send_event, 0, sizeof(timed_event));
         connection->send_handle.send_event.callback = data_send_event;
-        connection->send_handle.send_event.interval = IO_INTERVAL * 1000lu;
+        connection->send_handle.send_event.interval = IO_INTERVAL * NS_PER_MS;
         connection->send_handle.send_event.carry_data = &connection->send_handle;
         connection->send_handle.connection = connection;
 
@@ -140,6 +141,6 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
 
         init_connection_events(h, connection);
     }
-    
+
     h->rasta_connections_length = connections_length;
 }
