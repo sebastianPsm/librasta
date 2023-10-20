@@ -87,7 +87,12 @@ int receive_packet(redundancy_mux *mux, rasta_transport_channel *transport_chann
         handle_received_data(mux, buffer + read_offset, currentPacketSize, &receivedPacket);
         // Check that deferqueue can take new elements before calling red_f_receiveData
         rasta_redundancy_channel *channel = redundancy_mux_get_channel(mux, receivedPacket.data.sender_id);
-        if (deferqueue_isfull(&channel->defer_q)) {
+        if (channel == NULL) {
+            // Discard incoming packet
+            logger_log(mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux receive", "unable to resolve redundancy channel for sender %u", receivedPacket.data.sender_id);
+            freeRastaByteArray(&receivedPacket.data.data);
+            freeRastaByteArray(&receivedPacket.data.checksum);
+        } else if (deferqueue_isfull(&channel->defer_q)) {
             // Discard incoming packet
             logger_log(channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarding packet because defer queue is full");
             freeRastaByteArray(&receivedPacket.data.data);
