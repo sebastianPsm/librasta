@@ -249,6 +249,7 @@ bool redundancy_mux_bind(struct rasta_handle *h) {
     bool success = false;
     for (unsigned i = 0; i < h->mux.port_count; ++i) {
         const rasta_ip_data *ip_data = &h->mux.config->redundancy.connections.data[i];
+        logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA RedMux bind", "binding transport socket %d/%d to %s:%u", i + 1, h->mux.port_count, ip_data->ip, (uint16_t)ip_data->port);
         success |= transport_bind(&h->mux.transport_sockets[i], ip_data->ip, (uint16_t)ip_data->port);
     }
     return success;
@@ -411,4 +412,8 @@ void redundancy_mux_close_channel(rasta_connection *conn, rasta_redundancy_chann
             channel->associated_socket->file_descriptor = -1;
         }
     }
+
+    // reset sequence numbers
+    red_channel->seq_rx = 0;
+    red_channel->seq_tx = 0;
 }
