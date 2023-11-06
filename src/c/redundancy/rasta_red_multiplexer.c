@@ -384,12 +384,6 @@ int redundancy_mux_connect_channel(redundancy_mux *mux, rasta_redundancy_channel
     for (unsigned int i = 0; i < channel->transport_channel_count; i++) {
         // Provided transport channels have to match with local ports configured
         success |= rasta_red_connect_transport_channel(channel, &mux->transport_sockets[i]);
-#ifdef SLEEP_ON_CONNECT
-        if (success && getenv("RASTA_SLEEP_ON_CONNECT") != NULL) {
-            logger_log(mux->logger, LOG_LEVEL_INFO, "RaSTA RedMux connect", "connection established, sleeping for 5 seconds");
-            sleep(5);
-        }
-#endif
     }
 
     if (!success) {
