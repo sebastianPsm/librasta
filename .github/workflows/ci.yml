@@ -65,15 +65,19 @@ jobs:
 
     - name: Rcat UDP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
+      timeout-minutes: 1
       
     - name: Rcat TCP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
+      timeout-minutes: 1
 
     - name: Rcat TLS Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
+      timeout-minutes: 1
 
     - name: Rcat DTLS Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+      timeout-minutes: 1
 
     - name: Rcat KEX / Opaque Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
