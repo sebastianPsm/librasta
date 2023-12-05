@@ -3,7 +3,7 @@ jobs:
   build:
     resource_class: arm.medium
     docker:
-      - image: cimg/base:2022.09
+      - image: cimg/base:2023.12
     steps:
       - checkout
       - setup_remote_docker
