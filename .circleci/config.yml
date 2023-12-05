@@ -12,29 +12,42 @@ jobs:
           name: Build and Push application Docker image
           command: |
             TAG=main-arm64
+
             SHA=$(git rev-parse HEAD)
             SHORTSHA="${SHA:0:7}"
             SHA_TAG=sha-$SHORTSHA-arm64
+
             echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$TAG --target udp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$TAG --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$TAG --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$TAG --target tls -f docker/rasta_grpc_bridge/Dockerfile .
 
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$SHA_TAG --target udp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$SHA_TAG --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$SHA_TAG --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
-            docker buildx build --platform linux/arm64 -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$SHA_TAG --target tls -f docker/rasta_grpc_bridge/Dockerfile .
+            docker buildx build --platform linux/arm64 \
+              --target udp \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$TAG \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$SHA_TAG \
+              -f docker/rasta_grpc_bridge/Dockerfile .
 
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$TAG
+            docker buildx build --platform linux/arm64 \
+              --target tcp \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$TAG \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$SHA_TAG \
+              -f docker/rasta_grpc_bridge/Dockerfile .
 
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:$SHA_TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:$SHA_TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$SHA_TAG
-            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$SHA_TAG
+            docker buildx build --platform linux/arm64 \
+              --target dtls \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$TAG \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:$SHA_TAG \
+              -f docker/rasta_grpc_bridge/Dockerfile .
+
+            docker buildx build --platform linux/arm64 \
+              --target tls \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$TAG \
+              -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:$SHA_TAG \
+              -f docker/rasta_grpc_bridge/Dockerfile .
+
+
+            docker push --all-tags ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp
+            docker push --all-tags ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp
+            docker push --all-tags ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls
+            docker push --all-tags ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls
 workflows:
   build:
     jobs:
