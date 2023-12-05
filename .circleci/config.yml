@@ -1,4 +1,35 @@
 version: 2.1
+jobs:
+  build:
+    resource_class: arm.medium
+    docker:
+      - image: cimg/base:2023.12
+        auth:
+          username: $GHCR_USERNAME
+          password: $GHCR_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - v1-{{ .Branch }}
+      - run:
+          name: Load Docker image layer cache
+          command: |
+            set +o pipefail
+            docker load -i /caches/app.tar | true
+      - run:
+          name: Build and Push application Docker image
+          command: |
+            docker build -t ghcr.io/librasta/rasta_grpc_bridge_udp:main --target udp -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/librasta/rasta_grpc_bridge_tcp:main --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/librasta/rasta_grpc_bridge_dtls:main --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/librasta/rasta_grpc_bridge_tls:main --target tls -f docker/rasta_grpc_bridge/Dockerfile .
+            echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
+            docker push ghcr.io/librasta/rasta_grpc_bridge_udp:main
+            docker push ghcr.io/librasta/rasta_grpc_bridge_tcp:main
+            docker push ghcr.io/librasta/rasta_grpc_bridge_dtls:main
+            docker push ghcr.io/librasta/rasta_grpc_bridge_tls:main
 workflows:
   build:
     jobs:
@@ -7,32 +38,3 @@ workflows:
             branches:
               only:
                 - circleci-project-setup
-          resource_class: arm.medium
-          docker:
-            - image: cimg/base:2023.12
-              auth:
-                username: $GHCR_USERNAME
-                password: $GHCR_PASSWORD
-          steps:
-            - checkout
-            - setup_remote_docker
-            - restore_cache:
-                keys:
-                  - v1-{{ .Branch }}
-            - run:
-                name: Load Docker image layer cache
-                command: |
-                  set +o pipefail
-                  docker load -i /caches/app.tar | true
-            - run:
-                name: Build and Push application Docker image
-                command: |
-                  docker build -t ghcr.io/librasta/rasta_grpc_bridge_udp:main --target udp -f docker/rasta_grpc_bridge/Dockerfile .
-                  docker build -t ghcr.io/librasta/rasta_grpc_bridge_tcp:main --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
-                  docker build -t ghcr.io/librasta/rasta_grpc_bridge_dtls:main --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
-                  docker build -t ghcr.io/librasta/rasta_grpc_bridge_tls:main --target tls -f docker/rasta_grpc_bridge/Dockerfile .
-                  echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
-                  docker push ghcr.io/librasta/rasta_grpc_bridge_udp:main
-                  docker push ghcr.io/librasta/rasta_grpc_bridge_tcp:main
-                  docker push ghcr.io/librasta/rasta_grpc_bridge_dtls:main
-                  docker push ghcr.io/librasta/rasta_grpc_bridge_tls:main
