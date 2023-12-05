@@ -6,10 +6,8 @@ jobs:
       - image: cimg/base:2023.12
     steps:
       - checkout
-      - setup_remote_docker
-      - restore_cache:
-          keys:
-            - v1-{{ .Branch }}
+      - setup_remote_docker:
+          docker_layer_caching: true
       - run:
           name: Load Docker image layer cache
           command: |
