@@ -17,14 +17,14 @@ jobs:
           name: Build and Push application Docker image
           command: |
             echo $GHCR_PASSWORD | docker login ghcr.io -u $GHCR_USERNAME --password-stdin
-            docker build -t ghcr.io/librasta/rasta_grpc_bridge_udp:main --target udp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker build -t ghcr.io/librasta/rasta_grpc_bridge_tcp:main --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
-            docker build -t ghcr.io/librasta/rasta_grpc_bridge_dtls:main --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
-            docker build -t ghcr.io/librasta/rasta_grpc_bridge_tls:main --target tls -f docker/rasta_grpc_bridge/Dockerfile .
-            docker push ghcr.io/librasta/rasta_grpc_bridge_udp:main
-            docker push ghcr.io/librasta/rasta_grpc_bridge_tcp:main
-            docker push ghcr.io/librasta/rasta_grpc_bridge_dtls:main
-            docker push ghcr.io/librasta/rasta_grpc_bridge_tls:main
+            docker build -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:main --target udp -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:main --target tcp -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:main --target dtls -f docker/rasta_grpc_bridge/Dockerfile .
+            docker build -t ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:main --target tls -f docker/rasta_grpc_bridge/Dockerfile .
+            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_udp:main
+            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tcp:main
+            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_dtls:main
+            docker push ghcr.io/eulynx-live/librasta/rasta_grpc_bridge_tls:main
 workflows:
   build:
     jobs:
