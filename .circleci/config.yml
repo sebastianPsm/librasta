@@ -4,9 +4,6 @@ jobs:
     resource_class: arm.medium
     docker:
       - image: cimg/base:2023.12
-        auth:
-          username: $GHCR_USERNAME
-          password: $GHCR_PASSWORD
     steps:
       - checkout
       - setup_remote_docker
