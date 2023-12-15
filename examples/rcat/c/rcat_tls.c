@@ -4,20 +4,33 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <rasta/fifo.h>
-#include <rasta/logging.h>
 #include <rasta/rasta.h>
-#include <rasta/rmemory.h>
 
 #include "configfile.h"
+#include "wolfssl_certificate_helper.h"
 
-#define CONFIG_PATH_S "rasta_server_local.cfg"
-#define CONFIG_PATH_C "rasta_client_local.cfg"
+#define CONFIG_PATH_S "rasta_server_local_tls.cfg"
+#define CONFIG_PATH_C "rasta_client_local_tls.cfg"
 
 #define ID_R 0x61
 #define ID_S 0x60
 
 #define BUF_SIZE 500
+
+void prepare_certs(const char *config_path) {
+    struct RastaConfig config;
+    config_load(&config, config_path);
+
+    // do not overwrite existing certificates, might lead to failure in clients
+    if (access(config.values.tls.ca_cert_path, F_OK) || access(config.values.tls.cert_path, F_OK) || access(config.values.tls.key_path, F_OK)) {
+        create_certificates(config.values.tls.ca_cert_path, config.values.tls.cert_path, config.values.tls.key_path);
+
+        printf("Generated Certificates");
+    }
+
+    dictionary_free(&config.dictionary);
+    rfree(config.values.redundancy.connections.data);
+}
 
 void printHelpAndExit(void) {
     printf("Invalid Arguments!\n use 'r' to start in receiver mode and 's' to start in sender mode.\n");
@@ -25,7 +38,7 @@ void printHelpAndExit(void) {
 }
 
 struct connect_event_data {
-    rasta_lib_configuration_t rc;
+    rasta *rc;
     struct rasta_connection *connection;
 };
 
@@ -43,6 +56,7 @@ int send_input_data(void *carry_data) {
                 if (read_len > 0) {
                     rasta_send(data->rc, data->connection, buf, read_len);
                 }
+
                 rasta_disconnect(data->connection);
                 return 1;
             }
@@ -59,15 +73,10 @@ int send_input_data(void *carry_data) {
 }
 
 int main(int argc, char *argv[]) {
-    bool force_disable_rekeying = false;
-    if (argc < 2) printHelpAndExit();
 
-    if (argc > 2) {
-        force_disable_rekeying = true;
-        printf("Disabling rekeying!");
-    }
+    if (argc != 2) printHelpAndExit();
 
-    rasta_lib_configuration_t rc = {0};
+    rasta* rc = NULL;
 
     rasta_ip_data toServer[2];
 
@@ -84,6 +93,7 @@ int main(int argc, char *argv[]) {
 
     if (strcmp(argv[1], "r") == 0) {
         printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
+        prepare_certs(CONFIG_PATH_S);
         rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
@@ -99,11 +109,7 @@ int main(int argc, char *argv[]) {
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
-
-        if (force_disable_rekeying) {
-            rc->h.config->kex.rekeying_interval_ms = 0;
-        }
+        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         rasta_bind(rc);
 
@@ -116,11 +122,11 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Terrible API
-        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
-        add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
+        rasta_add_fd_event(rc, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
@@ -146,11 +152,7 @@ int main(int argc, char *argv[]) {
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
-
-        if (force_disable_rekeying) {
-            rc->h.config->kex.rekeying_interval_ms = 0;
-        }
+        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         rasta_bind(rc);
 
@@ -162,11 +164,11 @@ int main(int argc, char *argv[]) {
         };
 
         // TODO: Terrible API
-        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
-        add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
+        rasta_add_fd_event(rc, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {

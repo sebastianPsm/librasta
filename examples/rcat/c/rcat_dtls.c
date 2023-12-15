@@ -4,16 +4,13 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <rasta/fifo.h>
-#include <rasta/logging.h>
 #include <rasta/rasta.h>
-#include <rasta/rmemory.h>
 
 #include "configfile.h"
 #include "wolfssl_certificate_helper.h"
 
-#define CONFIG_PATH_S "rasta_server_local_tls.cfg"
-#define CONFIG_PATH_C "rasta_client_local_tls.cfg"
+#define CONFIG_PATH_S "rasta_server_local_dtls.cfg"
+#define CONFIG_PATH_C "rasta_client_local_dtls.cfg"
 
 #define ID_R 0x61
 #define ID_S 0x60
@@ -41,7 +38,7 @@ void printHelpAndExit(void) {
 }
 
 struct connect_event_data {
-    rasta_lib_configuration_t rc;
+    rasta *rc;
     struct rasta_connection *connection;
 };
 
@@ -59,6 +56,7 @@ int send_input_data(void *carry_data) {
                 if (read_len > 0) {
                     rasta_send(data->rc, data->connection, buf, read_len);
                 }
+
                 rasta_disconnect(data->connection);
                 return 1;
             }
@@ -78,7 +76,7 @@ int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
-    rasta_lib_configuration_t rc = {0};
+    rasta* rc = NULL;
 
     rasta_ip_data toServer[2];
 
@@ -109,9 +107,9 @@ int main(int argc, char *argv[]) {
             .config = &config,
             .rasta_id = ID_S,
             .transport_sockets = toServer,
-            .transport_sockets_count = 2};
+            .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
+        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         rasta_bind(rc);
 
@@ -124,11 +122,11 @@ int main(int argc, char *argv[]) {
         }
 
         // TODO: Terrible API
-        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
-        add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
+        rasta_add_fd_event(rc, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {
@@ -152,9 +150,9 @@ int main(int argc, char *argv[]) {
             .config = &config,
             .rasta_id = ID_R,
             .transport_sockets = toServer,
-            .transport_sockets_count = 2};
+            .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &logger, &connection, 1);
+        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         rasta_bind(rc);
 
@@ -166,11 +164,11 @@ int main(int argc, char *argv[]) {
         };
 
         // TODO: Terrible API
-        input_available_event_data.rc[0] = rc[0];
+        input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 
         enable_fd_event(&input_available_event);
-        add_fd_event(&rc->rasta_lib_event_system, &input_available_event, EV_READABLE);
+        rasta_add_fd_event(rc, &input_available_event, EV_READABLE);
 
         ssize_t recv_len;
         while ((recv_len = rasta_recv(rc, c, buf, BUF_SIZE)) > 0) {

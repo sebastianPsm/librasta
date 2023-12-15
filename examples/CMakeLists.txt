@@ -49,14 +49,14 @@ target_compile_options(pw2iv_sample PRIVATE ${DEFAULT_COMPILE_OPTIONS})
 if(ENABLE_RASTA_TLS)
         add_executable(rcat_dtls
                 ${EXAMPLES_COMMON_SRC}
-                rcat/c/dtls.c rcat/c/wolfssl_certificate_helper.c rcat/c/wolfssl_certificate_helper.h)
+                rcat/c/rcat_dtls.c rcat/c/wolfssl_certificate_helper.c rcat/c/wolfssl_certificate_helper.h)
         target_include_directories(rcat_dtls PRIVATE common/headers)
         set_target_properties(rcat_dtls PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(rcat_dtls PRIVATE ${DEFAULT_COMPILE_OPTIONS})
         target_link_libraries(rcat_dtls rasta_dtls wolfssl)
         add_executable(rcat_tls
                 ${EXAMPLES_COMMON_SRC}
-                rcat/c/tls.c rcat/c/wolfssl_certificate_helper.c rcat/c/wolfssl_certificate_helper.h)
+                rcat/c/rcat_tls.c rcat/c/wolfssl_certificate_helper.c rcat/c/wolfssl_certificate_helper.h)
         target_include_directories(rcat_tls PRIVATE common/headers)
         set_target_properties(rcat_tls PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(rcat_tls PRIVATE ${DEFAULT_COMPILE_OPTIONS})
@@ -64,7 +64,7 @@ if(ENABLE_RASTA_TLS)
 endif()
 
 if(ENABLE_RASTA_OPAQUE)
-        add_executable(rcat_kex ${EXAMPLES_COMMON_SRC} rcat/c/kex.c)
+        add_executable(rcat_kex ${EXAMPLES_COMMON_SRC} rcat/c/rcat_kex.c)
         target_include_directories(rcat_kex PRIVATE common/headers)
         set_target_properties(rcat_kex PROPERTIES ${DEFAULT_PROJECT_OPTIONS})
         target_compile_options(rcat_kex PRIVATE ${DEFAULT_COMPILE_OPTIONS})

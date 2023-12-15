@@ -1,6 +1,9 @@
 #include "rastamodule.h"
 #include "rmemory.h"
 
+#define rasta_htole16(X) (X)
+#define rasta_le16toh(X) (X)
+
 rasta_error_type rastamodule_lasterror = RASTA_ERRORS_NONE;
 
 rasta_error_type getRastamoduleLastError() {
@@ -15,7 +18,7 @@ rasta_error_type getRastamoduleLastError() {
  */
 void hostShortTole(uint16_t v, unsigned char *result) {
     uint16_t *target = (uint16_t *)result;
-    *target = htole16(v);
+    *target = rasta_htole16(v);
 }
 
 /**
@@ -25,7 +28,7 @@ void hostShortTole(uint16_t v, unsigned char *result) {
  */
 uint16_t leShortToHost(const unsigned char *v) {
     const uint16_t *value_network_byte_order = (uint16_t *)v;
-    return le16toh(*value_network_byte_order);
+    return rasta_le16toh(*value_network_byte_order);
 }
 
 unsigned int getDataLength(struct RastaPacket *packet, rasta_hashing_context_t *hashing_context) {
