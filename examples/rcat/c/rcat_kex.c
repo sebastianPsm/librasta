@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
+        rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
             config.kex.rekeying_interval_ms = 0;
@@ -112,7 +112,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-        // TODO: Terrible API
         input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 
@@ -143,7 +142,7 @@ int main(int argc, char *argv[]) {
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
-        rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
+        rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
             config.kex.rekeying_interval_ms = 0;
@@ -158,7 +157,6 @@ int main(int argc, char *argv[]) {
             return 1;
         };
 
-        // TODO: Terrible API
         input_available_event_data.rc = rc;
         input_available_event_data.connection = c;
 

@@ -193,7 +193,7 @@ bool processRasta(std::string config_path,
     bool server = local_id > s_remote_id;
     if (server) {
         s_rc = nullptr;
-        rasta_lib_init_configuration(s_rc, &config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
+        s_rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
         if (!rasta_bind(s_rc)) {
             rasta_cleanup(s_rc);
@@ -214,7 +214,7 @@ bool processRasta(std::string config_path,
         bool success = false;
         do {
             s_rc = nullptr;
-            rasta_lib_init_configuration(s_rc, &config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
+            s_rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
             if (!rasta_bind(s_rc)) {
                 rasta_cleanup(s_rc);
