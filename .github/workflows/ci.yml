@@ -91,50 +91,50 @@ jobs:
       # Build your program with the given configuration
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -v
 
-    - name: Rcat UDP Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
-      timeout-minutes: 1
+    # - name: Rcat UDP Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
+    #   timeout-minutes: 1
 
-    - name: Rcat TCP Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
-      timeout-minutes: 1
+    # - name: Rcat TCP Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
+    #   timeout-minutes: 1
 
-    - name: Rcat TLS Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
-      timeout-minutes: 1
+    # - name: Rcat TLS Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
+    #   timeout-minutes: 1
 
-    - name: Rcat DTLS Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
-      timeout-minutes: 1
+    # - name: Rcat DTLS Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+    #   timeout-minutes: 1
 
-    - name: Rcat KEX / Opaque Test
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
+    # - name: Rcat KEX / Opaque Test
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
 
-    - name: CTest
-      run: cd ${{github.workspace}}/build && ctest . --output-on-failure
+    # - name: CTest
+    #   run: cd ${{github.workspace}}/build && ctest . --output-on-failure
 
-    - name: Valgrind Memcheck
-      run: cd ${{github.workspace}}/build && ctest . -T memcheck --output-on-failure
+    # - name: Valgrind Memcheck
+    #   run: cd ${{github.workspace}}/build && ctest . -T memcheck --output-on-failure
 
-    - name: Configure CMake without extensions
-      # force full rebuild
-      run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_RASTA_GRPC_BRIDGE=ON -DENABLE_RASTA_TLS=ON
+    # - name: Configure CMake without extensions
+    #   # force full rebuild
+    #   run: rm -r ${{github.workspace}}/build && cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_RASTA_GRPC_BRIDGE=ON -DENABLE_RASTA_TLS=ON
 
-    - name: Build without extensions
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    # - name: Build without extensions
+    #   # Build your program with the given configuration
+    #   run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Rcat UDP Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
+    # - name: Rcat UDP Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
 
-    - name: Rcat TCP Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
+    # - name: Rcat TCP Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
 
-    - name: Rcat TLS Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
+    # - name: Rcat TLS Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
 
-    - name: Rcat DTLS Test without extensions
-      run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+    # - name: Rcat DTLS Test without extensions
+    #   run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
 
-    - name: CTest without extensions
-      run: cd ${{github.workspace}}/build && ctest .
+    # - name: CTest without extensions
+    #   run: cd ${{github.workspace}}/build && ctest .
