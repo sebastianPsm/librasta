@@ -54,7 +54,7 @@ jobs:
 
     - name: Use gRPC
       run: |
-        cd ${{github.workspace}}/deps/grpc
+        cd ${{github.workspace}}/deps/grpc/cmake/build
         sudo make install
 
     - name: Cache wolfssl
