@@ -26,30 +26,58 @@ jobs:
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
+    - name: Install gRPC dependencies
+      run: sudo apt-get install build-essential autoconf libtool
+
+    - name: Install wolfssl dependencies
+      run: sudo apt-get install libtool autogen automake
+
     - name: Install valgrind
       run: sudo apt-get install valgrind
 
-    - name: Install gRPC
+    - name: Cache gRPC
+      id: cache-grpc
+      uses: actions/cache@v3
+      with:
+        path: /deps/grpc
+        key: ${{ runner.os }}-grpc
+
+    - name: Compile gRPC
+      if: steps.cache-grpc.outputs.cache-hit != 'true'
       run: |
-        sudo apt-get install build-essential autoconf libtool
-        cd /tmp
+        cd /deps
         git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
         cd grpc
         mkdir -p cmake/build && cd cmake/build
         cmake ../.. -DgRPC_INSTALL=ON
-        make -j8 && sudo make install
-        cd / && rm -rf /tmp/grpc
+        make -j8
 
-    - name: Install WolfSSL
+    - name: Use gRPC
       run: |
-        sudo apt-get install libtool autogen automake
-        cd /tmp
+        cd /deps/grpc
+        sudo make install
+
+    - name: Cache wolfssl
+      id: cache-wolfssl
+      uses: actions/cache@v3
+      with:
+        path: /deps/wolfssl
+        key: ${{ runner.os }}-wolfssl
+
+    - name: Compile wolfssl
+      if: steps.cache-wolfssl.outputs.cache-hit != 'true'
+      run: |
+        cd /deps
         git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl
         cd wolfssl
         ./autogen.sh
         ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra
-        make && sudo make install
-        cd / && rm -rf /tmp/wolfssl
+        make
+
+    - name: Use wolfssl
+      run: |
+        cd /deps/wolfssl
+        sudo make install
 
     - name: Set LD_LIBRARY_PATH
       run: echo "LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH):/usr/local/lib" >> $GITHUB_ENV
@@ -66,7 +94,7 @@ jobs:
     - name: Rcat UDP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
       timeout-minutes: 1
-      
+
     - name: Rcat TCP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
       timeout-minutes: 1
@@ -98,7 +126,7 @@ jobs:
 
     - name: Rcat UDP Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
-      
+
     - name: Rcat TCP Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
 
