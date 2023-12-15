@@ -24,64 +24,8 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
+#include <rasta/config.h>
 #include "rastautil.h"
-
-/**
- * representation of the options the the crc algorithm will use
- */
-struct crc_options {
-    /**
-     * length of crc in bit
-     */
-    unsigned short width;
-    /*
-     * the crc polynom without msb
-     */
-    unsigned long polynom;
-    /**
-     * the initial value (currently unused)
-     */
-    unsigned long initial;
-    /**
-     * the initial value for the table lookup algorithm
-     */
-    unsigned long initial_optimized;
-    /**
-     * 0 if reflected input is disabled, 1 otherwise
-     */
-    int refin;
-    /**
-     * 0 if reflected output is disabled, 1 otherwise
-     */
-    int refout;
-    /**
-     * value for the final xor operation, hast to be the same length as width
-     */
-    unsigned long final_xor;
-
-    /**
-     * mask for internal crc computation, do not set
-     */
-    unsigned long crc_mask;
-    /**
-     * mask for internal crc computation, do not set
-     */
-    unsigned long crc_high_bit;
-
-    /*
-     * 1 if the crc lookup table has been generated, 0 otherwise
-     */
-    int is_table_generated;
-    /**
-     * the precomputed crc lookup table, generate by calling 'crc_generate_table'
-     */
-    unsigned long table[256];
-};
 
 /**
  * initializes crc options as in 6.3.6 a)
@@ -132,7 +76,3 @@ void crc_generate_table(struct crc_options *options);
  * @return the calculated checksum
  */
 unsigned long crc_calculate(struct crc_options *options, struct RastaByteArray data);
-
-#ifdef __cplusplus
-}
-#endif

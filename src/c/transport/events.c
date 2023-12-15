@@ -1,16 +1,17 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
-#include <rasta/logging.h>
 #include <rasta/rasta.h>
-#include <rasta/rastahandle.h>
-#include <rasta/rastaredundancy.h>
-#include <rasta/rmemory.h>
+#include "../logging.h"
+#include "../rastahandle.h"
+#include "../redundancy/rastaredundancy.h"
+#include "../util/rmemory.h"
 
 #include "../experimental/handlers.h"
 #include "../retransmission/messages.h"
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
+#include "../rasta_connection.h"
 #include "diagnostics.h"
 #include "events.h"
 #include "transport.h"

@@ -6,6 +6,7 @@
 
 #include "../retransmission/safety_retransmission.h"
 #include "../retransmission/protocol.h"
+#include "../rasta_connection.h"
 
 /**
  * processes a received Key Exchange Request packet

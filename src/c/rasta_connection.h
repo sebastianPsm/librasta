@@ -2,13 +2,14 @@
 
 #include <stdbool.h>
 
-#include "config.h"
-#include "event_system.h"
-#include "logging.h"
-#include "rastafactory.h"
-#include "rastahashing.h"
-#include "rastaredundancy.h"
-#include "rastarole.h"
+#include <rasta/rastarole.h>
+#include "rastahandle.h"
+#include "util/event_system.h"
+#include "util/fifo.h"
+#include "experimental/key_exchange.h"
+#include "redundancy/rasta_redundancy_channel.h"
+
+#define DIAGNOSTIC_INTERVAL_SIZE 500
 
 /**
  * representation of the connection state in the SR layer
@@ -117,68 +118,6 @@ struct timed_event_data {
     void *handle;
     struct rasta_connection *connection;
 };
-
-typedef struct rasta_sending_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending *config;
-    rasta_config_general *info;
-
-    struct logger_t *logger;
-
-    struct redundancy_mux *mux;
-
-    /**
-     * handle for notification only
-     */
-    // struct rasta_handle *handle;
-
-    timed_event send_event;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-
-    rasta_connection *connection;
-} rasta_sending_handle;
-
-typedef struct rasta_heartbeat_handle {
-
-    struct logger_t *logger;
-
-    struct redundancy_mux *mux;
-
-    // struct rasta_handle *handle; // handle for notification only
-
-    /**
-     * The parameters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-} rasta_heartbeat_handle;
-
-typedef struct rasta_receive_handle {
-    /**
-     * configuration values
-     */
-    rasta_config_sending *config;
-    rasta_config_general *info;
-
-    struct logger_t *logger;
-
-    rasta_connection *connection;
-
-    /**
-     * handle for notification only
-     */
-    struct rasta_handle *handle;
-
-    /**
-     * The paramenters that are used for SR checksums
-     */
-    rasta_hashing_context_t *hashing_context;
-} rasta_receive_handle;
 
 typedef struct rasta_connection {
 
@@ -331,102 +270,6 @@ typedef struct rasta_connection {
     struct logger_t *logger;
 } rasta_connection;
 
-/**
- * struct that is returned in all notifications
- */
-struct rasta_notification_result {
-    /**
-     * copy of the calling rasta connection (this should always be used first)
-     */
-    struct rasta_connection connection;
-};
-
-/**
- * pointer to a function that will be called when application messages are ready for processing
- * first parameter is the connection that fired the event
- */
-typedef void (*on_receive_ptr)(struct rasta_notification_result *result);
-
-/**
- * pointer to a function that will be called when connection state has changed
- * first parameter is the connection that fired the event
- */
-typedef void (*on_connection_state_change_ptr)(struct rasta_notification_result *result);
-
-/**
- * pointer to a function that will be called when diagnostic notification will be send
- * first parameter is the connection that fired the event
- * second parameter is the length for the provided array
- * third parameter it the array with tracked diagnostic data
- */
-typedef void (*on_diagnostic_notification_ptr)(struct rasta_notification_result *result);
-
-/**
- * pointer to a function that will be called when a DiscReq are received
- * first parameter is the connection that fired the event.
- * second parameter is the reason for this DiscReq
- * third parameter is the detail for this DiscReq
- */
-typedef void (*on_disconnection_request_received_ptr)(struct rasta_notification_result *result, unsigned short reason, unsigned short detail);
-
-/**
- * pointer to a function that will be called when an entity successfully completed the handshake and is now in state UP.
- * first parameter is the connection that fired the event
- */
-typedef void (*on_handshake_complete_ptr)(struct rasta_notification_result *);
-
-/**
- * pointer to a function that will be called when the T_i timer of an entity expired.
- * first parameter is the connection that fired the event
- */
-typedef void (*on_heartbeat_timeout_ptr)(struct rasta_notification_result *);
-
-/**
- * function pointers for the notifications that are specified in 5.2.2
- */
-struct rasta_notification_ptr {
-    /**
-     * called when a application message is ready for processing
-     */
-    on_receive_ptr on_receive;
-
-    /**
-     * called when connection state has changed
-     */
-    on_connection_state_change_ptr on_connection_state_change;
-
-    /**
-     * called when diagnostic notification will be send
-     */
-    on_diagnostic_notification_ptr on_diagnostic_notification;
-
-    /**
-     * called when a DiscReq are received
-     */
-    on_disconnection_request_received_ptr on_disconnection_request_received;
-
-    /**
-     * called when a diagnostic notification of the redundancy layer occures
-     */
-    on_diagnostics_available_red_ptr on_redundancy_diagnostic_notification;
-
-    /**
-     * called when an entity successfully completed the handshake and is now in state UP
-     */
-    on_handshake_complete_ptr on_handshake_complete;
-
-    /**
-     * called when the T_i timer of an entity expired
-     */
-    on_heartbeat_timeout_ptr on_heartbeat_timeout;
-};
-
-struct rasta_disconnect_notification_result {
-    struct rasta_notification_result result;
-    unsigned short reason;
-    unsigned short detail;
-};
-
 
 /**
  * creates the container for all notification events
@@ -473,3 +316,13 @@ void fire_on_handshake_complete(struct rasta_notification_result result);
  */
 void fire_on_heartbeat_timeout(struct rasta_notification_result result);
 
+void init_send_key_exchange_event(timed_event *ev, struct timed_event_data *carry_data,
+                                  struct rasta_connection *connection);
+
+/**
+ * initializes the RaSTA handle with a given configuration and logger
+ * @param user_configuration the user configuration containing the handle to initialize
+ * @param config the configuration to initialize the handle with
+ * @param logger the logger to use
+ */
+void rasta_socket(rasta *user_configuration, rasta_config_info *config, struct logger_t *logger);

@@ -1,9 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
 
 #include <stdint.h>
 
@@ -50,7 +46,3 @@ void hostLongToLe(uint32_t v, unsigned char *result);
  * @return the ulong
  */
 uint32_t leLongToHost(const unsigned char v[4]);
-
-#ifdef __cplusplus
-}
-#endif

@@ -1,5 +1,5 @@
-#include <rasta/rastamodule.h>
-#include <rasta/rmemory.h>
+#include "rastamodule.h"
+#include "rmemory.h"
 
 #define htole16(X) (X)
 #define le16toh(X) (X)

@@ -1,4 +1,6 @@
 #include "transport.h"
+#include "../rastahandle.h"
+#include "../redundancy/rasta_redundancy_channel.h"
 
 void transport_init(struct rasta_handle *h, rasta_transport_channel *channel, unsigned id, const char *host, uint16_t port, const rasta_config_tls *tls_config) {
     channel->id = id;

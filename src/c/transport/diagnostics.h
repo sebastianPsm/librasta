@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rasta/rastahandle.h>
+typedef struct rasta_redundancy_channel rasta_redundancy_channel;
 
 /**
  * representation of the transport channel diagnostic data

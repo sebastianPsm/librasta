@@ -1,7 +1,7 @@
 #pragma once
 
-#include <rasta/rastahandle.h>
-#include <rasta/rastamodule.h>
+#include "../util/rastamodule.h"
+#include "../rastahandle.h"
 
 /**
  * processes a received RaSTA packet

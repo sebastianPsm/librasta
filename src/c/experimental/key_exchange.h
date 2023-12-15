@@ -1,13 +1,9 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 #include <stdint.h>
+#include <rasta/config.h>
 
-#include "logging.h"
+#include "../logging.h"
 
 #ifdef ENABLE_OPAQUE
 
@@ -17,12 +13,6 @@ extern "C" { // only need to export C interface if
 
 #include <stdbool.h>
 
-enum KEY_EXCHANGE_MODE {
-    KEY_EXCHANGE_MODE_NONE,
-#ifdef ENABLE_OPAQUE
-    KEY_EXCHANGE_MODE_OPAQUE
-#endif
-};
 /**
  * Allow client's rekeying Key Exchange Request to be received up to 500 ms after it was due
  */
@@ -68,28 +58,6 @@ struct key_exchange_state {
 };
 
 #define CONFIGURATION_FILE_USER_RECORD_HEADER "URV1"
-
-#define KEX_PSK_MAX 128
-
-struct RastaConfigKex {
-    /**
-     * Active Kex mode for the server
-     */
-    enum KEY_EXCHANGE_MODE mode;
-    /**
-     * Configured PSK, might be nullptr if mode is KEX_EXCHANGE_MODE_NONE
-     */
-    char psk[KEX_PSK_MAX];
-    /**
-     * Rekeying interval or 0 when no rekeying is disabled
-     */
-    uint64_t rekeying_interval_ms;
-
-#ifdef ENABLE_OPAQUE
-    bool has_psk_record;
-    uint8_t psk_record[OPAQUE_USER_RECORD_LEN];
-#endif
-};
 
 /**
  * [SERVER] Prepare a user record from a PSK and the RaSTA IDs
@@ -157,7 +125,3 @@ int kex_recover_credential(struct key_exchange_state *kex_state,
  */
 int kex_authenticate_user(const struct key_exchange_state *kex_state, const uint8_t *received_user_auth,
                           size_t received_user_auth_length, struct logger_t *logger);
-
-#ifdef __cplusplus
-}
-#endif

@@ -11,7 +11,7 @@
 #include <wolfssl/wolfcrypt/error-crypt.h>
 #include <wolfssl/wolfio.h>
 
-#include <rasta/rmemory.h>
+#include "../util/rmemory.h"
 
 #include "bsd_utils.h"
 #include "ssl_utils.h"

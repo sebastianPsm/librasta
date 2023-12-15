@@ -1,10 +1,13 @@
 #pragma once
 
 #include <arpa/inet.h>
-#include <rasta/rasta_red_multiplexer.h>
+
+#include <stdbool.h>
+#include <rasta/config.h>
 
 #include "diagnostics.h"
 #include "events.h"
+#include "../util/rastautil.h"
 
 #define MAX_PENDING_CONNECTIONS 5
 

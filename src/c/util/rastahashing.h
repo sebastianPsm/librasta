@@ -5,42 +5,6 @@
 #include "rastasiphash24.h"
 #include "rastautil.h"
 
-/**
- * Algorithms that can be used for the RaSTA SR layer checksum
- */
-typedef enum {
-    /**
-     * MD4
-     */
-    RASTA_ALGO_MD4 = 0,
-    /**
-     * Blake2b
-     */
-    RASTA_ALGO_BLAKE2B = 1,
-    /**
-     * SipHash-2-4
-     */
-    RASTA_ALGO_SIPHASH_2_4 = 2
-} rasta_hash_algorithm;
-
-/**
- * used checksum type
- */
-typedef enum {
-    /**
-     * no checksum
-     */
-    RASTA_CHECKSUM_NONE = 0,
-    /**
-     * 8 byte checksum
-     */
-    RASTA_CHECKSUM_8B = 1,
-    /**
-     * 16 byte checksum
-     */
-    RASTA_CHECKSUM_16B = 2
-} rasta_checksum_type;
-
 typedef struct rasta_hashing_ctx {
     /**
      * The hashing algorithm

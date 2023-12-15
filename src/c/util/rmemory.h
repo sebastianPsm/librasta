@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 /**
  * Allocates memory of size
  * @param size the size of the memory
@@ -66,7 +61,3 @@ void rstrcat(char *dest, const char *src);
  * @return < 0 if if a < b, > 0 if a > b or 0 if a == b
  */
 int rmemcmp(const void *a, const void *b, unsigned int len);
-
-#ifdef __cplusplus
-}
-#endif

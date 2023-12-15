@@ -6,11 +6,6 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 #include "rastamodule.h"
 
 /**
@@ -116,7 +111,3 @@ unsigned long deferqueue_get_ts(struct defer_queue *queue, unsigned long seq_nr)
  * @param queue the queue that is cleared
  */
 void deferqueue_clear(struct defer_queue *queue);
-
-#ifdef __cplusplus
-}
-#endif

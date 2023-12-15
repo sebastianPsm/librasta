@@ -1,16 +1,11 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 #include <stdint.h>
 
-#include "key_exchange.h"
+#include "experimental/key_exchange.h"
 #include "logging.h"
-#include "rastahashing.h"
-#include "rastamodule.h"
+#include "util/rastahashing.h"
+#include "util/rastamodule.h"
 
 /**
  * generic struct for the additional data for Connectionrequest and Connectionresponse
@@ -255,7 +250,3 @@ struct RastaMessageData extractMessageData(struct RastaPacket *p);
  * @param packet the RaSTA redundancy layer PDU to create
  */
 void createRedundancyPacket(uint32_t sequence_number, struct RastaPacket *inner_data, struct crc_options checksum_type, struct RastaRedundancyPacket *packet);
-
-#ifdef __cplusplus
-}
-#endif

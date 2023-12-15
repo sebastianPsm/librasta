@@ -1,13 +1,12 @@
-#include <rasta/rastahandle.h>
+#include "rastahandle.h"
 
-#include <rasta/rmemory.h>
+#include "util/rmemory.h"
 #include <stdlib.h>
 
 struct rasta_notification_result sr_create_notification_result(struct rasta_handle *handle, struct rasta_connection *connection) {
-    struct rasta_notification_result r;
+    struct rasta_notification_result r = {};
     UNUSED(handle);
-
-    r.connection = *connection;
+    UNUSED(connection);
 
     return r;
 }

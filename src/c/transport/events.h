@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rasta/event_system.h>
+#include "../util/event_system.h"
 
 typedef struct rasta_transport_socket rasta_transport_socket;
 typedef struct rasta_transport_channel rasta_transport_channel;

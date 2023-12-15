@@ -58,16 +58,6 @@ int send_input_data(void *carry_data) {
     }
 }
 
-void *on_con_start(rasta_lib_connection_t connection) {
-    (void)connection;
-    return malloc(sizeof(rasta_lib_connection_t));
-}
-
-void on_con_end(rasta_lib_connection_t connection, void *memory) {
-    (void)connection;
-    free(memory);
-}
-
 int main(int argc, char *argv[]) {
     bool force_disable_rekeying = false;
     if (argc < 2) printHelpAndExit();

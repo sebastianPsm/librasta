@@ -1,9 +1,13 @@
-#include <rasta/event_system.h>
+#include "event_system.h"
 
 #include <sys/select.h>
 #include <time.h>
+#include <assert.h>
+#include <stdio.h>
 
 #include <rasta/rasta.h>
+#include "rastautil.h"
+#include "../rastahandle.h"
 
 uint64_t get_nanotime() {
     struct timespec t;
@@ -261,6 +265,10 @@ void add_fd_event(event_system *ev_sys, fd_event *event, int options) {
     }
 
     event->options = options;
+}
+
+void rasta_add_fd_event(rasta *rasta, fd_event *event, int options) {
+    add_fd_event(&rasta->rasta_lib_event_system, event, options);
 }
 
 /**

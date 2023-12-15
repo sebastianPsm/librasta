@@ -2,6 +2,7 @@
 
 #include "bsd_utils.h"
 #include "udp.h"
+#include "../rastahandle.h"
 
 // this file contains implementations for the transport methods of UDP-based protocols
 

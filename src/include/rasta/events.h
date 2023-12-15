@@ -1,20 +1,21 @@
 #pragma once
 
-#include <inttypes.h>
-#include <time.h>
-#include <unistd.h>
-
 #ifdef __cplusplus
 extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
-#define EV_READABLE (1 << 0)
-#define EV_WRITABLE (1 << 1)
-#define EV_EXCEPTIONAL (1 << 2)
+#include <stdint.h>
+
+typedef struct event_system event_system;
+typedef struct rasta rasta;
 
 // event callback pointer, return 0 to keep the loop running, everything else stops the loop
 typedef int (*event_ptr)(void *h);
+
+#define EV_READABLE (1 << 0)
+#define EV_WRITABLE (1 << 1)
+#define EV_EXCEPTIONAL (1 << 2)
 
 /**
  * contains a function pointer to a callback function and interval in microseconds
@@ -41,39 +42,6 @@ typedef struct fd_event {
     int options;
     char enabled;
 } fd_event;
-
-struct timed_event_linked_list_s {
-    timed_event *first;
-    timed_event *last;
-};
-
-struct fd_event_linked_list_s {
-    fd_event *first;
-    fd_event *last;
-};
-
-/**
- * an event system contains timed events (firing in a given interval) and fd events (firing when a fd becomes readable/writable/exceptional)
-*/
-typedef struct event_system {
-    struct timed_event_linked_list_s timed_events;
-    struct fd_event_linked_list_s fd_events;
-} event_system;
-
-/**
- * starts an event loop with the given events
- * the events may not be removed while the loop is running, but can be modified
- * @param ev_sys contains all the events the loop should handle.
- * Can be modified from the calling thread while running.
- */
-void event_system_start(event_system *ev_sys);
-
-/**
- * reschedules the event to the current time + the event interval
- * resulting in a delay of the event
- * @param event the event to delay
- */
-void reschedule_event(timed_event *event);
 
 /**
  * enables a timed event, it will fire in event::interval nanoseconds
@@ -125,6 +93,8 @@ void remove_timed_event(event_system *ev_sys, timed_event *event);
  * @param options set how the event should be triggered. (EV_READABLE | EV_WRITABLE | EV_CHANGE)
  */
 void add_fd_event(event_system *ev_sys, fd_event *event, int options);
+
+void rasta_add_fd_event(rasta *h, fd_event *event, int options);
 
 /**
  * Removes a fd event from its event system.

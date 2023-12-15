@@ -1,6 +1,7 @@
 #include "diagnostics.h"
 
 #include "transport.h"
+#include "../redundancy/rasta_red_multiplexer.h"
 
 /**
  * wrapper for parameter in the diagnose notification thread handler

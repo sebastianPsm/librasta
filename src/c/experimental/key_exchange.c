@@ -1,8 +1,8 @@
 #include <sys/mman.h>
 #include <errno.h>
 
-#include <rasta/logging.h>
-#include <rasta/rastahandle.h>
+#include "../logging.h"
+#include "../rastahandle.h"
 
 
 #ifdef ENABLE_OPAQUE

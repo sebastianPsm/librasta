@@ -7,13 +7,78 @@ extern "C" { // only need to export C interface if
 
 #include <limits.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
-#include "key_exchange.h"
-#include "logging.h"
-#include "rastafactory.h"
-
 #define CONFIG_BUFFER_LENGTH 10000
+
+enum KEY_EXCHANGE_MODE {
+    KEY_EXCHANGE_MODE_NONE,
+#ifdef ENABLE_OPAQUE
+    KEY_EXCHANGE_MODE_OPAQUE
+#endif
+};
+
+#define KEX_PSK_MAX 128
+
+struct RastaConfigKex {
+    /**
+     * Active Kex mode for the server
+     */
+    enum KEY_EXCHANGE_MODE mode;
+    /**
+     * Configured PSK, might be nullptr if mode is KEX_EXCHANGE_MODE_NONE
+     */
+    char psk[KEX_PSK_MAX];
+    /**
+     * Rekeying interval or 0 when no rekeying is disabled
+     */
+    uint64_t rekeying_interval_ms;
+
+#ifdef ENABLE_OPAQUE
+    bool has_psk_record;
+    uint8_t psk_record[OPAQUE_USER_RECORD_LEN];
+#endif
+};
+
+/* Any 32-bit or wider unsigned integer data type will do */
+typedef unsigned int MD4_u32plus;
+
+/**
+ * used checksum type
+ */
+typedef enum {
+    /**
+     * no checksum
+     */
+    RASTA_CHECKSUM_NONE = 0,
+    /**
+     * 8 byte checksum
+     */
+    RASTA_CHECKSUM_8B = 1,
+    /**
+     * 16 byte checksum
+     */
+    RASTA_CHECKSUM_16B = 2
+} rasta_checksum_type;
+
+/**
+ * Algorithms that can be used for the RaSTA SR layer checksum
+ */
+typedef enum {
+    /**
+     * MD4
+     */
+    RASTA_ALGO_MD4 = 0,
+    /**
+     * Blake2b
+     */
+    RASTA_ALGO_BLAKE2B = 1,
+    /**
+     * SipHash-2-4
+     */
+    RASTA_ALGO_SIPHASH_2_4 = 2
+} rasta_hash_algorithm;
 
 /**
  * defined in 7.2
@@ -63,6 +128,59 @@ typedef struct rasta_ip_data {
 struct RastaConfigRedundancyConnections {
     rasta_ip_data *data;
     unsigned int count;
+};
+
+
+/**
+ * representation of the options the the crc algorithm will use
+ */
+struct crc_options {
+    /**
+     * length of crc in bit
+     */
+    unsigned short width;
+    /*
+     * the crc polynom without msb
+     */
+    unsigned long polynom;
+    /**
+     * the initial value (currently unused)
+     */
+    unsigned long initial;
+    /**
+     * the initial value for the table lookup algorithm
+     */
+    unsigned long initial_optimized;
+    /**
+     * 0 if reflected input is disabled, 1 otherwise
+     */
+    int refin;
+    /**
+     * 0 if reflected output is disabled, 1 otherwise
+     */
+    int refout;
+    /**
+     * value for the final xor operation, hast to be the same length as width
+     */
+    unsigned long final_xor;
+
+    /**
+     * mask for internal crc computation, do not set
+     */
+    unsigned long crc_mask;
+    /**
+     * mask for internal crc computation, do not set
+     */
+    unsigned long crc_high_bit;
+
+    /*
+     * 1 if the crc lookup table has been generated, 0 otherwise
+     */
+    int is_table_generated;
+    /**
+     * the precomputed crc lookup table, generate by calling 'crc_generate_table'
+     */
+    unsigned long table[256];
 };
 
 /**
@@ -171,6 +289,48 @@ typedef struct rasta_connection_config {
      */
     unsigned long rasta_id;
 } rasta_connection_config;
+
+
+/**
+ * the log level
+ */
+typedef enum {
+    /**
+     * Messages meant for debugging
+     */
+    LOG_LEVEL_DEBUG = 3,
+    /**
+     * Messages for general connection status
+     */
+    LOG_LEVEL_INFO = 2,
+    /**
+     * Error messages
+     */
+    LOG_LEVEL_ERROR = 1,
+    /**
+     * Symbolic log level: nothing will be logged
+     * Can only be used as maximum log level
+     */
+    LOG_LEVEL_NONE = 0
+} log_level;
+
+/**
+ * represents the type of logging that should be used
+ */
+typedef enum {
+    /**
+     * log messages to console
+     */
+    LOGGER_TYPE_CONSOLE = 0,
+    /**
+     * log messages to file
+     */
+    LOGGER_TYPE_FILE = 1,
+    /**
+     * log to console and file
+     */
+    LOGGER_TYPE_BOTH = 2
+} logger_type;
 
 #ifdef __cplusplus
 }

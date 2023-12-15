@@ -1,9 +1,9 @@
 #pragma once
 
-#include <rasta/event_system.h>
 #include <rasta/config.h>
-#include <rasta/rastahandle.h>
-#include <rasta/logging.h>
+#include "../util/event_system.h"
+#include "../rastahandle.h"
+#include "../logging.h"
 #include "messages.h"
 
 /**
@@ -23,7 +23,7 @@ void sr_remove_confirmed_messages(struct rasta_connection *con);
 void sr_reset_connection(struct rasta_connection *connection);
 
 /**
- * Initialize a @p connection with @p role (client or server) 
+ * Initialize a @p connection with @p role (client or server)
 */
 void sr_init_connection(struct rasta_connection *connection, rasta_role role);
 

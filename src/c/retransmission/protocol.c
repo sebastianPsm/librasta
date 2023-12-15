@@ -1,8 +1,9 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../util/rastautil.h"
 #include <rasta/config.h>
-#include <rasta/rastautil.h>
+#include <string.h>
 
 #include "protocol.h"
 

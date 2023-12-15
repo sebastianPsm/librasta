@@ -4,13 +4,7 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
-/* Any 32-bit or wider unsigned integer data type will do */
-typedef unsigned int MD4_u32plus;
+#include <rasta/config.h>
 
 typedef struct {
     MD4_u32plus lo, hi;
@@ -54,7 +48,3 @@ void generateMD4(unsigned char *data, int length, int type, unsigned char *resul
  * @param result array for the result
  */
 void generateMD4WithVector(unsigned char *data, int length, int type, MD4_CONTEXT *context, unsigned char *result);
-
-#ifdef __cplusplus
-}
-#endif

@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 #include <stdint.h>
 
 #include "rastacrc.h"
@@ -132,7 +127,7 @@ struct RastaPacket {
      * NOTE: this field should never be set manually. Use the functions in rastafactory to create RastaPackets
      */
     unsigned short length;
-    
+
     /**
      *  the package type
      */
@@ -235,7 +230,3 @@ struct RastaByteArray rastaRedundancyPacketToBytes(struct RastaRedundancyPacket 
  * @param packet a RaSTA Redundancy layer packet that will contain all data that was in the @p data byte array
  */
 void bytesToRastaRedundancyPacket(struct RastaByteArray data, struct crc_options checksum_type, rasta_hashing_context_t *hashing_context, struct RastaRedundancyPacket *packet);
-
-#ifdef __cplusplus
-}
-#endif

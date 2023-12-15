@@ -5,6 +5,7 @@ extern "C" { // only need to export C interface if
              // used by C++ source code
 #endif
 
+#include "../../../src/c/logging.h"
 #include "dictionary.h"
 #include <rasta/config.h>
 

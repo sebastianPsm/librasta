@@ -1,7 +1,7 @@
 #pragma once
 
-#include <rasta/config.h>
 #include <stdint.h>
+#include <rasta/config.h>
 
 /**
  * the RaSTA version that is implemented

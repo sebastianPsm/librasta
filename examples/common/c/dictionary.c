@@ -1,8 +1,8 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "../../../src/c/util/rmemory.h"
 #include "dictionary.h"
-#include <rasta/rmemory.h>
 
 /**
  * makes the string uppercase

@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef __cplusplus
-extern "C" { // only need to export C interface if
-             // used by C++ source code
-#endif
-
 /**
  * Representation of an element in the FIFO
  */
@@ -82,7 +77,3 @@ unsigned int fifo_get_size(fifo_t *fifo);
  * @return 1 if the capacity has been reached, 0 otherwise
 */
 int fifo_full(fifo_t* fifo);
-
-#ifdef __cplusplus
-}
-#endif

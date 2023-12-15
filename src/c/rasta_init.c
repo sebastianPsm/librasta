@@ -2,12 +2,13 @@
 #include <stdbool.h>
 
 #include <rasta/rasta_init.h>
-#include <rasta/rastautil.h>
-#include <rasta/rmemory.h>
+#include "util/rastautil.h"
+#include "util/rmemory.h"
 
 #include "retransmission/safety_retransmission.h"
 #include "transport/events.h"
 #include "transport/transport.h"
+#include "rasta_connection.h"
 
 // This is the time that packets are deferred for creating multi-packet messages (in ms)
 // See section 5.5.10
@@ -60,7 +61,7 @@ void init_connection_events(struct rasta_handle *h, struct rasta_connection *con
 #endif
 }
 
-void rasta_socket(rasta_lib_configuration_t user_configuration, rasta_config_info *config, struct logger_t *logger) {
+void rasta_socket(rasta *user_configuration, rasta_config_info *config, struct logger_t *logger) {
     struct rasta_handle *handle = &user_configuration->h;
     rasta_handle_init(handle, config, logger);
 
@@ -68,22 +69,19 @@ void rasta_socket(rasta_lib_configuration_t user_configuration, rasta_config_inf
     handle->mux.notifications.on_diagnostics_available = handle->notifications.on_redundancy_diagnostic_notification;
 }
 
-void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, rasta_config_info *config, struct logger_t *logger, rasta_connection_config *connections, size_t connections_length) {
-    memset(user_configuration, 0, sizeof(rasta_lib_configuration_t));
-    rasta_socket(user_configuration, config, logger);
+void rasta_lib_init_configuration(rasta * user_configuration, rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type) {
+    memset(user_configuration, 0, sizeof(rasta));
+    logger_init(&user_configuration->logger, log_level, logger_type);
+    rasta_socket(user_configuration, config, &user_configuration->logger);
     memset(&user_configuration->rasta_lib_event_system, 0, sizeof(user_configuration->rasta_lib_event_system));
-    memset(&user_configuration->callback, 0, sizeof(user_configuration->callback));
-    user_configuration->h.user_handles = &user_configuration->callback;
 
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
     h->ev_sys = event_system;
 
     // init the redundancy layer
-    redundancy_mux_init_config(&h->mux, h->logger, config);
-
     // This is the place where we malloc
-    redundancy_mux_allocate_channels(h, &h->mux, connections, connections_length);
+    redundancy_mux_alloc(h, &h->mux, h->logger, config, connections, connections_length);
 
     h->rasta_connections = rmalloc(sizeof(rasta_connection) * connections_length);
     memset(h->rasta_connections, 0, sizeof(rasta_connection) * connections_length);
@@ -114,12 +112,12 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
 
         connection->send_handle.config = &config->sending;
         connection->send_handle.info = &config->general;
-        connection->send_handle.logger = logger;
+        connection->send_handle.logger = &user_configuration->logger;
         connection->send_handle.mux = connection->redundancy_channel->mux;
         connection->send_handle.hashing_context = &h->mux.sr_hashing_context;
 
         // heartbeat
-        connection->heartbeat_handle.logger = logger;
+        connection->heartbeat_handle.logger = &user_configuration->logger;
         connection->heartbeat_handle.mux = connection->redundancy_channel->mux;
         connection->heartbeat_handle.hashing_context = &connection->redundancy_channel->mux->sr_hashing_context;
 
@@ -127,7 +125,7 @@ void rasta_lib_init_configuration(rasta_lib_configuration_t user_configuration, 
         connection->receive_handle.config = &config->sending;
         connection->receive_handle.info = &config->general;
         connection->receive_handle.handle = h;
-        connection->receive_handle.logger = logger;
+        connection->receive_handle.logger = &user_configuration->logger;
         connection->receive_handle.hashing_context = &h->mux.sr_hashing_context;
 
         // init retransmission fifo
