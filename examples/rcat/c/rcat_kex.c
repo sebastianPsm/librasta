@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
-            rc->h.config->kex.rekeying_interval_ms = 0;
+            config.kex.rekeying_interval_ms = 0;
         }
 
         rasta_bind(rc);
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
         rasta_lib_init_configuration(rc, &config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
-            rc->h.config->kex.rekeying_interval_ms = 0;
+            config.kex.rekeying_interval_ms = 0;
         }
 
         rasta_bind(rc);
