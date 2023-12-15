@@ -41,6 +41,11 @@ struct rasta_connection *rasta_accept(rasta_lib_configuration_t user_configurati
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
 
+    for (unsigned i = 0; i < h->rasta_connections_length; i++) {
+        h->rasta_connections[i].redundancy_channel->seq_rx = 0;
+        h->rasta_connections[i].redundancy_channel->seq_tx = 0;
+    }
+
     // accept events were already prepared by rasta_listen
     // event system will break when we have received the first heartbeat of a new connection
     log_main_loop_state(h, event_system, "event-system started");

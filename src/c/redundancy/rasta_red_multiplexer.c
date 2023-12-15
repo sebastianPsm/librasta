@@ -382,6 +382,8 @@ int redundancy_mux_connect_channel(redundancy_mux *mux, rasta_redundancy_channel
     // add transport channels
     int success = 0;
     for (unsigned int i = 0; i < channel->transport_channel_count; i++) {
+        channel->seq_rx = 0;
+        channel->seq_tx = 0;
         // Provided transport channels have to match with local ports configured
         success |= rasta_red_connect_transport_channel(channel, &mux->transport_sockets[i]);
     }
@@ -406,8 +408,4 @@ void redundancy_mux_close_channel(rasta_connection *conn, rasta_redundancy_chann
             channel->associated_socket->file_descriptor = -1;
         }
     }
-
-    // reset sequence numbers
-    red_channel->seq_rx = 0;
-    red_channel->seq_tx = 0;
 }
