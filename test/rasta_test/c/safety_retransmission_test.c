@@ -90,7 +90,6 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     freeRastaByteArray(hb_message);
     rfree(hb_message);
 
-    rfree(mux.transport_sockets);
     freeRastaByteArray(&fake_channel.hashing_context.key);
     freeRastaByteArray(&mux.sr_hashing_context.key);
 }
@@ -202,7 +201,6 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     rfree(retrdata_message);
     rfree(hb_message);
 
-    rfree(mux.transport_sockets);
     freeRastaByteArray(&data.data);
     freeRastaByteArray(&hashing_context.key);
     freeRastaByteArray(&fake_channel.hashing_context.key);
