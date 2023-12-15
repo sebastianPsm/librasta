@@ -1,5 +1,6 @@
 #include "configfile.h"
 #include "../../../src/c/util/rastacrc.h"
+#include "../../../src/c/experimental/key_exchange.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>

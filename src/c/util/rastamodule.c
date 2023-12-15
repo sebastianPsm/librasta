@@ -1,9 +1,6 @@
 #include "rastamodule.h"
 #include "rmemory.h"
 
-#define htole16(X) (X)
-#define le16toh(X) (X)
-
 rasta_error_type rastamodule_lasterror = RASTA_ERRORS_NONE;
 
 rasta_error_type getRastamoduleLastError() {
