@@ -62,6 +62,8 @@ set(sources
     c/retransmission/protocol.h
     c/redundancy/rasta_red_multiplexer.c
     c/redundancy/rastaredundancy.c
+    c/redundancy/rasta_redundancy_channel.c
+    c/redundancy/rasta_redundancy_channel.h
     c/experimental/handlers.c
     c/experimental/key_exchange.c
     c/experimental/handlers.h

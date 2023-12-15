@@ -6,6 +6,7 @@
 #include "safety_retransmission.h"
 
 #include "../retransmission/handlers.h"
+#include "../redundancy/rasta_redundancy_channel.h"
 #include "../transport/events.h"
 #include "../transport/transport.h"
 

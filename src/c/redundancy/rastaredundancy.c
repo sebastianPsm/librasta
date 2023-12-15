@@ -177,20 +177,6 @@ int red_f_receiveData(rasta_redundancy_channel *channel, struct RastaRedundancyP
             logger_log(channel->logger, LOG_LEVEL_INFO, "RaSTA Red receive", "discarded packet because defer queue was full");
         }
 
-        // struct RastaByteArray innerPacketBytes;
-        // // convert inner data (RaSTA SR layer PDU) to byte array
-        // innerPacketBytes = rastaModuleToBytesNoChecksum(&packet.data, &channel->hashing_context);
-        // result = _deliver_message_to_upper_layer(connection, channel, innerPacketBytes);
-        // freeRastaByteArray(&innerPacketBytes);
-
-        // logger_log(connection->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: added message to buffer",
-        //            channel_id);
-
-        // increase seq_rx
-        // channel->seq_rx++;
-
-        // deliver already received messages to upper layer
-        // result |= red_f_deliverDeferQueue(h, channel);
         return 1;
     } else if (channel->seq_rx < packet.sequence_number && packet.sequence_number <= (channel->seq_rx + channel->configuration_parameters.n_deferqueue_size * 10)) {
         logger_log(channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red receive", "channel %d: seq_rx < seq_pdu && seq_pdu <= (seq_rx + 10 * MAX_DEFERQUEUE_SIZE)", channel_id);

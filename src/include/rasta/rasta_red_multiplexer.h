@@ -178,36 +178,10 @@ rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsign
 void redundancy_mux_send(rasta_redundancy_channel *channel, struct RastaPacket *data, rasta_role role);
 
 /**
- * blocks until all notification threads are finished
- * @param mux the multiplexer that is used
- */
-void redundancy_mux_wait_for_notifications(redundancy_mux *mux);
-
-/**
- * blocks until an entity with RaSTA ID @p id is discovered (i.e. the multiplexer has received something from that entity)
- * @param mux the multiplexer that is used
- * @param id the RaSTA ID of the entity
- */
-void redundancy_mux_wait_for_entity(redundancy_mux *mux, unsigned long id);
-
-/**
  * listen on all transport sockets of the given multiplexer
  * @param mux the mux used for listening
  */
 void redundancy_mux_listen_channels(redundancy_mux *mux);
-
-/**
- * connects a given redundancy channel on a given connection and multiplexer.
- * @param mux the multiplexer to which the redundancy channel belongs
- * @param channel the redundancy channel to connect
- */
-int redundancy_mux_connect_channel(redundancy_mux *mux, rasta_redundancy_channel *channel);
-
-/**
- * close an existing redundancy channel by closing all its transport channels
- * @param c the RaSTA redundancy channel to close
- */
-void redundancy_mux_close_channel(rasta_connection *conn, rasta_redundancy_channel *red_channel);
 
 // handlers
 int receive_packet(redundancy_mux *mux, rasta_transport_channel *channel, unsigned char *buffer, size_t len);
