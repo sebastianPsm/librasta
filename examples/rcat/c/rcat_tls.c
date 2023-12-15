@@ -29,7 +29,7 @@ void prepare_certs(const char *config_path) {
     }
 
     dictionary_free(&config.dictionary);
-    rfree(config.values.redundancy.connections.data);
+    free(config.values.redundancy.connections.data);
 }
 
 void printHelpAndExit(void) {

@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <deque>
+#include <optional>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -16,7 +18,6 @@
 #include <grpcpp/health_check_service_interface.h>
 
 #include <rasta/rasta.h>
-#include <rasta/rmemory.h>
 
 #include "configfile.h"
 
@@ -38,18 +39,18 @@ static grpc::ServerContext *s_currentServerContext;
 
 static uint32_t s_remote_id = 0;
 rasta_connection *s_connection = NULL;
-static rasta_lib_configuration_t s_rc;
+static rasta *s_rc;
 
 static int s_terminator_fd[2] = {-1, -1};
 static int s_data_fd[2] = {-1, -1};
 
 static std::mutex s_fifo_mutex;
-static fifo_t *s_message_fifo;
+static std::deque<std::vector<uint8_t>> s_message_fifo;
 
 static unsigned int recv_msg_size = 500;
 
 void processConnection(std::function<std::thread()> run_thread) {
-    s_message_fifo = fifo_init(128);
+    s_message_fifo.clear();
 
     // Data event
     if (pipe(s_data_fd) < 0){
@@ -62,29 +63,32 @@ void processConnection(std::function<std::thread()> run_thread) {
         // Invalidate the event
         uint64_t u;
         ssize_t ignored = read(s_data_fd[0], &u, sizeof(u));
-        UNUSED(ignored);
+        (void)ignored;
 
-        RastaByteArray *msg = nullptr;
+        std::optional<std::vector<uint8_t>> msg = std::nullopt;
 
         do {
+            msg = std::nullopt;
+
             {
                 std::lock_guard<std::mutex> guard(s_fifo_mutex);
-                msg = reinterpret_cast<RastaByteArray *>(fifo_pop(s_message_fifo));
+                if (s_message_fifo.size()) {
+                    msg = s_message_fifo.back();
+                    s_message_fifo.pop_back();
+                }
             }
 
-            if (msg != nullptr) {
-                rasta_send(s_rc, s_connection,  msg->bytes, msg->length);
-
-                freeRastaByteArray(msg);
+            if (msg != std::nullopt) {
+                rasta_send(s_rc, s_connection, msg.value().data(), msg.value().size());
             }
-        } while (msg != nullptr);
+        } while (msg != std::nullopt);
 
         return 0;
     };
-    data_event.carry_data = &s_rc->h;
+    data_event.carry_data = s_rc;
     data_event.fd = s_data_fd[0];
     enable_fd_event(&data_event);
-    add_fd_event(&s_rc->rasta_lib_event_system, &data_event, EV_READABLE);
+    rasta_add_fd_event(s_rc, &data_event, EV_READABLE);
 
     // Terminator event
     if (pipe(s_terminator_fd) < 0){
@@ -97,7 +101,7 @@ void processConnection(std::function<std::thread()> run_thread) {
         // Invalidate the event
         uint64_t u;
         ssize_t ignored = read(s_terminator_fd[0], &u, sizeof(u));
-        UNUSED(ignored);
+        (void)ignored;
 
         rasta_connection *con = reinterpret_cast<rasta_connection *>(carry);
         rasta_disconnect(con);
@@ -106,11 +110,11 @@ void processConnection(std::function<std::thread()> run_thread) {
     terminator_event.carry_data = s_connection;
     terminator_event.fd = s_terminator_fd[0];
     enable_fd_event(&terminator_event);
-    add_fd_event(&s_rc->rasta_lib_event_system, &terminator_event, EV_READABLE);
+    rasta_add_fd_event(s_rc, &terminator_event, EV_READABLE);
 
     // Forward gRPC messages to rasta
     auto forwarderThread = run_thread();
-    
+
     char* buf = new char[recv_msg_size];
     int recvlen;
     while ((recvlen = rasta_recv(s_rc, s_connection, buf, recv_msg_size)) > 0) {
@@ -119,17 +123,14 @@ void processConnection(std::function<std::thread()> run_thread) {
 
         std::lock_guard<std::mutex> streamGuard(s_busy);
         if (s_currentStream != nullptr) {
-            logger_log(s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
             sci::SciPacket outPacket;
             outPacket.set_message(buf, recvlen);
             s_currentStream->Write(outPacket);
         } else if (s_currentServerStream != nullptr) {
-            logger_log(s_rc->h.logger, LOG_LEVEL_DEBUG, (char *)"RaSTA retrieve", (char *)"forwarding packet to grpc");
             sci::SciPacket outPacket;
             outPacket.set_message(buf, recvlen);
             s_currentServerStream->Write(outPacket);
         } else {
-            logger_log(s_rc->h.logger, LOG_LEVEL_ERROR, (char *)"RaSTA retrieve", (char *)"discarding packet.");
         }
     }
 
@@ -149,8 +150,8 @@ void processConnection(std::function<std::thread()> run_thread) {
     rasta_disconnect(s_connection);
     s_connection = NULL;
 
-    remove_fd_event(&s_rc->rasta_lib_event_system, &data_event);
-    remove_fd_event(&s_rc->rasta_lib_event_system, &terminator_event);
+    rasta_remove_fd_event(s_rc, &data_event);
+    rasta_remove_fd_event(s_rc, &terminator_event);
 
     close(s_data_fd[0]);
     close(s_data_fd[1]);
@@ -159,8 +160,6 @@ void processConnection(std::function<std::thread()> run_thread) {
     close(s_terminator_fd[0]);
     close(s_terminator_fd[1]);
     s_terminator_fd[0] = s_terminator_fd[1] = -1;
-
-    fifo_destroy(&s_message_fifo);
 }
 
 bool processRasta(std::string config_path,
@@ -193,8 +192,8 @@ bool processRasta(std::string config_path,
     // TODO: Assert that this is true for every known peer
     bool server = local_id > s_remote_id;
     if (server) {
-        memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
-        rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
+        s_rc = nullptr;
+        rasta_lib_init_configuration(s_rc, &config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
         if (!rasta_bind(s_rc)) {
             rasta_cleanup(s_rc);
@@ -214,8 +213,8 @@ bool processRasta(std::string config_path,
     } else {
         bool success = false;
         do {
-            memset(&s_rc, 0, sizeof(rasta_lib_configuration_t));
-            rasta_lib_init_configuration(s_rc, &config, &logger, &connection, 1);
+            s_rc = nullptr;
+            rasta_lib_init_configuration(s_rc, &config, &connection, 1, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
             if (!rasta_bind(s_rc)) {
                 rasta_cleanup(s_rc);
@@ -259,13 +258,12 @@ class RastaService final : public sci::Rasta::Service {
                 sci::SciPacket message;
                 while (s_currentServerStream->Read(&message)) {
                     printf("Forwarding gRPC message...\n");
-                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray *>(rmalloc(sizeof(struct RastaByteArray)));
-                    allocateRastaByteArray(msg, message.message().size());
-                    rmemcpy(msg->bytes, message.message().c_str(), message.message().size());
+
+                    std::vector<uint8_t> msg(message.message().cbegin(), message.message().cend());
 
                     {
                         std::lock_guard<std::mutex> guard(s_fifo_mutex);
-                        fifo_push(s_message_fifo, msg);
+                        s_message_fifo.emplace_front(msg);
                     }
 
                     uint64_t notify_data = 1;
@@ -370,13 +368,12 @@ int main(int argc, char *argv[]) {
                 sci::SciPacket message;
                 while (s_currentStream->Read(&message)) {
                     printf("Forwarding gRPC message...\n");
-                    struct RastaByteArray *msg = reinterpret_cast<RastaByteArray *>(rmalloc(sizeof(struct RastaByteArray)));
-                    allocateRastaByteArray(msg, message.message().size());
-                    rmemcpy(msg->bytes, message.message().c_str(), message.message().size());
+
+                    std::vector<uint8_t> msg(message.message().cbegin(), message.message().cend());
 
                     {
                         std::lock_guard<std::mutex> guard(s_fifo_mutex);
-                        fifo_push(s_message_fifo, msg);
+                        s_message_fifo.emplace_front(msg);
                     }
 
                     uint64_t notify_data = 1;

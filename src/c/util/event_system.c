@@ -289,3 +289,7 @@ void remove_fd_event(event_system *ev_sys, fd_event *event) {
     if (event->prev) event->prev->next = event->next;
     if (event->next) event->next->prev = event->prev;
 }
+
+void rasta_remove_fd_event(rasta *rasta, fd_event *event) {
+    remove_fd_event(&rasta->rasta_lib_event_system, event);
+}

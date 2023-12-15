@@ -104,6 +104,8 @@ void rasta_add_fd_event(rasta *h, fd_event *event, int options);
  */
 void remove_fd_event(event_system *ev_sys, fd_event *event);
 
+void rasta_remove_fd_event(rasta *h, fd_event *event);
+
 #ifdef __cplusplus
 }
 #endif

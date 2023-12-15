@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <wolfssl/error-ssl.h>
 
+#include "../logging.h"
+
 // #define DEBUG_WOLFSSL
 void wolfssl_initialize_if_necessary() {
     static bool wolfssl_initialized = false;
@@ -274,7 +276,8 @@ void tls_pin_certificate(WOLFSSL *ssl, const char *peer_tls_cert_path) {
             abort();
         }
         if (memcmp(peer_digest_buffer, pinned_digest_buffer, pinned_digest_buffer_size) != 0) {
-            struct logger_t sha_logger = logger_init(LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
+            struct logger_t sha_logger;
+            logger_init(&sha_logger, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
             fprintf(stderr, "Certificate Pinning error - peer certificate hash does not match!\n");
             logger_hexdump(&sha_logger, LOG_LEVEL_DEBUG, peer_digest_buffer, peer_digest_buffer_size, "Peer certificate (digest)");
             logger_hexdump(&sha_logger, LOG_LEVEL_DEBUG, pinned_digest_buffer, pinned_digest_buffer_size, "Pinned certificate (digest)");
