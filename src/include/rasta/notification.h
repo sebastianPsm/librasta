@@ -15,6 +15,7 @@ struct rasta_notification_result {
      * copy of the calling rasta connection (this should always be used first)
      */
     // struct rasta_connection connection;
+    void * nothing;
 };
 
 /**

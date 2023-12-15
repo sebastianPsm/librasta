@@ -10,6 +10,12 @@ extern "C" { // only need to export C interface if
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef ENABLE_OPAQUE
+
+#include <opaque.h>
+
+#endif
+
 #define CONFIG_BUFFER_LENGTH 10000
 
 enum KEY_EXCHANGE_MODE {

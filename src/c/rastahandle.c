@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 struct rasta_notification_result sr_create_notification_result(struct rasta_handle *handle, struct rasta_connection *connection) {
-    struct rasta_notification_result r = {};
+    struct rasta_notification_result r = { NULL };
     UNUSED(handle);
     UNUSED(connection);
 
