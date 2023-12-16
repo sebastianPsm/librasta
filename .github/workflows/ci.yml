@@ -17,6 +17,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: 'Clang Format'
+      uses: DoozyX/clang-format-lint-action@v0.16.2
+      with:
+        source: '.'
+        extensions: 'h,cpp,c'
+        clangFormatVersion: 16
+        inplace: True
+
+    - name: 'Ensure no changes'
+      run: git diff --exit-code
+
     - name: Update package database
       run: sudo apt-get update
 
