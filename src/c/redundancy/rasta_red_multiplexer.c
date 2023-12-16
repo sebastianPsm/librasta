@@ -7,7 +7,6 @@
 #include "../util/event_system.h"
 #include "../util/rastautil.h"
 #include "../util/rmemory.h"
-
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../transport/bsd_utils.h"

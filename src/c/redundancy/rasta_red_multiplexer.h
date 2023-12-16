@@ -5,6 +5,7 @@
 
 #include <rasta/notification.h>
 #include <rasta/rastarole.h>
+
 #include "../util/event_system.h"
 #include "../util/rastamodule.h"
 #include "rasta_redundancy_channel.h"

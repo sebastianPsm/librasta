@@ -1,3 +1,5 @@
+#include "bsd_utils.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdio.h>
@@ -6,8 +8,6 @@
 #include <unistd.h>
 
 #include "../util/rmemory.h"
-
-#include "bsd_utils.h"
 
 struct sockaddr_in host_port_to_sockaddr(const char *host, uint16_t port) {
     struct sockaddr_in receiver;

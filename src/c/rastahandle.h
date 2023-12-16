@@ -4,6 +4,7 @@
 
 #include <rasta/notification.h>
 #include <rasta/config.h>
+
 #include "logging.h"
 #include "rastafactory.h"
 #include "util/rastahashing.h"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rasta/config.h>
+
 #include "../util/rastadeferqueue.h"
 
 typedef struct redundancy_mux redundancy_mux;

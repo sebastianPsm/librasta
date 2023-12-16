@@ -1,4 +1,6 @@
 
+#include "udp.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -9,10 +11,8 @@
 
 #include "../util/rmemory.h"
 #include "../rastahandle.h"
-
 #include "bsd_utils.h"
 #include "ssl_utils.h"
-#include "udp.h"
 
 static void get_client_addr_from_socket(const rasta_transport_socket *transport_socket, struct sockaddr_in *client_addr, socklen_t *addr_len) {
     ssize_t received_bytes;

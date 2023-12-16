@@ -1,9 +1,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <rasta/config.h>
-
-#include "../logging.h"
 
 #ifdef ENABLE_OPAQUE
 
@@ -11,7 +10,7 @@
 
 #endif
 
-#include <stdbool.h>
+#include "../logging.h"
 
 /**
  * Allow client's rekeying Key Exchange Request to be received up to 500 ms after it was due

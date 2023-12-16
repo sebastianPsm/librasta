@@ -1,10 +1,10 @@
-#include <rasta/rasta.h>
-#include "../rastahandle.h"
-#include "../util/rmemory.h"
-
-#include "protocol.h"
 #include "safety_retransmission.h"
 
+#include <rasta/rasta.h>
+
+#include "../rastahandle.h"
+#include "../util/rmemory.h"
+#include "protocol.h"
 #include "../retransmission/handlers.h"
 #include "../redundancy/rasta_redundancy_channel.h"
 #include "../transport/events.h"

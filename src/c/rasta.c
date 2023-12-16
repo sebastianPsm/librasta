@@ -1,3 +1,5 @@
+#include <rasta/rasta.h>
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -5,13 +7,12 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "util/event_system.h"
-#include <rasta/rasta.h>
 #include <rasta/rasta_init.h>
+
+#include "util/event_system.h"
 #include "rastahandle.h"
 #include "util/rmemory.h"
 #include "rasta_connection.h"
-
 #include "experimental/handlers.h"
 #include "retransmission/handlers.h"
 #include "retransmission/safety_retransmission.h"

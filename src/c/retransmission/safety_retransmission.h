@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rasta/config.h>
+
 #include "../util/event_system.h"
 #include "../rastahandle.h"
 #include "../logging.h"

@@ -1,3 +1,5 @@
+#include "udp.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -7,10 +9,8 @@
 #include <unistd.h>
 
 #include "../util/rmemory.h"
-
 #include "bsd_utils.h"
 #include "transport.h"
-#include "udp.h"
 
 void handle_tls_mode(rasta_transport_socket *transport_socket) {
     UNUSED(transport_socket);

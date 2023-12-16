@@ -1,6 +1,7 @@
 #include "rastadeferqueue.h"
 
 #include <stdlib.h>
+
 #include "rmemory.h"
 
 /**

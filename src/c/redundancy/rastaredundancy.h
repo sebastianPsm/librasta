@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <rasta/config.h>
+
 #include "../logging.h"
 #include "../util/fifo.h"
 #include "../util/rastacrc.h"

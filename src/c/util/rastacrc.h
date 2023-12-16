@@ -25,6 +25,7 @@
 #pragma once
 
 #include <rasta/config.h>
+
 #include "rastautil.h"
 
 /**

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include <rasta/rastarole.h>
+
 #include "rastahandle.h"
 #include "util/event_system.h"
 #include "util/fifo.h"

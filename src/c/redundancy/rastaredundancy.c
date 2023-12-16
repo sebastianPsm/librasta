@@ -7,7 +7,6 @@
 
 #include "../util/rastadeferqueue.h"
 #include "../util/rmemory.h"
-
 #include "../rastahandle.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../transport/transport.h"

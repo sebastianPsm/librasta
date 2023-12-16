@@ -1,4 +1,5 @@
 #include "rastamodule.h"
+
 #include "rmemory.h"
 
 #define rasta_htole16(X) (X)

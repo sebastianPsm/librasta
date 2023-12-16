@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include <rasta/rasta.h>
+
 #include "rastautil.h"
 #include "../rastahandle.h"
 

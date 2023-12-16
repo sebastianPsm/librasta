@@ -2,9 +2,9 @@
 #include <stdbool.h>
 
 #include <rasta/rasta_init.h>
+
 #include "util/rastautil.h"
 #include "util/rmemory.h"
-
 #include "retransmission/safety_retransmission.h"
 #include "transport/events.h"
 #include "transport/transport.h"

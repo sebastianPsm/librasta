@@ -1,10 +1,10 @@
-#include <stdlib.h>
-
-#include <string.h>
-#include "../util/rmemory.h"
-
-#include "bsd_utils.h"
 #include "tcp.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+#include "../util/rmemory.h"
+#include "bsd_utils.h"
 #include "../rastahandle.h"
 
 void transport_create_socket(struct rasta_handle *h, rasta_transport_socket *socket, int id, const rasta_config_tls *tls_config) {

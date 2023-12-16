@@ -1,7 +1,8 @@
 #include "rastahandle.h"
 
-#include "util/rmemory.h"
 #include <stdlib.h>
+
+#include "util/rmemory.h"
 
 struct rasta_notification_result sr_create_notification_result(struct rasta_handle *handle, struct rasta_connection *connection) {
     struct rasta_notification_result r = { NULL };

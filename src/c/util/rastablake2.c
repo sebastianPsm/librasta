@@ -1,6 +1,7 @@
 #include "rastablake2.h"
 
 #include <stdio.h>
+
 #include "rmemory.h"
 
 void generateBlake2(unsigned char *data, int data_length, const unsigned char *key, int key_length,

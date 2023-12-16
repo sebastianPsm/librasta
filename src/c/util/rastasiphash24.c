@@ -1,4 +1,5 @@
 #include "rastasiphash24.h"
+
 #include "rmemory.h"
 
 void generateSiphash24(const unsigned char *data, int data_length, const unsigned char *key, int hash_type, unsigned char *result) {

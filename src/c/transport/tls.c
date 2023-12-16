@@ -1,3 +1,5 @@
+#include "tcp.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -12,10 +14,8 @@
 #include <wolfssl/wolfio.h>
 
 #include "../util/rmemory.h"
-
 #include "bsd_utils.h"
 #include "ssl_utils.h"
-#include "tcp.h"
 #include "transport.h"
 
 #ifdef WOLFSSL_SET_TLS13_SECRET_CB_EXISTS

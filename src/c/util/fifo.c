@@ -1,6 +1,7 @@
 #include "fifo.h"
 
 #include <stdlib.h>
+
 #include "rmemory.h"
 
 fifo_t *fifo_init(unsigned int max_size) {

@@ -1,19 +1,20 @@
+#include "events.h"
+
 #include <inttypes.h>
 #include <stdlib.h>
 
 #include <rasta/rasta.h>
+
 #include "../logging.h"
 #include "../rastahandle.h"
 #include "../redundancy/rastaredundancy.h"
 #include "../util/rmemory.h"
-
 #include "../experimental/handlers.h"
 #include "../retransmission/messages.h"
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../rasta_connection.h"
 #include "diagnostics.h"
-#include "events.h"
 #include "transport.h"
 
 int channel_accept_event(void *carry_data) {

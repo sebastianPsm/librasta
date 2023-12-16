@@ -1,6 +1,7 @@
 #include "rastafactory.h"
 
 #include <stdlib.h>
+
 #include "util/rmemory.h"
 
 /*

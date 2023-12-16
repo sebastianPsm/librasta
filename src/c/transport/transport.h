@@ -1,8 +1,8 @@
 #pragma once
 
 #include <arpa/inet.h>
-
 #include <stdbool.h>
+
 #include <rasta/config.h>
 
 #include "diagnostics.h"
