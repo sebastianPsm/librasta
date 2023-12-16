@@ -1,9 +1,9 @@
 //
 // Created by erica on 04/07/2022.
 //
-#include <CUnit/Basic.h>
 #include "../../src/c/experimental/key_exchange.h"
 #include "../../src/c/logging.h"
+#include <CUnit/Basic.h>
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>

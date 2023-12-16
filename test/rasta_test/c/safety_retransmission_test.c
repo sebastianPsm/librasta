@@ -25,7 +25,7 @@ void fake_send_callback(struct RastaByteArray data_to_send, rasta_transport_chan
 void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     fifo_destroy(&test_send_fifo);
 
-    struct rasta_handle rasta_h = { 0 };
+    struct rasta_handle rasta_h = {0};
 
     rasta_receive_handle h;
     struct logger_t logger;
@@ -99,7 +99,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
 
     // Arrange
 
-    struct rasta_handle rasta_h = { 0 };
+    struct rasta_handle rasta_h = {0};
 
     rasta_receive_handle h;
     struct logger_t logger;

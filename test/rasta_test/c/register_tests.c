@@ -12,8 +12,8 @@
 #include "rastafactory_test.h"
 #include "rastamd4_test.h"
 #include "rastamodule_test.h"
-#include "safety_retransmission_test.h"
 #include "redundancy_channel_test.h"
+#include "safety_retransmission_test.h"
 
 int suite_init(void) {
     return 0;

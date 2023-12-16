@@ -6,8 +6,8 @@
 #include "configfile.h"
 #include <CUnit/Basic.h>
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 void check_std_config() {
     // remove old file

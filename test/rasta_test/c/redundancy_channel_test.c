@@ -7,7 +7,7 @@
 #include "../../../src/c/redundancy/rasta_redundancy_channel.h"
 
 void test_redundancy_channel() {
-    struct rasta_handle rasta_h = { 0 };
+    struct rasta_handle rasta_h = {0};
 
     rasta_config_info info = {0};
     info.redundancy.t_seq = 100;
