@@ -16,20 +16,20 @@
  */
 #define STEP(f, a, b, c, d, x, s)  \
     (a) += f((b), (c), (d)) + (x); \
-    (a) = (((a) << (s)) | (((a)&0xffffffff) >> (32 - (s))));
+    (a) = (((a) << (s)) | (((a) & 0xffffffff) >> (32 - (s))));
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__vax__)
 #define SET(n) \
-    (*(MD4_u32plus *)&ptr[(n)*4])
+    (*(MD4_u32plus *)&ptr[(n) * 4])
 #define GET(n) \
     SET(n)
 #else
-#define SET(n)                                 \
-    (ctx->block[(n)] =                         \
-         (MD4_u32plus)ptr[(n)*4] |             \
-         ((MD4_u32plus)ptr[(n)*4 + 1] << 8) |  \
-         ((MD4_u32plus)ptr[(n)*4 + 2] << 16) | \
-         ((MD4_u32plus)ptr[(n)*4 + 3] << 24))
+#define SET(n)                                   \
+    (ctx->block[(n)] =                           \
+         (MD4_u32plus)ptr[(n) * 4] |             \
+         ((MD4_u32plus)ptr[(n) * 4 + 1] << 8) |  \
+         ((MD4_u32plus)ptr[(n) * 4 + 2] << 16) | \
+         ((MD4_u32plus)ptr[(n) * 4 + 3] << 24))
 #define GET(n) \
     (ctx->block[(n)])
 #endif

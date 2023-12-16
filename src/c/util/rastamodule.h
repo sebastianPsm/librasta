@@ -149,7 +149,7 @@ struct RastaPacket {
     /**
      * 1 if the checksum is correct, 0 if it's not
      * NOTE: this field is only set, if you use the "bytestoRastaPacket" function
-    */
+     */
     int checksum_correct;
 };
 

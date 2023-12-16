@@ -15,7 +15,7 @@ struct rasta_notification_result {
      * copy of the calling rasta connection (this should always be used first)
      */
     // struct rasta_connection connection;
-    void * nothing;
+    void *nothing;
 };
 
 /**
@@ -126,7 +126,6 @@ struct rasta_disconnect_notification_result {
     unsigned short reason;
     unsigned short detail;
 };
-
 
 /**
  * representation of the notifications that are available for the redundancy layer

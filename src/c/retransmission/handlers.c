@@ -1,10 +1,10 @@
 #include "handlers.h"
 
-#include "protocol.h"
-#include "safety_retransmission.h"
-#include "../redundancy/rasta_redundancy_channel.h"
 #include "../experimental/handlers.h"
 #include "../rasta_connection.h"
+#include "../redundancy/rasta_redundancy_channel.h"
+#include "protocol.h"
+#include "safety_retransmission.h"
 
 int handle_received_packet(struct rasta_connection *connection, struct RastaPacket *receivedPacket) {
     switch (receivedPacket->type) {

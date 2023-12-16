@@ -18,7 +18,7 @@ struct fd_event_linked_list_s {
 
 /**
  * an event system contains timed events (firing in a given interval) and fd events (firing when a fd becomes readable/writable/exceptional)
-*/
+ */
 typedef struct event_system {
     struct timed_event_linked_list_s timed_events;
     struct fd_event_linked_list_s fd_events;

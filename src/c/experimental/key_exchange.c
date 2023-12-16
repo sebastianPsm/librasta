@@ -1,9 +1,8 @@
-#include <sys/mman.h>
 #include <errno.h>
+#include <sys/mman.h>
 
 #include "../logging.h"
 #include "../rastahandle.h"
-
 
 #ifdef ENABLE_OPAQUE
 #include "key_exchange.h"

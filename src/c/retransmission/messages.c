@@ -1,8 +1,8 @@
 #include "messages.h"
 
-#include "protocol.h"
-#include "../rastahandle.h"
 #include "../rasta_connection.h"
+#include "../rastahandle.h"
+#include "protocol.h"
 
 /**
  * send a DiscReq to the specified host

@@ -5,9 +5,9 @@
 
 #include <rasta/config.h>
 
+#include "../util/rastautil.h"
 #include "diagnostics.h"
 #include "events.h"
-#include "../util/rastautil.h"
 
 #define MAX_PENDING_CONNECTIONS 5
 

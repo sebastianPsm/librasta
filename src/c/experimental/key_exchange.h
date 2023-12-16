@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdbool.h>
 #include <rasta/config.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 #ifdef ENABLE_OPAQUE
 

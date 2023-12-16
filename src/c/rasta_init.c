@@ -3,12 +3,12 @@
 
 #include <rasta/rasta_init.h>
 
-#include "util/rastautil.h"
-#include "util/rmemory.h"
+#include "rasta_connection.h"
 #include "retransmission/safety_retransmission.h"
 #include "transport/events.h"
 #include "transport/transport.h"
-#include "rasta_connection.h"
+#include "util/rastautil.h"
+#include "util/rmemory.h"
 
 // This is the time that packets are deferred for creating multi-packet messages (in ms)
 // See section 5.5.10
@@ -69,7 +69,7 @@ void rasta_socket(rasta *user_configuration, rasta_config_info *config, struct l
     handle->mux.notifications.on_diagnostics_available = handle->notifications.on_redundancy_diagnostic_notification;
 }
 
-rasta * rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type) {
+rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type) {
     rasta *user_configuration = rmalloc(sizeof(rasta));
     memset(user_configuration, 0, sizeof(rasta));
     logger_init(&user_configuration->logger, log_level, logger_type);

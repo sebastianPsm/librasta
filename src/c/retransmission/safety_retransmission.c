@@ -2,14 +2,14 @@
 
 #include <rasta/rasta.h>
 
+#include "../rasta_connection.h"
 #include "../rastahandle.h"
-#include "../util/rmemory.h"
-#include "protocol.h"
-#include "../retransmission/handlers.h"
 #include "../redundancy/rasta_redundancy_channel.h"
+#include "../retransmission/handlers.h"
 #include "../transport/events.h"
 #include "../transport/transport.h"
-#include "../rasta_connection.h"
+#include "../util/rmemory.h"
+#include "protocol.h"
 
 void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const char *message);
 

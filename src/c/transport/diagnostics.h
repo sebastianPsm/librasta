@@ -32,4 +32,4 @@ typedef struct {
     int received_packets;
 } rasta_redundancy_diagnostics_data;
 
-void run_channel_diagnostics(rasta_redundancy_channel* current, unsigned int transport_channel_index);
+void run_channel_diagnostics(rasta_redundancy_channel *current, unsigned int transport_channel_index);

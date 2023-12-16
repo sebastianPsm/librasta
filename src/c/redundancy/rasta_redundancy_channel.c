@@ -1,11 +1,11 @@
 #include "rasta_redundancy_channel.h"
 
+#include "../rasta_connection.h"
 #include "../transport/transport.h"
 #include "../util/rastadeferqueue.h"
+#include "../util/rmemory.h"
 #include "rasta_red_multiplexer.h"
 #include "rasta_redundancy_channel.h"
-#include "../util/rmemory.h"
-#include "../rasta_connection.h"
 
 int rasta_red_connect_transport_channel(rasta_redundancy_channel *channel, rasta_transport_socket *transport_socket) {
     rasta_transport_channel *transport_connection = &channel->transport_channels[transport_socket->id];
@@ -13,8 +13,7 @@ int rasta_red_connect_transport_channel(rasta_redundancy_channel *channel, rasta
     return transport_connection->connected;
 }
 
-void redundancy_channel_init(rasta_redundancy_channel *channel)
-{
+void redundancy_channel_init(rasta_redundancy_channel *channel) {
     channel->seq_rx = 0;
     channel->seq_tx = 0;
 
@@ -57,7 +56,7 @@ void redundancy_channel_close(rasta_connection *conn, rasta_redundancy_channel *
 }
 
 void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_ip_data *transport_sockets, unsigned int transport_channel_count,
-                unsigned long id, rasta_redundancy_channel *channel) {
+                              unsigned long id, rasta_redundancy_channel *channel) {
 
     channel->associated_id = id;
 

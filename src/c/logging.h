@@ -7,9 +7,9 @@
  * Debug, Info, Error (and None which can only be used to specify the maximum log level)
  */
 
-#include <stdio.h>
-#include <rasta/config.h>
 #include "util/fifo.h"
+#include <rasta/config.h>
+#include <stdio.h>
 
 #define LOG_FORMAT "[%s][%s][%s] %s\n"
 

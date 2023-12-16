@@ -27,23 +27,23 @@ int rasta_blake2b_selftest();
 typedef struct {
     /**
      * input buffer
-    */
+     */
     uint8_t b[128];
     /**
      * chained state
-    */
+     */
     uint64_t h[8];
     /**
      * total number of bytes
-    */
+     */
     uint64_t t[2];
     /**
      * pointer for b[]
-    */
+     */
     size_t c;
     /**
      * digest size
-    */
+     */
     size_t outlen;
 } rasta_blake2b_ctx;
 
@@ -53,7 +53,7 @@ typedef struct {
  * @param outlen the digest size in bytes (1 <= outlen <= 64 ).
  * @param key secret key (also <= 64 bytes), is optional (keylen = 0).
  * @param keylen the length of the key
-*/
+ */
 int rasta_blake2b_init(rasta_blake2b_ctx *ctx, size_t outlen,
                        const void *key, size_t keylen);
 
@@ -62,7 +62,7 @@ int rasta_blake2b_init(rasta_blake2b_ctx *ctx, size_t outlen,
  * @param ctx hashing context
  * @param in data to be hashed
  * @param inlen the length of the data
-*/
+ */
 void rasta_blake2b_update(rasta_blake2b_ctx *ctx,
                           const void *in, size_t inlen);
 
@@ -70,7 +70,7 @@ void rasta_blake2b_update(rasta_blake2b_ctx *ctx,
  * Generate the message digest (size given in init).
  * @param ctx hashing context
  * @param out pointer into which to place the digest
-*/
+ */
 void rasta_blake2b_final(rasta_blake2b_ctx *ctx, void *out);
 
 /**
@@ -81,7 +81,7 @@ void rasta_blake2b_final(rasta_blake2b_ctx *ctx, void *out);
  * @param keylen the length of @p key
  * @param in data to be hashed
  * @param inlen the length of @p in
-*/
+ */
 int rasta_blake2b(void *out, size_t outlen,
                   const void *key, size_t keylen,
                   const void *in, size_t inlen);

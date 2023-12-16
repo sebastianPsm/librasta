@@ -5,15 +5,15 @@
 
 #include <rasta/rasta.h>
 
+#include "../experimental/handlers.h"
 #include "../logging.h"
+#include "../rasta_connection.h"
 #include "../rastahandle.h"
 #include "../redundancy/rastaredundancy.h"
-#include "../util/rmemory.h"
-#include "../experimental/handlers.h"
 #include "../retransmission/messages.h"
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
-#include "../rasta_connection.h"
+#include "../util/rmemory.h"
 #include "diagnostics.h"
 #include "transport.h"
 

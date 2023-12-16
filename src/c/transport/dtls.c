@@ -9,8 +9,8 @@
 #include <string.h> //memset
 #include <unistd.h>
 
-#include "../util/rmemory.h"
 #include "../rastahandle.h"
+#include "../util/rmemory.h"
 #include "bsd_utils.h"
 #include "ssl_utils.h"
 

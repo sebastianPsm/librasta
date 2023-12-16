@@ -5,12 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../util/rastadeferqueue.h"
-#include "../util/rmemory.h"
+#include "../rasta_connection.h"
 #include "../rastahandle.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../transport/transport.h"
-#include "../rasta_connection.h"
+#include "../util/rastadeferqueue.h"
+#include "../util/rmemory.h"
 #include "rasta_redundancy_channel.h"
 
 int _deliver_message_to_upper_layer(rasta_connection *h, rasta_redundancy_channel *channel, struct RastaByteArray message) {

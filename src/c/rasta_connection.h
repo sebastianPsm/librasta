@@ -4,11 +4,11 @@
 
 #include <rasta/rastarole.h>
 
+#include "experimental/key_exchange.h"
 #include "rastahandle.h"
+#include "redundancy/rasta_redundancy_channel.h"
 #include "util/event_system.h"
 #include "util/fifo.h"
-#include "experimental/key_exchange.h"
-#include "redundancy/rasta_redundancy_channel.h"
 
 #define DIAGNOSTIC_INTERVAL_SIZE 500
 
@@ -161,7 +161,7 @@ typedef struct rasta_connection {
 
     /**
      * queue for received messages that have not yet been rasta_recv()'d
-    */
+     */
     fifo_t *fifo_receive;
 
     /**
@@ -255,7 +255,7 @@ typedef struct rasta_connection {
      */
     struct key_exchange_state kex_state;
 
-    rasta_redundancy_channel* redundancy_channel;
+    rasta_redundancy_channel *redundancy_channel;
 
     rasta_receive_handle receive_handle;
 
@@ -270,7 +270,6 @@ typedef struct rasta_connection {
 
     struct logger_t *logger;
 } rasta_connection;
-
 
 /**
  * creates the container for all notification events

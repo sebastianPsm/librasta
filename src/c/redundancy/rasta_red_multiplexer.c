@@ -4,14 +4,14 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../util/event_system.h"
-#include "../util/rastautil.h"
-#include "../util/rmemory.h"
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
 #include "../transport/bsd_utils.h"
 #include "../transport/events.h"
 #include "../transport/transport.h"
+#include "../util/event_system.h"
+#include "../util/rastautil.h"
+#include "../util/rmemory.h"
 #include "rasta_redundancy_channel.h"
 
 /* --- Notifications --- */
@@ -176,7 +176,7 @@ void redundancy_mux_allocate_channels(struct rasta_handle *h, redundancy_mux *mu
     for (unsigned i = 0; i < connections_length; i++) {
         assert(connections[i].transport_sockets_count == mux->port_count);
         redundancy_channel_alloc(h, mux->logger, connections[i].config, connections[i].transport_sockets, connections[i].transport_sockets_count,
-                   connections[i].rasta_id, &mux->redundancy_channels[i]);
+                                 connections[i].rasta_id, &mux->redundancy_channels[i]);
         mux->redundancy_channels[i].mux = mux;
     }
 }

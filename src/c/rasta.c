@@ -9,13 +9,13 @@
 
 #include <rasta/rasta_init.h>
 
-#include "util/event_system.h"
-#include "rastahandle.h"
-#include "util/rmemory.h"
-#include "rasta_connection.h"
 #include "experimental/handlers.h"
+#include "rasta_connection.h"
+#include "rastahandle.h"
 #include "retransmission/handlers.h"
 #include "retransmission/safety_retransmission.h"
+#include "util/event_system.h"
+#include "util/rmemory.h"
 
 void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const char *message) {
     int fd_event_count = 0, fd_event_active_count = 0, timed_event_count = 0, timed_event_active_count = 0;

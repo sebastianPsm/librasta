@@ -136,7 +136,6 @@ struct RastaConfigRedundancyConnections {
     unsigned int count;
 };
 
-
 /**
  * representation of the options the the crc algorithm will use
  */
@@ -295,7 +294,6 @@ typedef struct rasta_connection_config {
      */
     unsigned long rasta_id;
 } rasta_connection_config;
-
 
 /**
  * the log level

@@ -97,7 +97,7 @@ void redundancy_channel_close(rasta_connection *conn, rasta_redundancy_channel *
  * @param channel the redundancy channel to initialize
  */
 void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_ip_data *transport_sockets, unsigned int transport_channel_count,
-                unsigned long id, rasta_redundancy_channel *channel);
+                              unsigned long id, rasta_redundancy_channel *channel);
 
 void redundancy_channel_init(rasta_redundancy_channel *channel);
 

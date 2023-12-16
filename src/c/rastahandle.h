@@ -2,14 +2,14 @@
 
 #include <stdbool.h>
 
-#include <rasta/notification.h>
 #include <rasta/config.h>
+#include <rasta/notification.h>
 
 #include "logging.h"
 #include "rastafactory.h"
-#include "util/rastahashing.h"
-#include "util/event_system.h"
 #include "redundancy/rasta_red_multiplexer.h"
+#include "util/event_system.h"
+#include "util/rastahashing.h"
 
 #ifdef ENABLE_OPAQUE
 #include <opaque.h>

@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <stdint.h>
 
 #define NS_PER_S 1000000000ULL

@@ -1,14 +1,14 @@
 #include "event_system.h"
 
-#include <sys/select.h>
-#include <time.h>
 #include <assert.h>
 #include <stdio.h>
+#include <sys/select.h>
+#include <time.h>
 
 #include <rasta/rasta.h>
 
-#include "rastautil.h"
 #include "../rastahandle.h"
+#include "rastautil.h"
 
 uint64_t get_nanotime() {
     struct timespec t;

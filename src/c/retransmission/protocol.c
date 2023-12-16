@@ -1,8 +1,8 @@
 #include "protocol.h"
 
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
+#include <time.h>
 
 #include <rasta/config.h>
 

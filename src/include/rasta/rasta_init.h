@@ -17,7 +17,7 @@ typedef struct rasta rasta;
  * @param connections the connections to initialize
  * @param connections_length the length of the connections array
  */
-rasta * rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type);
+rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type);
 
 #ifdef __cplusplus
 }
