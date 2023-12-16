@@ -1,13 +1,13 @@
 #include <chrono>
 #include <condition_variable>
+#include <deque>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
-#include <deque>
-#include <optional>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -53,7 +53,7 @@ void processConnection(std::function<std::thread()> run_thread) {
     s_message_fifo.clear();
 
     // Data event
-    if (pipe(s_data_fd) < 0){
+    if (pipe(s_data_fd) < 0) {
         perror("Failed to create pipe");
         abort();
     }
@@ -91,7 +91,7 @@ void processConnection(std::function<std::thread()> run_thread) {
     rasta_add_fd_event(s_rc, &data_event, EV_READABLE);
 
     // Terminator event
-    if (pipe(s_terminator_fd) < 0){
+    if (pipe(s_terminator_fd) < 0) {
         perror("Failed to create pipe");
         abort();
     }
@@ -115,7 +115,7 @@ void processConnection(std::function<std::thread()> run_thread) {
     // Forward gRPC messages to rasta
     auto forwarderThread = run_thread();
 
-    char* buf = new char[recv_msg_size];
+    char *buf = new char[recv_msg_size];
     int recvlen;
     while ((recvlen = rasta_recv(s_rc, s_connection, buf, recv_msg_size)) > 0) {
         static std::mutex s_busy_writing;
@@ -186,8 +186,7 @@ bool processRasta(std::string config_path,
     toServer[1].port = std::stoi(rasta_channel2_port);
 
     rasta_connection_config connection = {
-        &config, toServer, nchannels, s_remote_id
-    };
+        &config, toServer, nchannels, s_remote_id};
 
     // TODO: Assert that this is true for every known peer
     bool server = local_id > s_remote_id;
@@ -231,7 +230,7 @@ bool processRasta(std::string config_path,
             // If the transport layer cannot connect, we don't have a
             // delay between connection attempts without this
             sleep(1);
-        } while(retry_connect && !success);
+        } while (retry_connect && !success);
         return success;
     }
 }

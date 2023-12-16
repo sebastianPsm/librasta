@@ -1,6 +1,4 @@
 #include "configfile.h"
-#include "../../../src/c/util/rastacrc.h"
-#include "../../../src/c/experimental/key_exchange.h"
 
 #include <arpa/inet.h>
 #include <ctype.h>
@@ -17,6 +15,9 @@
 #include <unistd.h>
 
 #include <rasta/config.h>
+
+#include "../../../src/c/experimental/key_exchange.h"
+#include "../../../src/c/util/rastacrc.h"
 
 struct LineParser {
     char buf[CONFIG_BUFFER_LENGTH];

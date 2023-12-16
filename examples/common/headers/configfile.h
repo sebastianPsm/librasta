@@ -72,7 +72,7 @@ void config_free(struct RastaConfig *cfg);
  * @param config the configuration to be loaded
  * @param logger the logger to initialize
  * @param config_file_path the path of the configuration file to load
-*/
+ */
 void load_configfile(rasta_config_info *config, struct logger_t *logger, const char *config_file_path);
 
 #ifdef __cplusplus

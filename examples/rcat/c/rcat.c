@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 
     if (argc != 2) printHelpAndExit();
 
-    rasta* rc = NULL;
+    rasta *rc = NULL;
 
     rasta_ip_data toServer[2];
 
