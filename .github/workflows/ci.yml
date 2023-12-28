@@ -17,6 +17,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: 'Clang Format'
+      uses: DoozyX/clang-format-lint-action@v0.16.2
+      with:
+        source: '.'
+        extensions: 'h,cpp,c'
+        clangFormatVersion: 16
+        inplace: True
+
+    - name: 'Ensure no changes'
+      run: git diff --exit-code
+
     - name: Update package database
       run: sudo apt-get update
 
@@ -26,30 +37,58 @@ jobs:
     - name: Install libopaque dependencies
       run: sudo apt-get install libsodium-dev pkgconf
 
+    - name: Install gRPC dependencies
+      run: sudo apt-get install build-essential autoconf libtool
+
+    - name: Install wolfssl dependencies
+      run: sudo apt-get install libtool autogen automake
+
     - name: Install valgrind
       run: sudo apt-get install valgrind
 
-    - name: Install gRPC
+    - name: Cache gRPC
+      id: cache-grpc
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/deps/grpc
+        key: ${{ runner.os }}-grpc
+
+    - name: Compile gRPC
+      if: steps.cache-grpc.outputs.cache-hit != 'true'
       run: |
-        sudo apt-get install build-essential autoconf libtool
-        cd /tmp
+        mkdir -p ${{github.workspace}}/deps && cd ${{github.workspace}}/deps
         git clone --recurse-submodules -b v1.47.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
         cd grpc
         mkdir -p cmake/build && cd cmake/build
         cmake ../.. -DgRPC_INSTALL=ON
-        make -j8 && sudo make install
-        cd / && rm -rf /tmp/grpc
+        make -j8
 
-    - name: Install WolfSSL
+    - name: Use gRPC
       run: |
-        sudo apt-get install libtool autogen automake
-        cd /tmp
+        cd ${{github.workspace}}/deps/grpc/cmake/build
+        sudo make install
+
+    - name: Cache wolfssl
+      id: cache-wolfssl
+      uses: actions/cache@v3
+      with:
+        path: ${{github.workspace}}/deps/wolfssl
+        key: ${{ runner.os }}-wolfssl
+
+    - name: Compile wolfssl
+      if: steps.cache-wolfssl.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p ${{github.workspace}}/deps && cd ${{github.workspace}}/deps
         git clone --recurse-submodules -b v5.2.0-stable --depth 1 --shallow-submodules https://github.com/wolfssl/wolfssl
         cd wolfssl
         ./autogen.sh
         ./configure --enable-dtls --enable-debug --enable-certgen --enable-tls13 CFLAGS="-DHAVE_SECRET_CALLBACK" --enable-opensslextra
-        make && sudo make install
-        cd / && rm -rf /tmp/wolfssl
+        make
+
+    - name: Use wolfssl
+      run: |
+        cd ${{github.workspace}}/deps/wolfssl
+        sudo make install
 
     - name: Set LD_LIBRARY_PATH
       run: echo "LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH):/usr/local/lib" >> $GITHUB_ENV
@@ -65,15 +104,19 @@ jobs:
 
     - name: Rcat UDP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
-      
+      timeout-minutes: 1
+
     - name: Rcat TCP Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
+      timeout-minutes: 1
 
     - name: Rcat TLS Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
+      timeout-minutes: 1
 
     - name: Rcat DTLS Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+      timeout-minutes: 1
 
     - name: Rcat KEX / Opaque Test
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_kex.sh
@@ -94,15 +137,19 @@ jobs:
 
     - name: Rcat UDP Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_udp.sh
-      
+      timeout-minutes: 1
+
     - name: Rcat TCP Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tcp.sh
+      timeout-minutes: 1
 
     - name: Rcat TLS Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_tls.sh
+      timeout-minutes: 1
 
     - name: Rcat DTLS Test without extensions
       run: cd ${{github.workspace}} && ./examples/example_scripts/example_dtls.sh
+      timeout-minutes: 1
 
     - name: CTest without extensions
       run: cd ${{github.workspace}}/build && ctest .

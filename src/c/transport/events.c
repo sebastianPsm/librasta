@@ -1,18 +1,20 @@
+#include "events.h"
+
 #include <inttypes.h>
 #include <stdlib.h>
 
-#include <rasta/logging.h>
 #include <rasta/rasta.h>
-#include <rasta/rastahandle.h>
-#include <rasta/rastaredundancy.h>
-#include <rasta/rmemory.h>
 
 #include "../experimental/handlers.h"
+#include "../logging.h"
+#include "../rasta_connection.h"
+#include "../rastahandle.h"
+#include "../redundancy/rastaredundancy.h"
 #include "../retransmission/messages.h"
 #include "../retransmission/protocol.h"
 #include "../retransmission/safety_retransmission.h"
+#include "../util/rmemory.h"
 #include "diagnostics.h"
-#include "events.h"
 #include "transport.h"
 
 int channel_accept_event(void *carry_data) {
@@ -110,6 +112,7 @@ int channel_receive_event(void *carry_data) {
         if (data->socket != NULL) {
             disable_fd_event(&data->socket->receive_event);
         }
+
         if (data->channel != NULL) {
             disable_fd_event(&data->channel->receive_event);
         }
@@ -117,6 +120,7 @@ int channel_receive_event(void *carry_data) {
         if (connection != NULL) {
             return handle_closed_transport(connection, connection->redundancy_channel);
         }
+
         // Ignore and continue
         return 0;
     }

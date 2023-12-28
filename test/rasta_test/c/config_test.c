@@ -6,9 +6,8 @@
 #include "configfile.h"
 #include <CUnit/Basic.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#include <rasta/rmemory.h>
 
 void check_std_config() {
     // remove old file
@@ -161,5 +160,5 @@ void check_var_config() {
     CU_ASSERT_EQUAL(entr.value.number, 0xff32);
 
     dictionary_free(&cfg.dictionary);
-    rfree(cfg.values.redundancy.connections.data);
+    free(cfg.values.redundancy.connections.data);
 }

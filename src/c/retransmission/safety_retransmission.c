@@ -1,13 +1,17 @@
-#include <rasta/rasta.h>
-#include <rasta/rastahandle.h>
-#include <rasta/rmemory.h>
-
-#include "protocol.h"
 #include "safety_retransmission.h"
 
+#include <rasta/rasta.h>
+
+#include "../rasta_connection.h"
+#include "../rastahandle.h"
+#include "../redundancy/rasta_redundancy_channel.h"
 #include "../retransmission/handlers.h"
 #include "../transport/events.h"
 #include "../transport/transport.h"
+#include "../util/rmemory.h"
+#include "protocol.h"
+
+void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const char *message);
 
 void sr_update_timeout_interval(long confirmed_timestamp, struct rasta_connection *con, rasta_config_sending *cfg) {
     unsigned long t_local = cur_timestamp();
@@ -223,7 +227,7 @@ void sr_close_connection(struct rasta_connection *connection, rasta_disconnect_r
     if (connection->current_state == RASTA_CONNECTION_DOWN || connection->current_state == RASTA_CONNECTION_CLOSED) {
         sr_reset_connection(connection);
 
-        redundancy_mux_close_channel(connection, connection->redundancy_channel);
+        redundancy_channel_close(connection, connection->redundancy_channel);
 
         // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(NULL, connection));
@@ -234,7 +238,7 @@ void sr_close_connection(struct rasta_connection *connection, rasta_disconnect_r
 
         connection->current_state = RASTA_CONNECTION_CLOSED;
 
-        redundancy_mux_close_channel(connection, connection->redundancy_channel);
+        redundancy_channel_close(connection, connection->redundancy_channel);
 
         // fire connection state changed event
         fire_on_connection_state_change(sr_create_notification_result(NULL, connection));
@@ -438,7 +442,7 @@ struct rasta_connection *sr_connect(struct rasta_handle *h, unsigned long id) {
         }
     }
 
-    if (connection == NULL || redundancy_mux_connect_channel(&h->mux, connection->redundancy_channel) != 0) {
+    if (connection == NULL || redundancy_channel_connect(&h->mux, connection->redundancy_channel) != 0) {
         return NULL;
     }
 
@@ -490,7 +494,7 @@ struct rasta_connection *sr_connect(struct rasta_handle *h, unsigned long id) {
 
     // What happened? Timeout, or user abort, or success?
     if (connection->current_state != RASTA_CONNECTION_UP) {
-        redundancy_mux_close_channel(connection, connection->redundancy_channel);
+        redundancy_channel_close(connection, connection->redundancy_channel);
         return NULL;
     }
 
@@ -515,10 +519,6 @@ void sr_disconnect(struct rasta_connection *con) {
 
 void sr_cleanup(struct rasta_handle *h) {
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA Cleanup", "Cleanup called");
-
-    if (h->user_handles->on_rasta_cleanup) {
-        h->user_handles->on_rasta_cleanup();
-    }
 
     // set notification pointers to NULL
     h->notifications.on_receive = NULL;
@@ -655,7 +655,7 @@ void sr_closed_connection(rasta_connection *connection, unsigned long id) {
     sr_reset_connection(connection);
 
     // remove redundancy channel
-    redundancy_mux_close_channel(connection, connection->redundancy_channel);
+    redundancy_channel_close(connection, connection->redundancy_channel);
 
     // fire connection state changed event
     // TODO: Provide handle to receiver

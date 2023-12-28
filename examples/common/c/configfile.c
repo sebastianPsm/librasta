@@ -15,7 +15,9 @@
 #include <unistd.h>
 
 #include <rasta/config.h>
-#include <rasta/rmemory.h>
+
+#include "../../../src/c/experimental/key_exchange.h"
+#include "../../../src/c/util/rastacrc.h"
 
 struct LineParser {
     char buf[CONFIG_BUFFER_LENGTH];
@@ -295,110 +297,43 @@ void parser_parseValue(struct LineParser *p, const char key[MAX_DICTIONARY_STRIN
 }
 
 /**
- * Gets the IP address of a wired NIC that matches the given index.
- * If only one wired NIC exists, the function will returns this NIC's IP without considering the index.
- * If multiple wired NIC's exists, the function will return the IP of the NIC with index index.
- *
- * Loopback interfaces are ignored.
- * @param index the index of the wired NIC
- * @return the IP address of a wired NIC that matches the given index
- */
-char *getIpByNic(int index) {
-    (void)index;
-    char *ip = rmalloc(16);
-    struct ifaddrs *ifaddr; //, *ifa;
-
-    if (getifaddrs(&ifaddr) == -1) {
-        perror("getifaddrs failed");
-        return NULL;
-    }
-
-    // int eth_nics_count = 0;
-    char *nic_ip = NULL;
-    // for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-    //     char protocol[IFNAMSIZ] = {0};
-
-    //     if (ifa->ifa_addr == NULL ||
-    //         ifa->ifa_addr->sa_family != AF_PACKET) continue;
-
-    //     // check if it's loop interface and skip in that case
-    //     if (ifa->ifa_flags & IFF_LOOPBACK) {
-    //         continue;
-    //     }
-
-    //     eth_nics_count++;
-    //     int fd;
-    //     struct ifreq ifr;
-
-    //     fd = socket(AF_INET, SOCK_DGRAM, 0);
-    //     ifr.ifr_addr.sa_family = AF_INET;
-    //     strncpy(ifr.ifr_name, ifa->ifa_name, IFNAMSIZ - 1);
-    //     ioctl(fd, SIOCGIFADDR, &ifr);
-    //     close(fd);
-    //     nic_ip = inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
-
-    //     if (eth_nics_count == index + 1) {
-    //         rmemcpy(ip, nic_ip, 16);
-    //         break;
-    //     }
-    // }
-
-    // no ip found, return last eth nic address
-    if (nic_ip != NULL) {
-        rmemcpy(ip, nic_ip, 16);
-    }
-
-    freeifaddrs(ifaddr);
-
-    return ip;
-}
-
-/**
  * accepts a string like 192.168.2.1:80 and returns the record
  * @param data
  * @return the record. Port is set to 0 if wrong format
  */
-rasta_ip_data extractIPData(char data[256], int arrayIndex) {
+rasta_ip_data extractIPData(char data[256]) {
     int points = 0;
     int numbers = 0;
     int pos = 0;
     char port[10];
     rasta_ip_data result;
 
-    if (data[0] == '*') {
-        char *ip = getIpByNic(arrayIndex);
-        rmemcpy(result.ip, ip, 16);
-        rfree(ip);
-
-        pos = 1;
-    } else {
-        // check ip format
-        for (unsigned int i = 0; i < strlen(data); i++) {
-            if (isdigit(data[i])) {
-                numbers++;
-                if (numbers > 3) {
-                    result.port = 0;
-                    return result;
-                }
-                result.ip[i] = data[i];
-            } else if (data[i] == '.') {
-                numbers = 0;
-                points++;
-                if (points > 3) {
-                    result.port = 0;
-                    return result;
-                }
-                result.ip[i] = data[i];
-            } else if (data[i] == ':') {
-                if (points == 3 && numbers > 0) {
-                    pos = i;
-                    result.ip[i] = '\0';
-                    break;
-                }
-            } else {
+    // check ip format
+    for (unsigned int i = 0; i < strlen(data); i++) {
+        if (isdigit(data[i])) {
+            numbers++;
+            if (numbers > 3) {
                 result.port = 0;
                 return result;
             }
+            result.ip[i] = data[i];
+        } else if (data[i] == '.') {
+            numbers = 0;
+            points++;
+            if (points > 3) {
+                result.port = 0;
+                return result;
+            }
+            result.ip[i] = data[i];
+        } else if (data[i] == ':') {
+            if (points == 3 && numbers > 0) {
+                pos = i;
+                result.ip[i] = '\0';
+                break;
+            }
+        } else {
+            result.port = 0;
+            return result;
         }
     }
 
@@ -628,14 +563,14 @@ void config_setstd(struct RastaConfig *cfg) {
         // set std
         cfg->values.redundancy.connections.count = 0;
     } else {
-        cfg->values.redundancy.connections.data = rmalloc(sizeof(rasta_ip_data) * entr.value.array.count);
+        cfg->values.redundancy.connections.data = malloc(sizeof(rasta_ip_data) * entr.value.array.count);
         cfg->values.redundancy.connections.count = entr.value.array.count;
         // check valid format
         for (unsigned int i = 0; i < entr.value.array.count; i++) {
-            rasta_ip_data ip = extractIPData(entr.value.array.data[i].c, i);
+            rasta_ip_data ip = extractIPData(entr.value.array.data[i].c);
             if (ip.port == 0) {
                 logger_log(&cfg->logger, LOG_LEVEL_ERROR, cfg->filename, "RASTA_REDUNDANCY_CONNECTIONS may only contain strings in format ip:port or *:port");
-                rfree(entr.value.array.data);
+                free(entr.value.array.data);
                 entr.value.array.count = 0;
                 break;
             }
@@ -823,7 +758,7 @@ int config_load(struct RastaConfig *config, const char *filename) {
     char buf[CONFIG_BUFFER_LENGTH];
     strcpy(config->filename, filename);
 
-    config->logger = logger_init(LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
+    logger_init(&config->logger, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
     f = fopen(config->filename, "r");
     if (!f) {
@@ -896,7 +831,7 @@ struct DictionaryEntry config_get(struct RastaConfig *cfg, const char *key) {
 
 void config_free(struct RastaConfig *cfg) {
     dictionary_free(&cfg->dictionary);
-    if (cfg->values.redundancy.connections.count > 0) rfree(cfg->values.redundancy.connections.data);
+    if (cfg->values.redundancy.connections.count > 0) free(cfg->values.redundancy.connections.data);
 }
 
 unsigned long mix(unsigned long a, unsigned long b, unsigned long c) {
@@ -968,7 +903,7 @@ void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *
     struct DictionaryEntry logger_file = config_get(&config, RASTA_CONFIG_KEY_LOGGER_FILE);
 
     if (logger_ty.type == DICTIONARY_NUMBER && logger_maxlvl.type == DICTIONARY_NUMBER) {
-        *logger = logger_init((log_level)logger_maxlvl.value.number, (logger_type)logger_ty.value.number);
+        logger_init(logger, (log_level)logger_maxlvl.value.number, (logger_type)logger_ty.value.number);
 
         if (logger->type == LOGGER_TYPE_FILE) {
             // need to set log file
@@ -989,10 +924,10 @@ void load_configfile(rasta_config_info *c, struct logger_t *logger, const char *
 
     if (config_accepted_version.type == DICTIONARY_ARRAY) {
         c->accepted_version_count = config_accepted_version.value.array.count;
-        c->accepted_versions = rmalloc(c->accepted_version_count * 5 * sizeof(char));
+        c->accepted_versions = malloc(c->accepted_version_count * 5 * sizeof(char));
         for (unsigned int i = 0; i < c->accepted_version_count; ++i) {
             logger_log(logger, LOG_LEVEL_DEBUG, "RaSTA HANDLE_INIT", "Loaded accepted version: %s", config_accepted_version.value.array.data[i].c);
-            rmemcpy(c->accepted_versions[i], config_accepted_version.value.array.data[i].c, 4);
+            memcpy(c->accepted_versions[i], config_accepted_version.value.array.data[i].c, 4);
             c->accepted_versions[i][4] = '\0';
         }
     }

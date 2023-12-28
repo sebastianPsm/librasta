@@ -1,8 +1,11 @@
 #pragma once
 
 #include <arpa/inet.h>
-#include <rasta/rasta_red_multiplexer.h>
+#include <stdbool.h>
 
+#include <rasta/config.h>
+
+#include "../util/rastautil.h"
 #include "diagnostics.h"
 #include "events.h"
 

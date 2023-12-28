@@ -1,3 +1,5 @@
+#include <rasta/rasta.h>
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -5,15 +7,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <rasta/event_system.h>
-#include <rasta/rasta.h>
 #include <rasta/rasta_init.h>
-#include <rasta/rastahandle.h>
-#include <rasta/rmemory.h>
 
 #include "experimental/handlers.h"
+#include "rasta_connection.h"
+#include "rastahandle.h"
 #include "retransmission/handlers.h"
 #include "retransmission/safety_retransmission.h"
+#include "util/event_system.h"
+#include "util/rmemory.h"
 
 void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const char *message) {
     int fd_event_count = 0, fd_event_active_count = 0, timed_event_count = 0, timed_event_active_count = 0;
@@ -29,17 +31,20 @@ void log_main_loop_state(struct rasta_handle *h, event_system *ev_sys, const cha
                message, fd_event_active_count, fd_event_count, timed_event_active_count, timed_event_count);
 }
 
-bool rasta_bind(rasta_lib_configuration_t user_configuration) {
+bool rasta_bind(rasta *user_configuration) {
     return redundancy_mux_bind(&user_configuration->h);
 }
 
-void rasta_listen(rasta_lib_configuration_t user_configuration) {
+void rasta_listen(rasta *user_configuration) {
     sr_listen(&user_configuration->h);
 }
 
-struct rasta_connection *rasta_accept(rasta_lib_configuration_t user_configuration) {
+struct rasta_connection *rasta_accept(rasta *user_configuration) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
+
+    // Re-initialize the mux
+    redundancy_mux_init(&h->mux);
 
     // accept events were already prepared by rasta_listen
     // event system will break when we have received the first heartbeat of a new connection
@@ -56,11 +61,11 @@ struct rasta_connection *rasta_accept(rasta_lib_configuration_t user_configurati
     return NULL;
 }
 
-struct rasta_connection *rasta_connect(rasta_lib_configuration_t user_configuration, unsigned long id) {
+struct rasta_connection *rasta_connect(rasta *user_configuration, unsigned long id) {
     return sr_connect(&user_configuration->h, id);
 }
 
-int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
+int rasta_recv(rasta *user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
     struct rasta_handle *h = &user_configuration->h;
     event_system *event_system = &user_configuration->rasta_lib_event_system;
 
@@ -90,7 +95,7 @@ int rasta_recv(rasta_lib_configuration_t user_configuration, struct rasta_connec
     return received_len;
 }
 
-int rasta_send(rasta_lib_configuration_t user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
+int rasta_send(rasta *user_configuration, struct rasta_connection *connection, void *buf, size_t len) {
     struct RastaMessageData messageData1;
     allocateRastaMessageData(&messageData1, 1);
     messageData1.data_array[0].bytes = buf;
@@ -105,7 +110,7 @@ void rasta_disconnect(struct rasta_connection *connection) {
     sr_disconnect(connection);
 }
 
-void rasta_cleanup(rasta_lib_configuration_t user_configuration) {
+void rasta_cleanup(rasta *user_configuration) {
     sr_cleanup(&user_configuration->h);
     for (unsigned i = 0; i < user_configuration->h.rasta_connections_length; i++) {
         struct RastaByteArray *elem;
