@@ -11,13 +11,21 @@ extern "C" { // only need to export C interface if
 #include "config.h"
 #include "events.h"
 #include "notification.h"
-#include "rasta_init.h"
 #include "rastarole.h"
 
 typedef struct rasta rasta;
 struct rasta_connection;
 
-// The header, which the user will include later.
+/**
+ * initializes the RaSTA handle and all configured connections
+ * @param user_configuration the user configuration containing the handle to initialize
+ * @param config the configuration to initialize the handle with
+ * @param logger the logger to use
+ * @param connections the connections to initialize
+ * @param connections_length the length of the connections array
+ */
+rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type);
+
 
 /**
  * binds a RaSTA instance to the configured IP addresses and ports for the transport channels

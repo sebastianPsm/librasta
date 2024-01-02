@@ -1,7 +1,7 @@
 #include <memory.h>
 #include <stdbool.h>
 
-#include <rasta/rasta_init.h>
+#include <rasta/rasta.h>
 
 #include "rasta_connection.h"
 #include "retransmission/safety_retransmission.h"

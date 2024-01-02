@@ -7,7 +7,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <rasta/rasta_init.h>
+#include <rasta/rasta.h>
 
 #include "experimental/handlers.h"
 #include "rasta_connection.h"
@@ -123,6 +123,5 @@ void rasta_cleanup(rasta *user_configuration) {
         fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_receive);
     }
     rfree(user_configuration->h.rasta_connections);
-    rfree(user_configuration->h.config->redundancy.connections.data);
-    rfree(user_configuration->h.config->accepted_versions);
+    rfree(user_configuration);
 }

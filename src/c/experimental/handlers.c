@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-#include <rasta/rasta_init.h>
+#include <rasta/rasta.h>
 
 #include "../rasta_connection.h"
 #include "../retransmission/protocol.h"

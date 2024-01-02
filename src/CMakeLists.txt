@@ -21,7 +21,6 @@ set(target rasta)
 set(headers
     include/rasta/config.h
     include/rasta/rasta.h
-    include/rasta/rasta_init.h
     include/rasta/notification.h
     include/rasta/events.h
 )
