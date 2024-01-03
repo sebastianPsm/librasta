@@ -20,11 +20,11 @@ struct receive_event_data {
     rasta_transport_channel *channel;
 };
 
-int channel_accept_event(void *carry_data);
-int channel_receive_event(void *carry_data);
+int channel_accept_event(void *carry_data, int fd);
+int channel_receive_event(void *carry_data, int fd);
 
-int data_send_event(void *carry_data);
-int heartbeat_send_event(void *carry_data);
-int event_connection_expired(void *carry_data);
+int data_send_event(void *carry_data, int fd);
+int heartbeat_send_event(void *carry_data, int fd);
+int event_connection_expired(void *carry_data, int fd);
 
-int send_timed_key_exchange(void *arg);
+int send_timed_key_exchange(void *arg, int fd);

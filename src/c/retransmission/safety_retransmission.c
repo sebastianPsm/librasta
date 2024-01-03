@@ -113,7 +113,7 @@ void sr_remove_confirmed_messages(struct rasta_connection *con) {
 
     // sending is now possible again (space in the retransmission queue is available), so we should trigger it
     if (fifo_full(con->fifo_send)) {
-        data_send_event(&con->send_handle);
+        data_send_event(&con->send_handle, -1);
     }
 }
 
@@ -397,7 +397,7 @@ int sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMe
 
             if (fifo_full(con->fifo_send)) {
                 // Flush, send queued messages now
-                data_send_event(&con->send_handle);
+                data_send_event(&con->send_handle, -1);
             }
 
             if (!fifo_push(con->fifo_send, to_fifo)) {

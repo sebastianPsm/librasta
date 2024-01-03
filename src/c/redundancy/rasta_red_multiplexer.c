@@ -137,8 +137,9 @@ void handle_received_data(redundancy_mux *mux, unsigned char *buffer, ssize_t le
     freeRastaByteArray(&test.key);
 }
 
-int channel_timeout_event(void *carry_data) {
+int channel_timeout_event(void *carry_data, int fd) {
     UNUSED(carry_data);
+    UNUSED(fd);
     // Escape the event loop
     return 1;
 }

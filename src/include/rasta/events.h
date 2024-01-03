@@ -11,7 +11,7 @@ typedef struct event_system event_system;
 typedef struct rasta rasta;
 
 // event callback pointer, return 0 to keep the loop running, everything else stops the loop
-typedef int (*event_ptr)(void *h);
+typedef int (*event_ptr)(void *h, int fd);
 
 #define EV_READABLE (1 << 0)
 #define EV_WRITABLE (1 << 1)

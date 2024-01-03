@@ -42,7 +42,8 @@ struct connect_event_data {
     struct rasta_connection *connection;
 };
 
-int send_input_data(void *carry_data) {
+int send_input_data(void *carry_data, int fd) {
+    (void)fd;
     struct connect_event_data *data = carry_data;
     char buf[BUF_SIZE];
     int c;

@@ -17,7 +17,9 @@
 #include "diagnostics.h"
 #include "transport.h"
 
-int channel_accept_event(void *carry_data) {
+int channel_accept_event(void *carry_data, int _fd) {
+    UNUSED(_fd);
+
     struct accept_event_data *data = carry_data;
 
     logger_log(data->h->mux.logger, LOG_LEVEL_DEBUG, "RaSTA RedMux accept", "Socket ready to accept");
@@ -60,7 +62,9 @@ int channel_accept_event(void *carry_data) {
     return 0;
 }
 
-int channel_receive_event(void *carry_data) {
+int channel_receive_event(void *carry_data, int fd) {
+    UNUSED(fd);
+
     struct receive_event_data *data = carry_data;
     rasta_connection *connection = data->connection;
 
@@ -135,7 +139,9 @@ int channel_receive_event(void *carry_data) {
     return 0;
 }
 
-int event_connection_expired(void *carry_data) {
+int event_connection_expired(void *carry_data, int fd) {
+    UNUSED(fd);
+
     struct timed_event_data *data = carry_data;
     struct rasta_heartbeat_handle *h = (struct rasta_heartbeat_handle *)data->handle;
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA HEARTBEAT", "T_i timer expired");
@@ -169,7 +175,9 @@ int event_connection_expired(void *carry_data) {
     return 1;
 }
 
-int heartbeat_send_event(void *carry_data) {
+int heartbeat_send_event(void *carry_data, int fd) {
+    UNUSED(fd);
+
     struct timed_event_data *data = carry_data;
     struct rasta_heartbeat_handle *h = (struct rasta_heartbeat_handle *)data->handle;
 
@@ -191,7 +199,9 @@ int heartbeat_send_event(void *carry_data) {
     return 0;
 }
 
-int data_send_event(void *carry_data) {
+int data_send_event(void *carry_data, int fd) {
+    UNUSED(fd);
+
     rasta_sending_handle *h = carry_data;
 
     logger_log(h->logger, LOG_LEVEL_DEBUG, "RaSTA send handler", "send data");
@@ -276,7 +286,9 @@ int data_send_event(void *carry_data) {
     return 0;
 }
 
-int send_timed_key_exchange(void *arg) {
+int send_timed_key_exchange(void *arg, int fd) {
+    UNUSED(fd);
+
 #ifdef ENABLE_OPAQUE
     struct timed_event_data *event_data = (struct timed_event_data *)arg;
     // rasta_receive_handle *handle = (rasta_receive_handle *)event_data->handle;
