@@ -51,7 +51,7 @@ rasta_connection *rasta_accept(rasta *r);
 rasta_cancellation *rasta_prepare_cancellation(rasta *r);
 
 /**
- * Wait for incoming connections.
+ * Wait for incoming connections with the ability to cancel from another thread.
  * @param rasta the user configuration containing the socket information
  */
 rasta_connection *rasta_accept_with_cancel(rasta *r, rasta_cancellation *cancel);
