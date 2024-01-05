@@ -59,7 +59,7 @@ void processConnection(std::function<std::thread()> run_thread) {
     }
     fd_event data_event;
     memset(&data_event, 0, sizeof(fd_event));
-    data_event.callback = [](void *) {
+    data_event.callback = [](void *, int) {
         // Invalidate the event
         uint64_t u;
         ssize_t ignored = read(s_data_fd[0], &u, sizeof(u));
@@ -97,7 +97,7 @@ void processConnection(std::function<std::thread()> run_thread) {
     }
     fd_event terminator_event;
     memset(&terminator_event, 0, sizeof(fd_event));
-    terminator_event.callback = [](void *carry) {
+    terminator_event.callback = [](void *carry, int) {
         // Invalidate the event
         uint64_t u;
         ssize_t ignored = read(s_terminator_fd[0], &u, sizeof(u));

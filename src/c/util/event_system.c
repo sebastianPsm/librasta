@@ -69,13 +69,13 @@ int event_system_sleep(uint64_t time_to_wait, struct fd_event_linked_list_s *fd_
     }
     for (fd_event *current = fd_events->first; current; current = current->next) {
         if (current->enabled && FD_ISSET(current->fd, &on_readable)) {
-            if (current->callback(current->carry_data)) return -1;
+            if (current->callback(current->carry_data, current->fd)) return -1;
         }
         if (current->enabled && FD_ISSET(current->fd, &on_writable)) {
-            if (current->callback(current->carry_data)) return -1;
+            if (current->callback(current->carry_data, current->fd)) return -1;
         }
         if (current->enabled && FD_ISSET(current->fd, &on_exceptional)) {
-            if (current->callback(current->carry_data)) return -1;
+            if (current->callback(current->carry_data, current->fd)) return -1;
         }
     }
     return result;
@@ -156,7 +156,7 @@ void event_system_start(event_system *ev_sys) {
             }
         }
         // fire event and exit in case it returns something else than 0
-        if (next_event->callback(next_event->carry_data)) {
+        if (next_event->callback(next_event->carry_data, -1)) {
             break;
         }
         // update timed_event::last_call
