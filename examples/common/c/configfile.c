@@ -656,6 +656,15 @@ void config_setstd(struct RastaConfig *cfg) {
         cfg->values.general.rasta_id = (unsigned long)entr.value.unumber;
     }
 
+    entr = config_get(cfg, "RASTA_REMOTE_ID");
+    if (entr.type != DICTIONARY_NUMBER) {
+        // set std
+        cfg->values.general.rasta_id_remote = 0;
+    } else {
+        // check valid format
+        cfg->values.general.rasta_id_remote = (unsigned long)entr.value.unumber;
+    }
+
     // TLS settings
 
     entr = config_get(cfg, "RASTA_CA_PATH");

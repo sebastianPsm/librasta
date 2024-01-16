@@ -71,7 +71,7 @@ int sr_receive(rasta_connection *con, struct RastaPacket *receivedPacket);
  * @param h the handle of the local RaSTA instance
  * @param id the ID of the remote RaSTA instance to connect to
  */
-struct rasta_connection *sr_connect(struct rasta_handle *h, unsigned long id);
+struct rasta_connection *sr_connect(struct rasta_handle *h);
 
 /**
  * Disconnect a connection on request by the user.

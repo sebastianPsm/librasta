@@ -11,9 +11,6 @@
 #define CONFIG_PATH_S "rasta_server_local.cfg"
 #define CONFIG_PATH_C "rasta_client_local.cfg"
 
-#define ID_R 0x61
-#define ID_S 0x60
-
 #define BUF_SIZE 500
 
 void printHelpAndExit(void) {
@@ -81,10 +78,10 @@ int main(int argc, char *argv[]) {
     char buf[BUF_SIZE];
 
     if (strcmp(argv[1], "r") == 0) {
-        printf("->   R (ID = 0x%lX)\n", (unsigned long)ID_R);
         rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_S);
+        printf("->   R (ID = 0x%lX)\n", (unsigned long)config.general.rasta_id);
 
         strcpy(toServer[0].ip, "127.0.0.1");
         strcpy(toServer[1].ip, "127.0.0.1");
@@ -93,7 +90,6 @@ int main(int argc, char *argv[]) {
 
         rasta_connection_config connection = {
             .config = &config,
-            .rasta_id = ID_S,
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
@@ -127,10 +123,10 @@ int main(int argc, char *argv[]) {
             }
         }
     } else if (strcmp(argv[1], "s") == 0) {
-        printf("->   S (ID = 0x%lX)\n", (unsigned long)ID_S);
         rasta_config_info config;
         struct logger_t logger;
         load_configfile(&config, &logger, CONFIG_PATH_C);
+        printf("->   S (ID = 0x%lX)\n", (unsigned long)config.general.rasta_id);
 
         strcpy(toServer[0].ip, "127.0.0.1");
         strcpy(toServer[1].ip, "127.0.0.1");
@@ -139,7 +135,6 @@ int main(int argc, char *argv[]) {
 
         rasta_connection_config connection = {
             .config = &config,
-            .rasta_id = ID_R,
             .transport_sockets = toServer,
             .transport_sockets_count = sizeof(toServer) / sizeof(toServer[0])};
 
@@ -151,7 +146,7 @@ int main(int argc, char *argv[]) {
 
         rasta_bind(rc);
 
-        struct rasta_connection *c = rasta_connect(rc, ID_R);
+        struct rasta_connection *c = rasta_connect(rc);
 
         if (c == NULL) {
             printf("->   Failed to connect any channel.\n");

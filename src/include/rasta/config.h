@@ -204,6 +204,7 @@ typedef struct rasta_config_redundancy {
 typedef struct rasta_config_general {
     unsigned long rasta_network;
     unsigned long rasta_id;
+    unsigned long rasta_id_remote;
 } rasta_config_general;
 
 // max length of CN in ASN.1
@@ -287,10 +288,6 @@ typedef struct rasta_connection_config {
      */
     rasta_ip_data *transport_sockets;
     size_t transport_sockets_count;
-    /**
-     * the RaSTA ID of the other connection endpoint
-     */
-    unsigned long rasta_id;
 } rasta_connection_config;
 
 /**

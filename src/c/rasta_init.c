@@ -92,7 +92,7 @@ rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_
 
         connection->config = connections[i].config;
         connection->logger = h->logger;
-        connection->remote_id = connections[i].rasta_id;
+        connection->remote_id = connections[i].config->general.rasta_id_remote;
         connection->my_id = (uint32_t)connection->config->general.rasta_id;
         connection->network_id = (uint32_t)connection->config->general.rasta_network;
 

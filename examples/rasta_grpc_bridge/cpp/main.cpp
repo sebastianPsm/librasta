@@ -185,8 +185,10 @@ bool processRasta(std::string config_path,
     strcpy(toServer[1].ip, rasta_channel2_address.c_str());
     toServer[1].port = std::stoi(rasta_channel2_port);
 
+    config.general.rasta_id_remote = s_remote_id;
+
     rasta_connection_config connection = {
-        &config, toServer, nchannels, s_remote_id};
+        &config, toServer, nchannels};
 
     // TODO: Assert that this is true for every known peer
     bool server = local_id > s_remote_id;
@@ -220,7 +222,7 @@ bool processRasta(std::string config_path,
                 return false;
             }
 
-            s_connection = rasta_connect(s_rc, s_remote_id);
+            s_connection = rasta_connect(s_rc);
             if (s_connection) {
                 success = true;
                 processConnection(run_thread);
