@@ -8,7 +8,7 @@ This tutorial is written for Linux. If you are using another operating system, t
 
 The following dependencies are required for building the RaSTA library and binaries:
 
-* CUnit (package `libcunit1` or similar)
+* CUnit (package `libcunit1-dev` or similar)
 * if `ENABLE_RASTA_OPAQUE` is enabled: libsodium (packages `libsodium-dev` and `pkgconf` or similar)
 * if `ENABLE_RASTA_TLS` is enabled: [WolfSSL](https://www.wolfssl.com/) (package `wolfssl` or similar).
 * if `BUILD_RASTA_GRPC_BRIDGE` is enabled: gRPC (package `grpc` or similar)
