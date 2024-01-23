@@ -261,6 +261,7 @@ typedef struct rasta_config_info {
      * all values for the redundancy part
      */
     rasta_config_redundancy redundancy;
+    rasta_config_redundancy redundancy_remote;
     /**
      * includes rastanetwork, receiver and sender id
      * values are 0 if not set in config
@@ -283,11 +284,6 @@ typedef struct rasta_connection_config {
      * the RaSTA configuration
      */
     rasta_config_info *config;
-    /**
-     * the sockets (IP address + port) used by the other connection endpoint
-     */
-    rasta_ip_data *transport_sockets;
-    size_t transport_sockets_count;
 } rasta_connection_config;
 
 /**
