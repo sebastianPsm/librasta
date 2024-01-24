@@ -43,7 +43,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     info.retransmission = configRetransmission;
 
     redundancy_mux mux;
-    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info, NULL, 0);
+    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info);
     mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
 
@@ -64,8 +64,7 @@ void test_sr_retransmit_data_shouldSendFinalHeartbeat() {
     fake_channel.transport_channels = &transport;
     fake_channel.transport_channel_count = 1;
 
-    mux.redundancy_channels = &fake_channel;
-    mux.redundancy_channels_count = 1;
+    mux.redundancy_channel = &fake_channel;
 
     rasta_connection connection;
     connection.remote_id = SERVER_ID;
@@ -117,7 +116,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     info.retransmission = configRetransmission;
 
     redundancy_mux mux;
-    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info, NULL, 0);
+    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info);
     mux.sr_hashing_context.hash_length = RASTA_CHECKSUM_NONE;
     rasta_md4_set_key(&mux.sr_hashing_context, 0, 0, 0, 0);
 
@@ -138,8 +137,7 @@ void test_sr_retransmit_data_shouldRetransmitPackage() {
     fake_channel.transport_channels = &transport;
     fake_channel.transport_channel_count = 1;
 
-    mux.redundancy_channels = &fake_channel;
-    mux.redundancy_channels_count = 1;
+    mux.redundancy_channel = &fake_channel;
 
     struct rasta_connection connection;
     connection.remote_id = SERVER_ID;

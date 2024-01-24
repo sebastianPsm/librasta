@@ -30,14 +30,8 @@ int channel_accept_event(void *carry_data, int _fd) {
     char str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &addr.sin_addr, str, INET_ADDRSTRLEN);
 
-    int red_channel_idx, transport_channel_idx;
-    rasta_transport_channel *channel = NULL;
-
     // Find the suitable transport channel in the mux
-    find_channel_by_ip_address(data->h, addr, &red_channel_idx, &transport_channel_idx);
-    if (red_channel_idx != -1 && transport_channel_idx != -1) {
-        channel = &data->h->mux.redundancy_channels[red_channel_idx].transport_channels[transport_channel_idx];
-    }
+    rasta_transport_channel *channel = find_channel_by_ip_address(data->h, addr);
 
     if (channel != NULL) {
         channel->file_descriptor = fd;
@@ -82,14 +76,9 @@ int channel_receive_event(void *carry_data, int fd) {
 
     if (transport_channel == NULL) {
         // We will only enter this branch for UDP and DTLS
-        int red_channel_idx, transport_channel_idx;
 
         // Find the suitable transport channel in the mux
-        find_channel_by_ip_address(data->h, sender, &red_channel_idx, &transport_channel_idx);
-        if (red_channel_idx != -1 && transport_channel_idx != -1) {
-            transport_channel = &data->h->mux.redundancy_channels[red_channel_idx].transport_channels[transport_channel_idx];
-            connection = &data->h->rasta_connections[red_channel_idx];
-        }
+        transport_channel = find_channel_by_ip_address(data->h, sender);
 
         if (transport_channel == NULL) {
             // Ignore and continue
@@ -97,6 +86,7 @@ int channel_receive_event(void *carry_data, int fd) {
             return 0;
         }
 
+        connection = data->h->rasta_connection;
         transport_channel->file_descriptor = data->socket->file_descriptor;
 
         // We can regard UDP channels as 'always connected' (no re-dial possible)
