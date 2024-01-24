@@ -432,11 +432,11 @@ int sr_send(struct rasta_handle *h, struct rasta_connection *con, struct RastaMe
     return 0;
 }
 
-struct rasta_connection *sr_connect(struct rasta_handle *h, unsigned long id) {
+struct rasta_connection *sr_connect(struct rasta_handle *h) {
     rasta_connection *connection = NULL;
 
     for (unsigned i = 0; i < h->rasta_connections_length; i++) {
-        if (h->rasta_connections[i].remote_id == id) {
+        if (h->rasta_connections[i].remote_id == h->config->general.rasta_id_remote) {
             connection = &h->rasta_connections[i];
             break;
         }

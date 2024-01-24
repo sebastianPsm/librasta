@@ -578,6 +578,26 @@ void config_setstd(struct RastaConfig *cfg) {
         }
     }
 
+    entr = config_get(cfg, "RASTA_REMOTE_REDUNDANCY_CONNECTIONS");
+    if (entr.type != DICTIONARY_ARRAY || entr.value.array.count == 0) {
+        // set std
+        cfg->values.redundancy_remote.connections.count = 0;
+    } else {
+        cfg->values.redundancy_remote.connections.data = malloc(sizeof(rasta_ip_data) * entr.value.array.count);
+        cfg->values.redundancy_remote.connections.count = entr.value.array.count;
+        // check valid format
+        for (unsigned int i = 0; i < entr.value.array.count; i++) {
+            rasta_ip_data ip = extractIPData(entr.value.array.data[i].c);
+            if (ip.port == 0) {
+                logger_log(&cfg->logger, LOG_LEVEL_ERROR, cfg->filename, "RASTA_REMOTE_REDUNDANCY_CONNECTIONS may only contain strings in format ip:port or *:port");
+                free(entr.value.array.data);
+                entr.value.array.count = 0;
+                break;
+            }
+            cfg->values.redundancy_remote.connections.data[i] = ip;
+        }
+    }
+
     // crc type
     entr = config_get(cfg, "RASTA_CRC_TYPE");
     if (entr.type != DICTIONARY_STRING) {
@@ -654,6 +674,15 @@ void config_setstd(struct RastaConfig *cfg) {
     } else {
         // check valid format
         cfg->values.general.rasta_id = (unsigned long)entr.value.unumber;
+    }
+
+    entr = config_get(cfg, "RASTA_REMOTE_ID");
+    if (entr.type != DICTIONARY_NUMBER) {
+        // set std
+        cfg->values.general.rasta_id_remote = 0;
+    } else {
+        // check valid format
+        cfg->values.general.rasta_id_remote = (unsigned long)entr.value.unumber;
     }
 
     // TLS settings

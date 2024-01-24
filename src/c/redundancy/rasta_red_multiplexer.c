@@ -175,9 +175,9 @@ void redundancy_mux_allocate_channels(struct rasta_handle *h, redundancy_mux *mu
     }
 
     for (unsigned i = 0; i < connections_length; i++) {
-        assert(connections[i].transport_sockets_count == mux->port_count);
-        redundancy_channel_alloc(h, mux->logger, connections[i].config, connections[i].transport_sockets, connections[i].transport_sockets_count,
-                                 connections[i].rasta_id, &mux->redundancy_channels[i]);
+        assert(connections[i].config->redundancy_remote.connections.count == mux->port_count);
+        redundancy_channel_alloc(h, mux->logger, connections[i].config, connections[i].config->redundancy_remote.connections.data, connections[i].config->redundancy_remote.connections.count,
+                                 connections[i].config->general.rasta_id_remote, &mux->redundancy_channels[i]);
         mux->redundancy_channels[i].mux = mux;
     }
 }

@@ -128,8 +128,8 @@ void rasta_cancel_operation(rasta *r, rasta_cancellation *cancel) {
     (void)ignore;
 }
 
-rasta_connection *rasta_connect(rasta *user_configuration, unsigned long id) {
-    return sr_connect(&user_configuration->h, id);
+rasta_connection *rasta_connect(rasta *user_configuration) {
+    return sr_connect(&user_configuration->h);
 }
 
 int rasta_recv(rasta *user_configuration, rasta_connection *connection, void *buf, size_t len) {

@@ -66,7 +66,7 @@ void rasta_cancel_operation(rasta *r, rasta_cancellation *cancel);
  * @param rasta the user configuration of the local RaSTA instance
  * @param id the ID of the remote RaSTA instance to connect to
  */
-rasta_connection *rasta_connect(rasta *r, unsigned long id);
+rasta_connection *rasta_connect(rasta *r);
 
 /**
  * Receive data on a given RaSTA connection
