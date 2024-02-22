@@ -81,9 +81,7 @@ int main(int argc, char *argv[]) {
         load_configfile(&config, &logger, CONFIG_PATH_S);
         printf("->   R (ID = 0x%lX)\n", (unsigned long)config.general.rasta_id);
 
-        rasta_connection_config connection = {.config = &config};
-
-        rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
+        rc = rasta_lib_init_configuration(&config, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
             config.kex.rekeying_interval_ms = 0;
@@ -118,9 +116,7 @@ int main(int argc, char *argv[]) {
         load_configfile(&config, &logger, CONFIG_PATH_C);
         printf("->   S (ID = 0x%lX)\n", (unsigned long)config.general.rasta_id);
 
-        rasta_connection_config connection = {.config = &config};
-
-        rc = rasta_lib_init_configuration(&config, &connection, 1, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
+        rc = rasta_lib_init_configuration(&config, LOG_LEVEL_DEBUG, LOGGER_TYPE_CONSOLE);
 
         if (force_disable_rekeying) {
             config.kex.rekeying_interval_ms = 0;

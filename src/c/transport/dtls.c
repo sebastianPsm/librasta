@@ -61,14 +61,8 @@ static size_t wolfssl_receive_dtls(rasta_transport_socket *transport_socket, uns
 
     get_client_addr_from_socket(transport_socket, sender, &sender_size);
 
-    int red_channel_idx, transport_channel_idx;
-    rasta_transport_channel *channel = NULL;
-
     // find the transport channel corresponding to this socket
-    find_channel_by_ip_address(data->h, *sender, &red_channel_idx, &transport_channel_idx);
-    if (red_channel_idx != -1 && transport_channel_idx != -1) {
-        channel = &data->h->mux.redundancy_channels[red_channel_idx].transport_channels[transport_channel_idx];
-    }
+    rasta_transport_channel *channel = find_channel_by_ip_address(data->h, *sender);
 
     // If this is a client and the channel was connected using udp_send, we may not have
     // told the socket about it. In this case, propagate the connection information to the

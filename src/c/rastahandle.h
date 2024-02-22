@@ -44,8 +44,7 @@ typedef struct rasta_handle {
      */
     event_system *ev_sys;
 
-    rasta_connection *rasta_connections;
-    unsigned rasta_connections_length;
+    rasta_connection *rasta_connection;
 
     struct rasta_connection *accepted_connection;
 } rasta_handle;

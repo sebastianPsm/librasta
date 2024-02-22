@@ -51,11 +51,9 @@ rasta_connection *rasta_accept(rasta *user_configuration) {
     log_main_loop_state(h, event_system, "event-system started");
     event_system_start(event_system);
 
-    for (unsigned i = 0; i < h->rasta_connections_length; i++) {
-        if (h->rasta_connections[i].is_new) {
-            h->rasta_connections[i].is_new = false;
-            return &h->rasta_connections[i];
-        }
+    if (h->rasta_connection->is_new) {
+        h->rasta_connection->is_new = false;
+        return h->rasta_connection;
     }
 
     return NULL;
@@ -179,16 +177,16 @@ void rasta_disconnect(rasta_connection *connection) {
 
 void rasta_cleanup(rasta *user_configuration) {
     sr_cleanup(&user_configuration->h);
-    for (unsigned i = 0; i < user_configuration->h.rasta_connections_length; i++) {
-        struct RastaByteArray *elem;
-        while ((elem = fifo_pop(user_configuration->h.rasta_connections[i].fifo_retransmission))) {
-            freeRastaByteArray(elem);
-            rfree(elem);
-        }
-        fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_retransmission);
-        fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_send);
-        fifo_destroy(&user_configuration->h.rasta_connections[i].fifo_receive);
+
+    struct RastaByteArray *elem;
+    while ((elem = fifo_pop(user_configuration->h.rasta_connection->fifo_retransmission))) {
+        freeRastaByteArray(elem);
+        rfree(elem);
     }
-    rfree(user_configuration->h.rasta_connections);
+    fifo_destroy(&user_configuration->h.rasta_connection->fifo_retransmission);
+    fifo_destroy(&user_configuration->h.rasta_connection->fifo_send);
+    fifo_destroy(&user_configuration->h.rasta_connection->fifo_receive);
+
+    rfree(user_configuration->h.rasta_connection);
     rfree(user_configuration);
 }

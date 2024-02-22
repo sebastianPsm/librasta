@@ -19,10 +19,10 @@ void test_redundancy_channel() {
     logger_init(&logger, LOG_LEVEL_INFO, LOGGER_TYPE_CONSOLE);
 
     redundancy_mux mux;
-    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info, NULL, 0);
+    redundancy_mux_alloc(&rasta_h, &mux, &logger, &info);
 
     rasta_redundancy_channel channel;
-    redundancy_channel_alloc(&rasta_h, &logger, &info, NULL, 0, 0, &channel);
+    redundancy_channel_alloc(&rasta_h, &logger, &info, &channel);
     int result = redundancy_channel_connect(&mux, &channel);
 
     CU_ASSERT_EQUAL(result, 1);

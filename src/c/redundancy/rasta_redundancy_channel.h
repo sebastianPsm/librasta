@@ -91,13 +91,9 @@ void redundancy_channel_close(rasta_connection *conn, rasta_redundancy_channel *
  * @param h the RaSTA handle to initialite the channel with
  * @param logger the logger that is used to log information
  * @param config the configuration for the redundancy layer
- * @param transport_sockets the transport sockets belonging to this redundancy channel
- * @param transport_channel_count the amount of transport channels that should be created in this redundancy channel (corresponds to the number of transport sockets supplied)
- * @param id the RaSTA ID that is associated with this redundancy channel
  * @param channel the redundancy channel to initialize
  */
-void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_ip_data *transport_sockets, unsigned int transport_channel_count,
-                              unsigned long id, rasta_redundancy_channel *channel);
+void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_redundancy_channel *channel);
 
 void redundancy_channel_init(rasta_redundancy_channel *channel);
 

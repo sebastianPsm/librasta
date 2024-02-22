@@ -69,7 +69,7 @@ void rasta_socket(rasta *user_configuration, rasta_config_info *config, struct l
     handle->mux.notifications.on_diagnostics_available = handle->notifications.on_redundancy_diagnostic_notification;
 }
 
-rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_config *connections, size_t connections_length, log_level log_level, logger_type logger_type) {
+rasta *rasta_lib_init_configuration(rasta_config_info *config, log_level log_level, logger_type logger_type) {
     rasta *user_configuration = rmalloc(sizeof(rasta));
     memset(user_configuration, 0, sizeof(rasta));
     logger_init(&user_configuration->logger, log_level, logger_type);
@@ -82,66 +82,63 @@ rasta *rasta_lib_init_configuration(rasta_config_info *config, rasta_connection_
 
     // init the redundancy layer
     // This is the place where we malloc
-    redundancy_mux_alloc(h, &h->mux, h->logger, config, connections, connections_length);
+    redundancy_mux_alloc(h, &h->mux, h->logger, config);
 
-    h->rasta_connections = rmalloc(sizeof(rasta_connection) * connections_length);
-    memset(h->rasta_connections, 0, sizeof(rasta_connection) * connections_length);
-    for (unsigned i = 0; i < connections_length; i++) {
-        rasta_connection *connection = &h->rasta_connections[i];
-        sr_reset_connection(connection);
+    h->rasta_connection = rmalloc(sizeof(rasta_connection));
+    memset(h->rasta_connection, 0, sizeof(rasta_connection));
 
-        connection->config = connections[i].config;
-        connection->logger = h->logger;
-        connection->remote_id = connections[i].config->general.rasta_id_remote;
-        connection->my_id = (uint32_t)connection->config->general.rasta_id;
-        connection->network_id = (uint32_t)connection->config->general.rasta_network;
+    rasta_connection *connection = h->rasta_connection;
+    sr_reset_connection(connection);
 
-        // This is a little hacky
-        connection->redundancy_channel = &h->mux.redundancy_channels[i];
-        for (unsigned j = 0; j < connection->redundancy_channel->transport_channel_count; j++) {
-            connection->redundancy_channel->transport_channels[j].receive_event_data.connection = connection;
-        }
+    connection->config = config;
+    connection->logger = h->logger;
+    connection->remote_id = config->general.rasta_id_remote;
+    connection->my_id = (uint32_t)connection->config->general.rasta_id;
+    connection->network_id = (uint32_t)connection->config->general.rasta_network;
 
-        // batch outgoing packets
-        memset(&connection->send_handle.send_event, 0, sizeof(timed_event));
-        connection->send_handle.send_event.callback = data_send_event;
-        connection->send_handle.send_event.interval = IO_INTERVAL * NS_PER_MS;
-        connection->send_handle.send_event.carry_data = &connection->send_handle;
-        connection->send_handle.connection = connection;
-
-        add_timed_event(h->ev_sys, &connection->send_handle.send_event);
-
-        connection->send_handle.config = &config->sending;
-        connection->send_handle.info = &config->general;
-        connection->send_handle.logger = &user_configuration->logger;
-        connection->send_handle.mux = connection->redundancy_channel->mux;
-        connection->send_handle.hashing_context = &h->mux.sr_hashing_context;
-
-        // heartbeat
-        connection->heartbeat_handle.logger = &user_configuration->logger;
-        connection->heartbeat_handle.mux = connection->redundancy_channel->mux;
-        connection->heartbeat_handle.hashing_context = &connection->redundancy_channel->mux->sr_hashing_context;
-
-        // receive
-        connection->receive_handle.config = &config->sending;
-        connection->receive_handle.info = &config->general;
-        connection->receive_handle.handle = h;
-        connection->receive_handle.logger = &user_configuration->logger;
-        connection->receive_handle.hashing_context = &h->mux.sr_hashing_context;
-
-        // init retransmission fifo
-        connection->fifo_retransmission = fifo_init(connection->config->retransmission.max_retransmission_queue_size);
-
-        // create send queue
-        connection->fifo_send = fifo_init(2 * connection->config->sending.max_packet);
-
-        // init receive queue
-        connection->fifo_receive = fifo_init(connection->config->receive.max_recvqueue_size);
-
-        init_connection_events(h, connection);
+    // This is a little hacky
+    connection->redundancy_channel = h->mux.redundancy_channel;
+    for (unsigned j = 0; j < connection->redundancy_channel->transport_channel_count; j++) {
+        connection->redundancy_channel->transport_channels[j].receive_event_data.connection = connection;
     }
 
-    h->rasta_connections_length = connections_length;
+    // batch outgoing packets
+    memset(&connection->send_handle.send_event, 0, sizeof(timed_event));
+    connection->send_handle.send_event.callback = data_send_event;
+    connection->send_handle.send_event.interval = IO_INTERVAL * NS_PER_MS;
+    connection->send_handle.send_event.carry_data = &connection->send_handle;
+    connection->send_handle.connection = connection;
+
+    add_timed_event(h->ev_sys, &connection->send_handle.send_event);
+
+    connection->send_handle.config = &config->sending;
+    connection->send_handle.info = &config->general;
+    connection->send_handle.logger = &user_configuration->logger;
+    connection->send_handle.mux = connection->redundancy_channel->mux;
+    connection->send_handle.hashing_context = &h->mux.sr_hashing_context;
+
+    // heartbeat
+    connection->heartbeat_handle.logger = &user_configuration->logger;
+    connection->heartbeat_handle.mux = connection->redundancy_channel->mux;
+    connection->heartbeat_handle.hashing_context = &connection->redundancy_channel->mux->sr_hashing_context;
+
+    // receive
+    connection->receive_handle.config = &config->sending;
+    connection->receive_handle.info = &config->general;
+    connection->receive_handle.handle = h;
+    connection->receive_handle.logger = &user_configuration->logger;
+    connection->receive_handle.hashing_context = &h->mux.sr_hashing_context;
+
+    // init retransmission fifo
+    connection->fifo_retransmission = fifo_init(connection->config->retransmission.max_retransmission_queue_size);
+
+    // create send queue
+    connection->fifo_send = fifo_init(2 * connection->config->sending.max_packet);
+
+    // init receive queue
+    connection->fifo_receive = fifo_init(connection->config->receive.max_recvqueue_size);
+
+    init_connection_events(h, connection);
 
     return user_configuration;
 }

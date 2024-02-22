@@ -55,10 +55,9 @@ void redundancy_channel_close(rasta_connection *conn, rasta_redundancy_channel *
     }
 }
 
-void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_ip_data *transport_sockets, unsigned int transport_channel_count,
-                              unsigned long id, rasta_redundancy_channel *channel) {
+void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, const rasta_config_info *config, rasta_redundancy_channel *channel) {
 
-    channel->associated_id = id;
+    channel->associated_id = config->general.rasta_id_remote;
 
     channel->logger = logger;
     channel->configuration_parameters = config->redundancy;
@@ -93,13 +92,14 @@ void redundancy_channel_alloc(struct rasta_handle *h, struct logger_t *logger, c
     }
 
     // init transport channel buffer;
+    unsigned int transport_channel_count = config->redundancy_remote.connections.count;
     logger_log(channel->logger, LOG_LEVEL_DEBUG, "RaSTA Red init", "space for %d connected channels", transport_channel_count);
     channel->transport_channels = rmalloc(transport_channel_count * sizeof(rasta_transport_channel));
     rmemset(channel->transport_channels, 0, transport_channel_count * sizeof(rasta_transport_channel));
     channel->transport_channel_count = transport_channel_count;
 
-    for (unsigned j = 0; j < transport_channel_count; j++) {
-        transport_init(h, &channel->transport_channels[j], j, transport_sockets[j].ip, transport_sockets[j].port, &config->tls);
+    for (unsigned i = 0; i < transport_channel_count; i++) {
+        transport_init(h, &channel->transport_channels[i], i, config->redundancy_remote.connections.data[i].ip, config->redundancy_remote.connections.data[i].port, &config->tls);
     }
 }
 

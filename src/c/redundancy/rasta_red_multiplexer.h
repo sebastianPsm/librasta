@@ -48,12 +48,7 @@ struct redundancy_mux {
     /**
      * the redundancy channels to remote entities this multiplexer is aware of
      */
-    rasta_redundancy_channel *redundancy_channels;
-
-    /**
-     * the amount of redundancy channels to remote entitites, i.e. the length of redundancy_channels
-     */
-    unsigned int redundancy_channels_count;
+    rasta_redundancy_channel *redundancy_channel;
 
     /**
      * the logger that is used to log information
@@ -87,7 +82,7 @@ struct redundancy_mux {
  * @param logger the logger that is used to log information
  * @param config configuration for redundancy channels
  */
-void redundancy_mux_alloc(struct rasta_handle *h, redundancy_mux *mux, struct logger_t *logger, rasta_config_info *config, rasta_connection_config *connections, size_t connections_length);
+void redundancy_mux_alloc(struct rasta_handle *h, redundancy_mux *mux, struct logger_t *logger, rasta_config_info *config);
 
 /**
  * binds all transport sockets of a redundancy layer multiplexer to their respective IP/port
@@ -100,14 +95,6 @@ bool redundancy_mux_bind(struct rasta_handle *h);
  * @param mux the multiplexer that will be closed
  */
 void redundancy_mux_close(redundancy_mux *mux);
-
-/**
- * getter for a redundancy channel
- * @param mux the redundancy multiplexer that contains the channel
- * @param id the RaSTA ID that is associated with the channel
- * @return the channel or if ID is unknown NULL
- */
-rasta_redundancy_channel *redundancy_mux_get_channel(redundancy_mux *mux, unsigned long id);
 
 /**
  * send a RaSTA packet on a given redundancy channel
